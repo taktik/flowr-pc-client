@@ -124,6 +124,73 @@ const preload = name => {
   fuse.run();
 };
 
+const bundlePhoneApp = () => {
+  const cfg = {
+    sourceMaps: !production,
+    homeDir: 'src/',
+    cache: !production,
+    target: 'electron',
+    output: 'build/phone.js',
+    useTypescriptCompiler: true,
+    plugins: [
+      production &&
+        QuantumPlugin({
+          bakeApiIntoBundle: 'phone',
+          treeshake: true,
+          removeExportsInterop: false,
+          uglify: {
+            es6: true,
+          },
+        }),
+    ],
+    alias: {
+      '~': '~/wexond',
+    },
+    log: {
+      showBundledFiles: false,
+    }
+  }
+
+  cfg.plugins.push(getWebIndexPlugin('phone'))
+  cfg.plugins.push(JSONPlugin())
+  cfg.plugins.push(getCopyPlugin())
+
+  const fuse = FuseBox.init(cfg)
+  fuse.bundle('phone').instructions(`> [phone/view/index.tsx]`)
+  fuse.run()
+}
+
+const phonePreload = () => {
+  const cfg = {
+    sourceMaps: !production,
+    homeDir: 'src/',
+    cache: !production,
+    target: 'electron',
+    output: 'build/phonePreload.js',
+    useTypescriptCompiler: true,
+    plugins: [
+      production &&
+        QuantumPlugin({
+          bakeApiIntoBundle: 'phonePreload',
+          treeshake: true,
+          removeExportsInterop: false,
+          uglify: {
+            es6: true,
+          },
+        }),
+    ],
+    alias: {
+      '~': '~/wexond',
+    },
+    log: {
+      showBundledFiles: false,
+    }
+  }
+  const fuse = FuseBox.init(cfg)
+  fuse.bundle('phonePreload').instructions(`> [phone/preloads/phonePreload.ts]`)
+  fuse.run()
+}
+
 const exportNode = () => {
   const scriptName = 'exportNode'
   const cfg = getRendererConfig('electron', scriptName);
@@ -133,6 +200,8 @@ const exportNode = () => {
 }
 
 renderer('app', 4444);
+bundlePhoneApp()
+phonePreload()
 preload('view-preload');
 preload('background-preload');
 exportNode();

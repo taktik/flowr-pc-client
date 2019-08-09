@@ -8,6 +8,7 @@ import { URL } from 'url'
 const network = require('network');
 const deepExtend = require('deep-extend')
 import defaultBrowserWindowOptions from './defaultBrowserWindowOptions'
+import { PhoneWindow } from '../phone/phoneWindow';
 const FlowrDataDir = resolve(homedir(), '.flowr')
 const CONFIG_NAME = 'user-preferences.json'
 
@@ -37,6 +38,8 @@ export function buildBrowserWindowConfig(options: BrowserWindowConstructorOption
 }
 
 export async function createFlowrWindow(): Promise<BrowserWindow> {
+  //// Init phone app
+  let phoneWindow: PhoneWindow | null = null
   const mac = await getMacAddress()
   const winBounds = flowrStore.get('windowBounds')
 
@@ -197,6 +200,15 @@ export async function createFlowrWindow(): Promise<BrowserWindow> {
   })
 
   ipcMain.on('openConfigMode', displayHiddenMenu)
+
+  ipcMain.on('openPhoneApp', (username?: string) => {
+    if (phoneWindow === null) {
+      phoneWindow = new PhoneWindow(mainWindow, flowrStore.get('phoneServer'), username)
+    } else if (username) {
+      phoneWindow.username = username
+    }
+    phoneWindow.open()
+  })
 
   function buildFileUrl(fileName: string): string {
     let result: string
