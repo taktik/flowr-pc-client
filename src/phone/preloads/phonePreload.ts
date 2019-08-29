@@ -5,15 +5,22 @@ declare global {
     interface Global {
       require: any
       ipcRenderer: IpcRenderer
+      process: Process
     }
   }
 }
 
-const nodeRequire: {[key: string]: any} = {
-  react: require('react'),
-  'react-dom': require('react-dom'),
-  'typescript-state-machine': require('typescript-state-machine'),
-}
+const production = process.env.NODE_ENV !== 'dev' && process.env.NODE_ENV !== 'development'
+const packagesToExport = [
+  'react',
+  'react-dom',
+  'typescript-state-machine',
+  '@fortawesome/react-fontawesome',
+  '@fortawesome/fontawesome-svg-core',
+  '@fortawesome/free-solid-svg-icons',
+  'styled-components',
+]
+const nodeRequire: {[key: string]: any} = packagesToExport.reduce((exported, pack) => Object.assign(exported, { [pack]: require(pack) }), {})
 const ipcRenderer = require('electron').ipcRenderer
 
 process.once('loaded', () => {
@@ -27,6 +34,10 @@ process.once('loaded', () => {
     return requiredModule
   }
   global.ipcRenderer = ipcRenderer
+
+  if (!production) {
+    global.process = process
+  }
 });
 
 export {};

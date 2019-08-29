@@ -7,6 +7,10 @@ export class FlowrWindow extends BrowserWindow {
   private resizeTimeout?: number
   private player: Player
 
+  get phoneServerUrl() {
+    return this.store.get('phoneServer')
+  }
+
   constructor(private store: Store, options?: BrowserWindowConstructorOptions) {
     super(options);
     this.player = new Player(this.store)

@@ -16,6 +16,8 @@
     "object-shorthand-properties-first": false,
     "semicolon": false,
     "align": false,
-    "no-this-assignment": false
+    "no-this-assignment": false,
+    "no-unused-variable": true,
+    "no-unused-expression": true
   }
 }

@@ -125,38 +125,13 @@ const preload = name => {
 };
 
 const bundlePhoneApp = () => {
-  const cfg = {
-    sourceMaps: !production,
-    homeDir: 'src/',
-    cache: !production,
-    target: 'electron',
-    output: 'build/phone.js',
-    useTypescriptCompiler: true,
-    plugins: [
-      production &&
-        QuantumPlugin({
-          bakeApiIntoBundle: 'phone',
-          treeshake: true,
-          removeExportsInterop: false,
-          uglify: {
-            es6: true,
-          },
-        }),
-    ],
-    alias: {
-      '~': '~/wexond',
-    },
-    log: {
-      showBundledFiles: false,
-    }
-  }
-
+  const cfg = getRendererConfig('electron', 'phone')
   cfg.plugins.push(getWebIndexPlugin('phone'))
   cfg.plugins.push(JSONPlugin())
   cfg.plugins.push(getCopyPlugin())
 
   const fuse = FuseBox.init(cfg)
-  fuse.bundle('phone').instructions(`> [phone/view/index.tsx]`)
+  fuse.bundle('phone').instructions(`> [phone/views/index.tsx]`)
   fuse.run()
 }
 

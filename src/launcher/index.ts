@@ -6,6 +6,9 @@ import { autoUpdater } from 'electron-updater';
 import { createFlowrWindow, initFlowrConfig, buildBrowserWindowConfig } from '../frontend'
 import { createWexondWindow, setWexondLog } from '~/main'
 import { getMigrateUserPreferences } from './migration/fromFlowrClientToFlowrPcClient'
+import { PhoneWindow } from 'src/phone/phoneWindow';
+import { RegisterProps } from 'src/phone/views/phone';
+import { FlowrWindow } from 'src/frontend/flowr-window';
 export const log = require('electron-log');
 const migrateUserPreferences = getMigrateUserPreferences()
 if (migrateUserPreferences) {
@@ -21,8 +24,9 @@ log.transports.file.level = 'verbose';
 log.transports.file.file = resolve(app.getPath('userData'), 'log.log');
 setWexondLog(log)
 ipcMain.setMaxListeners(0);
-let flowrWindow: BrowserWindow = null
+let flowrWindow: FlowrWindow = null
 let wexondWindow: BrowserWindow = null
+let phoneWindow: PhoneWindow = null
 const gotTheLock = app.requestSingleInstanceLock();
 
 if (!gotTheLock) {
@@ -46,12 +50,18 @@ app.on('ready', async () => {
     if (flowrWindow === null) {
       flowrWindow = await createFlowrWindow();
       flowrWindow.on('close', () => {
+        if (phoneWindow) {
+          phoneWindow.close()
+        }
         flowrWindow = null;
       })
     }
   });
   flowrWindow = await createFlowrWindow();
   flowrWindow.on('close', () => {
+    if (phoneWindow) {
+      phoneWindow.close()
+    }
     flowrWindow = null;
   })
 
@@ -96,6 +106,25 @@ app.on('ready', async () => {
     }
     // flowrWindow.moveTop()
   })
+
+  ipcMain.on('openPhoneApp', (evt: any, registerProps?: RegisterProps & { show: boolean }) => {
+    if (!flowrWindow) return
+
+    if (phoneWindow === null) {
+      phoneWindow = new PhoneWindow(flowrWindow, flowrWindow.phoneServerUrl, registerProps)
+      phoneWindow.on('show', mute)
+      phoneWindow.on('hide', unmute)
+      phoneWindow.on('close', () => {
+        unmute()
+        phoneWindow = null
+      })
+    } else if (registerProps) {
+      phoneWindow.registerProps = registerProps
+    }
+    if (registerProps.show) {
+      phoneWindow.open()
+    }
+  })
 });
 
 ipcMain.on('clear-application-data', async () => {
@@ -107,3 +136,25 @@ ipcMain.on('clear-application-data', async () => {
 app.on('window-all-closed', () => {
   app.quit();
 });
+
+function mute() {
+  if (flowrWindow) muteWindow(flowrWindow)
+  if (wexondWindow) muteWindow(wexondWindow)
+}
+
+function unmute() {
+  if (flowrWindow) unmuteWindow(flowrWindow)
+  if (wexondWindow) unmuteWindow(wexondWindow)
+}
+
+function muteWindow(windowToMute: BrowserWindow) {
+  if (!windowToMute.webContents.isAudioMuted) {
+    windowToMute.webContents.setAudioMuted(true)
+  }
+}
+
+function unmuteWindow(windowToMute: BrowserWindow) {
+  if (windowToMute.webContents.isAudioMuted) {
+    windowToMute.webContents.setAudioMuted(false)
+  }
+}

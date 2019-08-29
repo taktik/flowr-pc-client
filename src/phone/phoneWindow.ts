@@ -1,6 +1,7 @@
 import { BrowserWindow, Rectangle, app, ipcMain } from 'electron'
 import { resolve, join } from 'path';
 import { WindowModes } from './WindowModes'
+import { RegisterProps } from './views/phone';
 
 function buildFileUrl(fileName: string): string {
   let result: string
@@ -20,18 +21,21 @@ function buildExportPath(fileName: string): string {
   return result
 }
 
+function buildPositionFromParents(parentRectangle: Rectangle) {
+  return {
+    width: Math.round(.5 * parentRectangle.width),
+    height: Math.round(.5 * parentRectangle.height),
+    x: Math.round(parentRectangle.x + .3 * parentRectangle.width),
+    y: Math.round(parentRectangle.y),
+  }
+}
 export class PhoneWindow extends BrowserWindow {
   _mode: WindowModes
-  _username: string
+  _registerProps: RegisterProps
 
   get _widgetPosition(): Rectangle {
-    const contentBounds = this.getContentBounds()
-    return {
-      width: 400,
-      height: 200,
-      x: Math.max(contentBounds.width - 400, 0),
-      y: 0,
-    }
+    const contentBounds = this.getParentWindow().getBounds()
+    return buildPositionFromParents(contentBounds)
   }
 
   get mode() {
@@ -43,24 +47,23 @@ export class PhoneWindow extends BrowserWindow {
     if (value === WindowModes.WIDGET) {
       this.setBounds(this._widgetPosition, true)
     } else {
-      this.maximize()
+      this.setBounds(this.getParentWindow().getBounds(), true)
     }
     this.webContents.send('window-mode-changed', value)
   }
 
-  set username(value: string) {
-    if (this._username !== value) {
-      this.webContents.send('username-changed', value)
-      this._username = value
-    }
+  set registerProps(value: RegisterProps) {
+    this.webContents.send('register-props', value)
+    this._registerProps = value
   }
 
-  constructor(parent: BrowserWindow, phoneServer: string, username?: string) {
-    super({
+  constructor(parent: BrowserWindow, phoneServer: string, registerProps?: RegisterProps) {
+    super(Object.assign({
       frame: false,
+      transparent: true,
       show: false,
       parent,
-      modal: true,
+      backgroundColor: '#8C777777',
       webPreferences: {
         plugins: true,
         nodeIntegration: false,
@@ -68,11 +71,31 @@ export class PhoneWindow extends BrowserWindow {
         experimentalFeatures: true,
         preload: buildExportPath('phonePreload'),
       },
-    })
+    }, buildPositionFromParents(parent.getContentBounds())))
+    const pageUrl = new URL(buildFileUrl('phone.html'))
+    // phoneServer = 'ws://10.1.20.164:8001'
+    if (phoneServer) {
+      pageUrl.searchParams.append('server', phoneServer)
+    }
+
+    if (registerProps) {
+      pageUrl.searchParams.append('username', registerProps.username)
+      pageUrl.searchParams.append('host', registerProps.host)
+    }
+
+    this.loadURL(pageUrl.href)
     this.mode = WindowModes.WIDGET
-    this.loadURL(buildFileUrl(`phone.html?server=${phoneServer}&username=${username}`))
+
     ipcMain.on('phone-maximize', () => this.mode = WindowModes.FULLSCREEN)
     ipcMain.on('phone-reduce', () => this.mode = WindowModes.WIDGET)
+    ipcMain.on('phone-show', this.show.bind(this))
+    ipcMain.on('phone-hide', this.hide.bind(this))
+    ipcMain.on('register-props', this.updateRegisterProps.bind(this))
+  }
+
+  updateRegisterProps(e: Event, registerProps: RegisterProps) {
+    console.log('Received register props', registerProps)
+    this.registerProps = registerProps
   }
 
   open(mode: WindowModes = WindowModes.WIDGET) {
