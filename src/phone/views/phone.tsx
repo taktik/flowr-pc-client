@@ -102,7 +102,7 @@ export class Phone extends React.Component<PhoneProps, PhoneAppState> {
   }
 
   unlistenToCallStateMachine() {
-    if (!this.callStateMachineListeners) {
+    if (this.callStateMachineListeners) {
       this.callStateMachineListeners.forEach(listener => listener.cancel())
       this.callStateMachineListeners = []
     }
