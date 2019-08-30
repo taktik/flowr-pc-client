@@ -71,6 +71,7 @@ export class Dispatcher extends StateMachineImpl<ConnectionState> {
   private _websocket: WebSocket
   private _registerStateMachine: RegisterStateMachine
   private _callStateMachine: CallStateMachine
+  private _connectionTimeout: number | undefined
 
   private updateStatuses() {
     this.updateStatus()
@@ -168,7 +169,7 @@ export class Dispatcher extends StateMachineImpl<ConnectionState> {
   private onError() {
     console.error('Connection error')
     console.log('Retrying in 5s')
-    setTimeout(this.connect.bind(this), 5000)
+    this._connectionTimeout = setTimeout(this.connect.bind(this), 5000)
   }
 
   private onClose() {
@@ -176,6 +177,10 @@ export class Dispatcher extends StateMachineImpl<ConnectionState> {
   }
 
   private connect() {
+    if (this._connectionTimeout) {
+      clearTimeout(this._connectionTimeout)
+      this._connectionTimeout = undefined
+    }
     this.disconnect()
 
     if (this._url) {

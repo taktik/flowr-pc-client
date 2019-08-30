@@ -6,8 +6,8 @@ import { autoUpdater } from 'electron-updater';
 import { createFlowrWindow, initFlowrConfig, buildBrowserWindowConfig } from '../frontend'
 import { createWexondWindow, setWexondLog } from '~/main'
 import { getMigrateUserPreferences } from './migration/fromFlowrClientToFlowrPcClient'
-import { PhoneWindow } from 'src/phone/phoneWindow';
-import { RegisterProps } from 'src/phone/views/phone';
+import { PhoneWindow } from '../phone/phoneWindow';
+import { RegisterProps } from '../phone/views/phone';
 import { FlowrWindow } from 'src/frontend/flowr-window';
 export const log = require('electron-log');
 const migrateUserPreferences = getMigrateUserPreferences()

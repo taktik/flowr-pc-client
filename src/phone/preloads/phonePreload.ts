@@ -8,6 +8,10 @@ declare global {
       process: Process
     }
   }
+
+  interface Window {
+    global: Window
+  }
 }
 
 const production = process.env.NODE_ENV !== 'dev' && process.env.NODE_ENV !== 'development'
@@ -24,6 +28,8 @@ const nodeRequire: {[key: string]: any} = packagesToExport.reduce((exported, pac
 const ipcRenderer = require('electron').ipcRenderer
 
 process.once('loaded', () => {
+  window.global = window.global || window
+
   global.require = (moduleName: string): any => {
     const requiredModule = nodeRequire[moduleName]
 
