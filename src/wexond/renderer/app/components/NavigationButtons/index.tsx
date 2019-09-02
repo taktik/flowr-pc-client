@@ -25,6 +25,11 @@ const onRefreshClick = () => {
 };
 
 const onHomePress = () => {
+  const param = new URLSearchParams(location.search);
+  if (param.has('clearBrowsingDataAtClose')) {
+    store.history.clear();
+    ipcRenderer.send('clear-browsing-data');
+  }
   ipcRenderer.send('open-flowr')
 }
 
