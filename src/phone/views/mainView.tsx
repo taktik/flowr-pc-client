@@ -8,7 +8,7 @@ import styled from 'styled-components';
 import { robotoRegular } from '~/shared/mixins';
 
 interface MainViewProps {
-  callState: CallState
+  callState: CallState | null
   call: (callNumber: string) => void
   answer: () => void
   hangup: () => void

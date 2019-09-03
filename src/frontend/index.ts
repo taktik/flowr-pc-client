@@ -37,7 +37,6 @@ export function buildBrowserWindowConfig(options: BrowserWindowConstructorOption
 }
 
 export async function createFlowrWindow(): Promise<FlowrWindow> {
-  //// Init phone app
   const mac = await getMacAddress()
   const winBounds = flowrStore.get('windowBounds')
 

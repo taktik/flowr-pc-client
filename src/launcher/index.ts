@@ -24,9 +24,9 @@ log.transports.file.level = 'verbose';
 log.transports.file.file = resolve(app.getPath('userData'), 'log.log');
 setWexondLog(log)
 ipcMain.setMaxListeners(0);
-let flowrWindow: FlowrWindow = null
-let wexondWindow: BrowserWindow = null
-let phoneWindow: PhoneWindow = null
+let flowrWindow: FlowrWindow | null = null
+let wexondWindow: BrowserWindow | null = null
+let phoneWindow: PhoneWindow | null = null
 const gotTheLock = app.requestSingleInstanceLock();
 
 if (!gotTheLock) {
@@ -67,7 +67,9 @@ app.on('ready', async () => {
 
   autoUpdater.on('update-downloaded', ({ version }) => {
     // TODO
-    flowrWindow.webContents.send('update-available', version);
+    if (flowrWindow) {
+      flowrWindow.webContents.send('update-available', version);
+    }
   });
 
   ipcMain.on('update-install', () => {
@@ -81,12 +83,14 @@ app.on('ready', async () => {
   });
 
   ipcMain.on('window-focus', () => {
-    flowrWindow.webContents.focus();
+    if (flowrWindow) {
+      flowrWindow.webContents.focus();
+    }
   });
 
   ipcMain.on('open-browser', (event: Event, options: any) => {
     if (wexondWindow === null) {
-      wexondWindow = createWexondWindow(options, flowrWindow, buildBrowserWindowConfig({}))
+      wexondWindow = createWexondWindow(options, flowrWindow || undefined, buildBrowserWindowConfig({}))
       wexondWindow.on('close', () => {
         wexondWindow = null;
       })
@@ -121,7 +125,7 @@ app.on('ready', async () => {
     } else if (registerProps) {
       phoneWindow.registerProps = registerProps
     }
-    if (registerProps.show) {
+    if (registerProps && registerProps.show) {
       phoneWindow.open()
     }
   })

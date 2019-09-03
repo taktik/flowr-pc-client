@@ -8,7 +8,7 @@ const url = new URL(window.location.href)
 const server = url.searchParams.get('server')
 const username = url.searchParams.get('username')
 const host = url.searchParams.get('host')
-const registerProps = { username, host }
+const registerProps = username && host ? { username, host } : null
 
 const StyledPhone = styled(Phone)`
   position: absolute;

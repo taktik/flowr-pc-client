@@ -50,7 +50,9 @@ enum ConnectionStatesNames {
 }
 
 export class ConnectionState extends State {
-  label: ConnectionStatesNames
+  constructor(readonly label: ConnectionStatesNames, readonly parent?: State) {
+    super(label, parent)
+  }
 }
 
 export const DISCONNECTED_STATE = new ConnectionState(ConnectionStatesNames.DISCONNECTED)
@@ -68,9 +70,9 @@ const CONNECTION_TRANSITIONS = {
 
 export class Dispatcher extends StateMachineImpl<ConnectionState> {
   private _url: string
-  private _websocket: WebSocket
-  private _registerStateMachine: RegisterStateMachine
-  private _callStateMachine: CallStateMachine
+  private _websocket: WebSocket | undefined
+  private _registerStateMachine: RegisterStateMachine | undefined
+  private _callStateMachine: CallStateMachine | undefined
   private _connectionTimeout: number | undefined
 
   private updateStatuses() {
@@ -113,7 +115,7 @@ export class Dispatcher extends StateMachineImpl<ConnectionState> {
     }
   }
 
-  constructor(phoneServer: string) {
+  constructor(phoneServer: string | null) {
     super(CONNECTION_STATES, CONNECTION_TRANSITIONS, DISCONNECTED_STATE)
     this.onEnterState(DISCONNECTED_STATE, this.connect.bind(this))
     this.onEnterState(CONNECTED_STATE, this.updateStatuses.bind(this))
@@ -146,7 +148,9 @@ export class Dispatcher extends StateMachineImpl<ConnectionState> {
         this.registerState = CLIENT_NOT_RUNNING_STATE
         break
       case ServerReference.SM17:
-        this.statusChanged(message.to)
+        if (message.to) {
+          this.statusChanged(message.to)
+        }
         break
     }
   }
@@ -187,8 +191,10 @@ export class Dispatcher extends StateMachineImpl<ConnectionState> {
       this._websocket = new WebSocket(this._url)
       this._websocket.onerror = this.onError.bind(this)
       this._websocket.onopen = () => {
-        this._websocket.onclose = this.onClose.bind(this)
-        this._websocket.onmessage = this.onMessage.bind(this)
+        if (this._websocket) {
+          this._websocket.onclose = this.onClose.bind(this)
+          this._websocket.onmessage = this.onMessage.bind(this)
+        }
       }
     }
   }
@@ -213,6 +219,8 @@ export class Dispatcher extends StateMachineImpl<ConnectionState> {
 
   @CheckStateIs(CONNECTED_STATE, 'Cannot send message while disconnected')
   send(action: string, payload: {[key: string]: string} = {}) {
-    this._websocket.send(JSON.stringify({ action, ...payload }))
+    if (this._websocket) {
+      this._websocket.send(JSON.stringify({ action, ...payload }))
+    }
   }
 }

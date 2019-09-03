@@ -4,7 +4,7 @@ import { RegisterStateMachine } from './registerStateMachine';
 import { CallStateMachine } from './callStateMachine';
 
 export class PhoneStateMachine {
-  static factory(phoneServer: string, registerProps: RegisterProps) {
+  static factory(phoneServer: string | null, registerProps: RegisterProps | null) {
     const dispatcher = new Dispatcher(phoneServer)
     const registerStateMachine = new RegisterStateMachine(dispatcher, registerProps)
     const callStateMachine = new CallStateMachine(dispatcher)

@@ -7,7 +7,7 @@ export class FlowrWindow extends BrowserWindow {
   private resizeTimeout?: number
   private player: Player
 
-  get phoneServerUrl() {
+  get phoneServerUrl(): string | undefined {
     return this.store.get('phoneServer')
   }
 

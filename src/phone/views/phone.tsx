@@ -18,13 +18,13 @@ declare global {
 }
 
 type PhoneProps = {
-  phoneServer: string,
+  phoneServer: string | null,
   className?: string,
-  registerProps: RegisterProps,
+  registerProps: RegisterProps | null,
 }
 
 type PhoneAppState = {
-  callState: CallState,
+  callState: CallState | null,
   mode?: WindowModes,
   waiting: boolean,
 }
@@ -120,13 +120,6 @@ export class Phone extends React.Component<PhoneProps, PhoneAppState> {
   hangup() {
     this.callStateMachine.terminate()
   }
-
-  // private triggerConnectionStateMachineAction <T> (ctx: any, callback: (...args: T[]) => any, ...args: T[]) {
-  //   callback.apply(ctx, args)
-  //   this.setState({ waiting: true })
-  //   this.connectionStateMachine.waitUntilLeft(this.connectionStateMachine.state)
-  //     .then(() => this.setState({ waiting: false }))
-  // }
 
   render() {
     return (

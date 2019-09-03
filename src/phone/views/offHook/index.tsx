@@ -21,7 +21,7 @@ export class OffHook extends React.Component<OffHookProps, OffHookState> {
     this.state = { callNumber: '' }
   }
 
-  private onKeyDown(e: KeyboardEvent) {
+  private onKeyDown(e: React.KeyboardEvent<HTMLInputElement>) {
     if (e.keyCode === 13) {
       this.call()
     }

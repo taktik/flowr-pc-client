@@ -154,9 +154,6 @@ const phonePreload = () => {
           },
         }),
     ],
-    alias: {
-      '~': '~/wexond',
-    },
     log: {
       showBundledFiles: false,
     }

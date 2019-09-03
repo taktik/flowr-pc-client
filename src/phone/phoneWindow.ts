@@ -30,19 +30,19 @@ function buildPositionFromParents(parentRectangle: Rectangle) {
   }
 }
 export class PhoneWindow extends BrowserWindow {
-  _mode: WindowModes
-  _registerProps: RegisterProps
+  _mode: WindowModes | undefined
+  _registerProps: RegisterProps | undefined
 
   get _widgetPosition(): Rectangle {
     const contentBounds = this.getParentWindow().getBounds()
     return buildPositionFromParents(contentBounds)
   }
 
-  get mode() {
+  get mode(): WindowModes | undefined {
     return this._mode
   }
 
-  set mode(value: WindowModes) {
+  set mode(value: WindowModes | undefined) {
     this._mode = value
     if (value === WindowModes.WIDGET) {
       this.setBounds(this._widgetPosition, true)
@@ -57,7 +57,7 @@ export class PhoneWindow extends BrowserWindow {
     this._registerProps = value
   }
 
-  constructor(parent: BrowserWindow, phoneServer: string, registerProps?: RegisterProps) {
+  constructor(parent: BrowserWindow, phoneServer?: string, registerProps?: RegisterProps) {
     super(Object.assign({
       frame: false,
       transparent: true,

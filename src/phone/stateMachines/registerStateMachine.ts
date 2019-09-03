@@ -12,7 +12,9 @@ enum RegisterStatesNames {
 }
 
 export class RegisterState extends State {
-  label: RegisterStatesNames
+  constructor(readonly label: RegisterStatesNames, readonly parent?: State) {
+    super(label, parent)
+  }
 }
 
 export const IDLE_STATE = new RegisterState(RegisterStatesNames.IDLE)
@@ -42,7 +44,7 @@ const CONNECTION_TRANSITIONS = {
 
 export class RegisterStateMachine extends StateMachineImpl<RegisterState> {
   private _dispatcher: Dispatcher
-  private _registerProps: RegisterProps
+  private _registerProps: RegisterProps | null = null
   private _initTimeout: number | undefined
   private _registerTimeout: number | undefined
 
@@ -54,8 +56,8 @@ export class RegisterStateMachine extends StateMachineImpl<RegisterState> {
     return this._registerProps
   }
 
-  set registerProps(props: RegisterProps) {
-    const isDifferent = !this.registerProps || props.host !== this._registerProps.host || props.username !== this._registerProps.username
+  set registerProps(props: RegisterProps | null) {
+    const isDifferent = !this.registerProps || (props && (props.host !== this._registerProps!.host || props.username !== this._registerProps!.username))
     this._registerProps = props
 
     if (isDifferent && this.inState(REGISTERED_STATE)) {
@@ -65,7 +67,7 @@ export class RegisterStateMachine extends StateMachineImpl<RegisterState> {
     }
   }
 
-  constructor(dispatcher: Dispatcher, registerProps: RegisterProps) {
+  constructor(dispatcher: Dispatcher, registerProps: RegisterProps | null) {
     super(CONNECTION_STATES, CONNECTION_TRANSITIONS, IDLE_STATE)
     this.onEnterState(CLIENT_NOT_RUNNING_STATE, this.attemptToInit.bind(this))
     this.onLeaveState(CLIENT_NOT_RUNNING_STATE, this.clearInitAttemps.bind(this))
