@@ -68,7 +68,7 @@ const getCopyPlugin = () => {
 const main = () => {
   const fuse = FuseBox.init(getConfig('server', 'main'));
 
-  const app = fuse.bundle('main').instructions(`> [launcher/index.ts]`);
+  const app = fuse.bundle('main').instructions('> [launcher/index.ts]');
 
   if (!production) {
     app.watch();
@@ -131,7 +131,7 @@ const bundlePhoneApp = () => {
   cfg.plugins.push(getCopyPlugin())
 
   const fuse = FuseBox.init(cfg)
-  fuse.bundle('phone').instructions(`> [phone/views/index.tsx]`)
+  fuse.bundle('phone').instructions('> [phone/views/index.tsx]')
   fuse.run()
 }
 
@@ -159,23 +159,23 @@ const phonePreload = () => {
     }
   }
   const fuse = FuseBox.init(cfg)
-  fuse.bundle('phonePreload').instructions(`> [phone/preloads/phonePreload.ts]`)
+  fuse.bundle('phonePreload').instructions('> [phone/preloads/phonePreload.ts]')
   fuse.run()
 }
 
 const exportNode = () => {
   const scriptName = 'exportNode'
-  const cfg = getRendererConfig('electron', scriptName);
-  const fuse = FuseBox.init(cfg);
-  fuse.bundle(scriptName).instructions(`> [frontend/preloads/${scriptName}.ts]`);
-  fuse.run();
+  const cfg = getRendererConfig('electron', scriptName)
+  const fuse = FuseBox.init(cfg)
+  fuse.bundle(scriptName).instructions(`> [frontend/preloads/${scriptName}.ts]`)
+  fuse.run()
 }
 
-renderer('app', 4444);
+renderer('app', 4444)
 bundlePhoneApp()
 phonePreload()
-preload('view-preload');
-preload('background-preload');
-exportNode();
+preload('view-preload')
+preload('background-preload')
+exportNode()
 
-main();
+main()

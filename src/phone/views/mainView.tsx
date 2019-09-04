@@ -1,11 +1,11 @@
 import * as React from 'react'
 import { Incoming } from './incoming'
-import { Unavailable } from './unavailable';
-import { OffHook } from './offHook';
-import { Calling } from './calling';
-import { CallState, OFF_HOOK_STATE, INCOMING_STATE, ANSWERED_STATE, CALL_OUT_STATE } from '../stateMachines/callStateMachine';
-import styled from 'styled-components';
-import { robotoRegular } from '~/shared/mixins';
+import { Unavailable } from './unavailable'
+import { OffHook } from './offHook'
+import { Calling } from './calling'
+import { CallState, OFF_HOOK_STATE, INCOMING_STATE, ANSWERED_STATE, CALL_OUT_STATE } from '../stateMachines/callStateMachine'
+import styled from 'styled-components'
+import { robotoRegular } from '~/shared/mixins'
 
 interface MainViewProps {
   callState: CallState | null

@@ -1,7 +1,7 @@
 import { fsm } from 'typescript-state-machine'
 import StateMachineImpl = fsm.StateMachineImpl
 import State = fsm.State
-import { Dispatcher } from './dispatcher';
+import { Dispatcher } from './dispatcher'
 
 enum CallStatesNames {
   IDLE = 'IDLE',
@@ -46,8 +46,6 @@ export class CallStateMachine extends StateMachineImpl<CallState> {
   constructor(dispatcher: Dispatcher) {
     super(states, transitions, IDLE_STATE)
     this._dispatcher = dispatcher
-
-    /// debug
     this.onAnyTransition((from, to) => console.log(`Call transitioned from ${from.label} to ${to.label}`))
   }
 

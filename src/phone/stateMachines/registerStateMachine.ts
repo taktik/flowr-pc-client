@@ -1,7 +1,7 @@
 import { fsm } from 'typescript-state-machine'
 import StateMachineImpl = fsm.StateMachineImpl
 import State = fsm.State
-import { RegisterProps } from '../views/phone';
+import { RegisterProps } from '../views/phone'
 import { Dispatcher } from './dispatcher'
 
 enum RegisterStatesNames {
@@ -73,8 +73,6 @@ export class RegisterStateMachine extends StateMachineImpl<RegisterState> {
     this.onLeaveState(CLIENT_NOT_RUNNING_STATE, this.clearInitAttemps.bind(this))
     this.onEnterState(UNREGISTERED_STATE, this.attemptToRegister.bind(this))
     this.onLeaveState(UNREGISTERED_STATE, this.clearRegisterAttempts.bind(this))
-
-    /// debug
     this.onAnyTransition((from, to) => console.log(`Register transitioned from ${from.label} to ${to.label}`))
 
     this._dispatcher = dispatcher

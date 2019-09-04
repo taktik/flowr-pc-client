@@ -1,15 +1,15 @@
 import * as React from 'react'
-import { RegisterStateMachine, REGISTERED_STATE } from '../stateMachines/registerStateMachine';
-import { IpcRenderer } from 'electron';
-import { WindowModes } from '../WindowModes';
-import { MainView } from './mainView';
+import { RegisterStateMachine, REGISTERED_STATE } from '../stateMachines/registerStateMachine'
+import { IpcRenderer } from 'electron'
+import { WindowModes } from '../WindowModes'
+import { MainView } from './mainView'
 import './icons'
-import { CallState, CallStateMachine, INCOMING_STATE } from '../stateMachines/callStateMachine';
+import { CallState, CallStateMachine, INCOMING_STATE } from '../stateMachines/callStateMachine'
 import { fsm } from 'typescript-state-machine'
 import TransitionListener = fsm.ListenerRegistration
-import { PhoneStateMachine } from '../stateMachines/factory';
-import styled from 'styled-components';
-import { ClickableIcon } from './clickableIcon';
+import { PhoneStateMachine } from '../stateMachines/factory'
+import styled from 'styled-components'
+import { ClickableIcon } from './clickableIcon'
 
 declare global {
   interface Window {
@@ -95,7 +95,7 @@ export class Phone extends React.Component<PhoneProps, PhoneAppState> {
     if (!this.callStateMachineListeners.length) {
       this.callStateMachineListeners = [
         this.callStateMachine.onAnyTransition(this.stateChanged.bind(this)),
-        this.callStateMachine.onEnterState(INCOMING_STATE, this.show.bind(this))
+        this.callStateMachine.onEnterState(INCOMING_STATE, this.show.bind(this)),
       ]
     }
     this.setState({ callState: this.callStateMachine.state })

@@ -119,8 +119,6 @@ export class Dispatcher extends StateMachineImpl<ConnectionState> {
     super(CONNECTION_STATES, CONNECTION_TRANSITIONS, DISCONNECTED_STATE)
     this.onEnterState(DISCONNECTED_STATE, this.connect.bind(this))
     this.onEnterState(CONNECTED_STATE, this.updateStatuses.bind(this))
-
-    /// debug
     this.onAnyTransition((from, to) => console.log(`Connection transitioned from ${from.label} to ${to.label}`))
 
     this._url = phoneServer || 'ws://127.0.0.1:8001'
