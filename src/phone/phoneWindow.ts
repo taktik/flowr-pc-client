@@ -1,7 +1,7 @@
 import { BrowserWindow, Rectangle, app, ipcMain } from 'electron'
 import { resolve, join } from 'path';
 import { WindowModes } from './WindowModes'
-import { RegisterProps } from './views/phone';
+import { RegisterProps } from './views/phone'
 
 function buildFileUrl(fileName: string): string {
   let result: string

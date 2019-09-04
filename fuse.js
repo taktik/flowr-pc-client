@@ -6,6 +6,9 @@ const {
   CopyPlugin,
   JSONPlugin,
   StyledComponentsPlugin,
+  SassPlugin,
+  CSSResourcePlugin,
+  CSSPlugin,
 } = require('fuse-box');
 
 const { spawn } = require('child_process');
@@ -115,7 +118,7 @@ const preload = name => {
 
   const fuse = FuseBox.init(cfg);
 
-  const app = fuse.bundle(name).instructions(`> [preloads/${name}.ts]`);
+  const app = fuse.bundle(name).instructions(`> [preloads/${name}.ts] + fuse-box-css`);
 
   if (!production) {
     app.watch();
@@ -129,9 +132,12 @@ const bundlePhoneApp = () => {
   cfg.plugins.push(getWebIndexPlugin('phone'))
   cfg.plugins.push(JSONPlugin())
   cfg.plugins.push(getCopyPlugin())
+  cfg.plugins.push(CSSPlugin())
+  cfg.plugins.push(SassPlugin())
+  cfg.plugins.push(CSSResourcePlugin({ dist: "dist/css-resources" }))
 
   const fuse = FuseBox.init(cfg)
-  const app = fuse.bundle('phone').instructions('> [phone/views/index.tsx]')
+  const app = fuse.bundle('phone').instructions('> [phone/views/index.tsx] + fuse-box-css')
 
   if (!production) {
     const port = 4445
