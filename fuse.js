@@ -131,7 +131,14 @@ const bundlePhoneApp = () => {
   cfg.plugins.push(getCopyPlugin())
 
   const fuse = FuseBox.init(cfg)
-  fuse.bundle('phone').instructions('> [phone/views/index.tsx]')
+  const app = fuse.bundle('phone').instructions('> [phone/views/index.tsx]')
+
+  if (!production) {
+    const port = 4445
+    fuse.dev({ httpServer: false, port, socketURI: `ws://localhost:${port}` })
+    app.hmr({ port, socketURI: `ws://localhost:${port}`, reload: true }).watch()
+  }
+
   fuse.run()
 }
 
