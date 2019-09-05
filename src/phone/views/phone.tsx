@@ -134,7 +134,7 @@ export class Phone extends React.Component<PhoneProps, PhoneAppState> {
     return (
       <div className={this.props.className}>
         <MainView translator={this._translator} lang={this.state.lang} callState={this.state.callState} waiting={this.state.waiting} call={this.call.bind(this)} answer={this.answer.bind(this)} hangup={this.hangup.bind(this)} />
-        <UpperRightIcon onClick={this.hide.bind(this)} icon="window-close" />
+        <UpperRightIcon onClick={this.hide.bind(this)} icon="times" />
       </div>
     )
   }

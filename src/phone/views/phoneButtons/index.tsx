@@ -1,7 +1,6 @@
 import * as React from 'react'
 import styled from 'styled-components';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import './PhoneButtons.css';
 
 const StyledPhone = styled.div`
   color: rgba(255,255,255,0.8);

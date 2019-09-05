@@ -7,10 +7,13 @@ import {
   faExpandArrowsAlt,
   faLongArrowAltLeft,
   faLongArrowAltRight,
-  faWindowClose,
+  faTimes,
   faMicrophoneSlash,
   faTh,
   faVolumeUp,
+  faHashtag,
+  faAsterisk,
+  faBackspace,
 } from '@fortawesome/free-solid-svg-icons'
 
 library.add(
@@ -21,8 +24,11 @@ library.add(
   faExpandArrowsAlt,
   faLongArrowAltLeft,
   faLongArrowAltRight,
-  faWindowClose,
+  faTimes,
   faMicrophoneSlash,
   faTh,
   faVolumeUp,
+  faHashtag,
+  faAsterisk,
+  faBackspace,
 )

@@ -23,7 +23,7 @@ interface MainViewProps {
 
 const StyledCalling = styled(Calling)`
   height: 50%;
-  width: 70%;
+  width: 80%;
   ${robotoRegular}
 `
 
@@ -31,7 +31,7 @@ export class MainView extends React.Component<MainViewProps> {
   render() {
     let template: JSX.Element
     // this.props.callState 
-    switch (INCOMING_STATE) {
+    switch (OFF_HOOK_STATE) {
       case OFF_HOOK_STATE:
         template = (<OffHook translator={this.props.translator} lang={this.props.lang} call={this.props.call} />)
         break
