@@ -6,5 +6,5 @@ export const fr: LocalisedMessage = {
   'Sorry... :(': { message: 'Désolé... :(' },
   'The phone service is momentarily unavailable, please try again later': { message: 'Le téléphone n\'est pas dispobible pour le moment'},
   'Calling': {message: 'Appel'},
-  'Answered...': {message: 'Répondu...'},
+  'Answered': {message: 'Répondu'},
 }

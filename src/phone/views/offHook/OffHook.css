@@ -47,7 +47,7 @@
     background: rgba(0,0,0,0.24);
 }
 
-.phoneNumber{
+.number{
     font-family: 'Roboto', Arial, Helvetica, sans-serif;
     font-size: 36px;
     font-weight: normal;
@@ -60,7 +60,7 @@
     color: white;
 }
 
-.phoneNumber:focus{
+.number:focus{
     outline: 0;
 }
 
