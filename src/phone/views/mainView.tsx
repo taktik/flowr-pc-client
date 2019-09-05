@@ -6,6 +6,7 @@ import { Calling } from './calling'
 import { CallState, OFF_HOOK_STATE, INCOMING_STATE, ANSWERED_STATE, CALL_OUT_STATE } from '../stateMachines/callStateMachine'
 import styled from 'styled-components'
 import { robotoRegular } from '~/shared/mixins'
+import { Translator } from '../../translator/translator'
 
 interface MainViewProps {
   callState: CallState | null
@@ -13,6 +14,8 @@ interface MainViewProps {
   answer: () => void
   hangup: () => void
   waiting: boolean
+  translator: Translator
+  lang?: string
 }
 
 const StyledCalling = styled(Calling)`
@@ -27,7 +30,7 @@ export class MainView extends React.Component<MainViewProps> {
 
     switch (this.props.callState) {
       case OFF_HOOK_STATE:
-        template = (<OffHook call={this.props.call} />)
+        template = (<OffHook translator={this.props.translator} lang={this.props.lang} call={this.props.call} />)
         break
       case INCOMING_STATE:
         template = (<Incoming answer={this.props.answer} hangup={this.props.hangup} />)
@@ -39,7 +42,7 @@ export class MainView extends React.Component<MainViewProps> {
         template = (<StyledCalling mode={CALL_OUT_STATE} hangup={this.props.hangup} />)
         break
       default:
-        template = (<Unavailable />)
+        template = (<Unavailable translator={this.props.translator} lang={this.props.lang} />)
     }
     return template
   }

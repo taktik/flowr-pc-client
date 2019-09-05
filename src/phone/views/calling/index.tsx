@@ -70,33 +70,26 @@ export class Calling extends React.Component<CallingProps, CallingState> {
   }
 
   render() {
+    let body = (<StyledIcon icon="phone" />)
+
     if (this.props.mode === CALL_OUT_STATE) {
-      return (
-        <FlexColumnCenter className={this.props.className}>
-          <FlexRowCenter>
-            <StyledIcon icon="phone-alt" />
-            <StyledIcon icon="long-arrow-alt-right" />
-          </FlexRowCenter>
-          <ElapsedTime><span>{this.state.elapsedTime}</span></ElapsedTime>
-          <HangupPhoneIcon hangup={this.props.hangup} />
-        </FlexColumnCenter>
+      body = (
+        <FlexRowCenter>
+          <StyledIcon icon="phone-alt" />
+          <StyledIcon icon="long-arrow-alt-right" />
+        </FlexRowCenter>
       )
-    }
-    if (this.props.mode === ANSWERED_STATE) {
-      return (
-        <FlexColumnCenter className={this.props.className}>
-          <FlexRowCenter>
-            <StyledIcon icon="long-arrow-alt-right" />
-            <StyledIcon icon="phone" />
-          </FlexRowCenter>
-          <ElapsedTime><span>{this.state.elapsedTime}</span></ElapsedTime>
-          <HangupPhoneIcon hangup={this.props.hangup} />
-        </FlexColumnCenter>
+    } else if (this.props.mode === ANSWERED_STATE) {
+      body = (
+        <FlexRowCenter>
+          <StyledIcon icon="long-arrow-alt-right" />
+          <StyledIcon icon="phone" />
+        </FlexRowCenter>
       )
     }
     return (
       <FlexColumnCenter className={this.props.className}>
-        <StyledIcon icon="phone" />
+        {body}
         <ElapsedTime>{this.state.elapsedTime}</ElapsedTime>
         <HangupPhoneIcon hangup={this.props.hangup} />
       </FlexColumnCenter>

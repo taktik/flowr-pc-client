@@ -2,11 +2,14 @@ import * as React from 'react'
 import { AnswerPhoneIcon } from '../phoneButtons'
 import { FlexColumnCenter } from '../flex'
 import { throttle } from '../../helper/throttle'
+import { Translator } from '../../../translator/translator'
 
 type CallFunction = (callNumber: string) => void
 
 interface OffHookProps {
   call: CallFunction
+  translator: Translator
+  lang?: string
 }
 
 interface OffHookState {
@@ -41,7 +44,7 @@ export class OffHook extends React.Component<OffHookProps, OffHookState> {
   render() {
     return (
       <FlexColumnCenter>
-        <label htmlFor="callNumber">Number</label>
+        <label htmlFor="callNumber">{this.props.translator.translate('Number', this.props.lang)}</label>
         <input id="callNumber" type="string" value={this.state.callNumber} onChange={this.handleChange.bind(this)} onKeyDown={this.onKeyDown.bind(this)} />
         <AnswerPhoneIcon answer={this.call.bind(this)} />
       </FlexColumnCenter>

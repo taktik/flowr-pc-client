@@ -1,7 +1,9 @@
 import { BrowserWindow, Rectangle, app, ipcMain } from 'electron'
-import { resolve, join } from 'path';
+import { resolve, join } from 'path'
 import { WindowModes } from './WindowModes'
 import { RegisterProps } from './views/phone'
+import { Translator } from 'src/translator/translator'
+import { fr } from './translations/fr'
 
 function buildFileUrl(fileName: string): string {
   let result: string
@@ -57,7 +59,7 @@ export class PhoneWindow extends BrowserWindow {
     this._registerProps = value
   }
 
-  constructor(parent: BrowserWindow, phoneServer?: string, registerProps?: RegisterProps) {
+  constructor(parent: BrowserWindow, phoneServer?: string, registerProps?: RegisterProps, lang?: string) {
     super(Object.assign({
       frame: false,
       transparent: true,
@@ -73,7 +75,7 @@ export class PhoneWindow extends BrowserWindow {
       },
     }, buildPositionFromParents(parent.getContentBounds())))
     const pageUrl = new URL(buildFileUrl('phone.html'))
-    // phoneServer = 'ws://10.1.20.164:8001'
+
     if (phoneServer) {
       pageUrl.searchParams.append('server', phoneServer)
     }
@@ -81,6 +83,10 @@ export class PhoneWindow extends BrowserWindow {
     if (registerProps) {
       pageUrl.searchParams.append('username', registerProps.username)
       pageUrl.searchParams.append('host', registerProps.host)
+    }
+
+    if (lang) {
+      pageUrl.searchParams.append('lang', lang)
     }
 
     this.loadURL(pageUrl.href)
@@ -101,5 +107,9 @@ export class PhoneWindow extends BrowserWindow {
   open(mode: WindowModes = WindowModes.WIDGET) {
     this.mode = mode
     this.show()
+  }
+
+  changeLanguage(lang: string): void {
+    this.webContents.send('change-language', lang)
   }
 }

@@ -8,6 +8,7 @@ const url = new URL(window.location.href)
 const server = url.searchParams.get('server')
 const username = url.searchParams.get('username')
 const host = url.searchParams.get('host')
+const lang = url.searchParams.get('lang')
 const registerProps = username && host ? { username, host } : null
 
 const StyledPhone = styled(Phone)`
@@ -44,4 +45,4 @@ styleElement.textContent = `
 
 document.head.appendChild(styleElement);
 
-ReactDOM.render(<StyledPhone phoneServer={server} registerProps={registerProps} />, document.getElementById('phone'));
+ReactDOM.render(<StyledPhone phoneServer={server} registerProps={registerProps} lang={lang} />, document.getElementById('phone'));

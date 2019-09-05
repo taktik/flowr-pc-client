@@ -1,10 +1,15 @@
-import { LocalisedMessage } from '~/local';
+import { LocalisedMessage } from '~/local'
 
 export class Translator {
-  static keys: { [key: string]: LocalisedMessage } = {}
+  private _currentLang?: string
+  keys: { [key: string]: LocalisedMessage } = {}
 
-  static addKeys(lang: string, keys: LocalisedMessage) {
-    const previousKeys = Translator.keys[lang] || {}
+  set currentLang(lang: string) {
+    this._currentLang = lang
+  }
+
+  addKeys(lang: string, keys: LocalisedMessage) {
+    const previousKeys = this.keys[lang] || {}
 
     for (const key in keys) {
       if (!!previousKeys[key]) {
@@ -12,20 +17,16 @@ export class Translator {
       }
     }
 
-    Translator.keys[lang] = Object.assign({}, previousKeys, keys)
+    this.keys[lang] = Object.assign({}, previousKeys, keys)
   }
 
-  static translate(text: string, lang: string) {
-    const localisedMessage = Translator.keys[lang]
+  translate(text: string, lang: string = this._currentLang) {
+    const localisedMessage = this.keys[lang]
 
     if (localisedMessage && localisedMessage[text]) {
       return localisedMessage[text].message
     }
 
     return text
-  }
-
-  static withLang(lang: string) {
-    return (text: string) => Translator.translate(text, lang)
   }
 }

@@ -10,6 +10,8 @@ import TransitionListener = fsm.ListenerRegistration
 import { PhoneStateMachine } from '../stateMachines/factory'
 import styled from 'styled-components'
 import { ClickableIcon } from './clickableIcon'
+import { Translator } from '../../translator/translator'
+import { fr } from '../translations/fr'
 
 declare global {
   interface Window {
@@ -21,12 +23,14 @@ type PhoneProps = {
   phoneServer: string | null,
   className?: string,
   registerProps: RegisterProps | null,
+  lang?: string,
 }
 
 type PhoneAppState = {
   callState: CallState | null,
   mode?: WindowModes,
   waiting: boolean,
+  lang?: string,
 }
 
 export type RegisterProps = {
@@ -46,6 +50,7 @@ export class Phone extends React.Component<PhoneProps, PhoneAppState> {
   private callStateMachine: CallStateMachine
   private callStateMachineListeners: TransitionListener[] = []
   private _ipc: IpcRenderer = window.ipcRenderer
+  private _translator: Translator = new Translator()
 
   constructor(props: PhoneProps) {
     super(props)
@@ -55,11 +60,14 @@ export class Phone extends React.Component<PhoneProps, PhoneAppState> {
 
     this._ipc.on('window-mode-changed', this.windowModeChanged.bind(this))
     this._ipc.on('register-props', this.receivedRegisterProps.bind(this))
+    this._ipc.on('change-language', (e: Event, lang: string) => this.setState({ lang }))
 
     this.registerStateMachine.onEnterState(REGISTERED_STATE, this.listenToCallStateMachine.bind(this))
     this.registerStateMachine.onLeaveState(REGISTERED_STATE, this.unlistenToCallStateMachine.bind(this))
 
-    this.state = { callState: null, waiting: false }
+    this._translator.addKeys('fr', fr)
+
+    this.state = { callState: null, waiting: false, lang: props.lang }
   }
 
   maximize() {
@@ -124,7 +132,7 @@ export class Phone extends React.Component<PhoneProps, PhoneAppState> {
   render() {
     return (
       <div className={this.props.className}>
-        <MainView callState={this.state.callState} waiting={this.state.waiting} call={this.call.bind(this)} answer={this.answer.bind(this)} hangup={this.hangup.bind(this)} />
+        <MainView translator={this._translator} lang={this.state.lang} callState={this.state.callState} waiting={this.state.waiting} call={this.call.bind(this)} answer={this.answer.bind(this)} hangup={this.hangup.bind(this)} />
         <UpperRightIcon onClick={this.hide.bind(this)} icon="window-close" />
       </div>
     )

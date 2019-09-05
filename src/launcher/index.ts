@@ -15,7 +15,7 @@ if (migrateUserPreferences) {
   initFlowrConfig(migrateUserPreferences)
 }
 
-type OpenPhoneProps = RegisterProps & { show?: boolean }
+type OpenPhoneProps = { registerProps: RegisterProps, show?: boolean, lang?: string }
 
 app.commandLine.appendSwitch('widevine-cdm-path', resolve('/Applications/Google Chrome.app/Contents/Versions/74.0.3729.169/Google Chrome Framework.framework/Versions/A/Libraries/WidevineCdm/_platform_specific/mac_x64'))
 // The version of plugin can be got from `chrome://components` page in Chrome.
@@ -50,22 +50,10 @@ app.on('ready', async () => {
 
   app.on('activate', async () => {
     if (flowrWindow === null) {
-      flowrWindow = await createFlowrWindow()
-      flowrWindow.on('close', () => {
-        if (phoneWindow) {
-          phoneWindow.close()
-        }
-        flowrWindow = null
-      })
+      await initFlowr()
     }
   })
-  flowrWindow = await createFlowrWindow()
-  flowrWindow.on('close', () => {
-    if (phoneWindow) {
-      phoneWindow.close()
-    }
-    flowrWindow = null
-  })
+  await initFlowr()
 
   autoUpdater.on('update-downloaded', ({ version }) => {
     // TODO
@@ -113,23 +101,27 @@ app.on('ready', async () => {
     // flowrWindow.moveTop()
   })
 
-  ipcMain.on('openPhoneApp', (evt: any, openPhoneProps?: OpenPhoneProps) => {
+  ipcMain.on('openPhoneApp', (evt: any, openPhoneProps: OpenPhoneProps) => {
     if (!flowrWindow) {
       return
     }
 
     if (phoneWindow === null) {
-      phoneWindow = new PhoneWindow(flowrWindow, flowrWindow.phoneServerUrl, openPhoneProps)
+      phoneWindow = new PhoneWindow(flowrWindow, flowrWindow.phoneServerUrl, openPhoneProps.registerProps, openPhoneProps.lang)
       phoneWindow.on('show', mute)
       phoneWindow.on('hide', unmute)
       phoneWindow.on('close', () => {
         unmute()
         phoneWindow = null
       })
-    } else if (openPhoneProps) {
-      phoneWindow.registerProps = openPhoneProps
     }
-    if (openPhoneProps && openPhoneProps.show) {
+    if (openPhoneProps.registerProps) {
+      phoneWindow.registerProps = openPhoneProps.registerProps
+    }
+    if (openPhoneProps.lang) {
+      phoneWindow.changeLanguage(openPhoneProps.lang)
+    }
+    if (openPhoneProps.show) {
       phoneWindow.open()
     }
   })
@@ -144,6 +136,23 @@ ipcMain.on('clear-application-data', async () => {
 app.on('window-all-closed', () => {
   app.quit()
 })
+
+async function initFlowr() {
+  flowrWindow = await createFlowrWindow()
+  flowrWindow.on('close', () => {
+    if (phoneWindow) {
+      phoneWindow.close()
+    }
+    flowrWindow = null
+  })
+  ipcMain.on('flowrLanguageChanged', changeLanguage)
+}
+
+function changeLanguage(e: Event, lang: string) {
+  if (phoneWindow) {
+    phoneWindow.changeLanguage(lang)
+  }
+}
 
 function mute() {
   if (flowrWindow) {
