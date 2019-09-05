@@ -1,8 +1,10 @@
 import * as React from 'react'
 import { AnswerPhoneIcon } from '../phoneButtons'
-import { FlexColumnCenter } from '../flex'
+import styled from 'styled-components';
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { throttle } from '../../helper/throttle'
 import { Translator } from '../../../translator/translator'
+import './OffHook.css'
 
 type CallFunction = (callNumber: string) => void
 
@@ -17,6 +19,10 @@ interface OffHookState {
 }
 
 const numberValidationRegExp = /^\+?[0-9]*$/
+
+const StyledIcon = styled(FontAwesomeIcon)`
+  width: 36px;
+`
 
 export class OffHook extends React.Component<OffHookProps, OffHookState> {
   constructor(props: OffHookProps) {
@@ -43,11 +49,34 @@ export class OffHook extends React.Component<OffHookProps, OffHookState> {
 
   render() {
     return (
-      <FlexColumnCenter>
-        <label htmlFor="callNumber">{this.props.translator.translate('Number', this.props.lang)}</label>
-        <input id="callNumber" type="string" value={this.state.callNumber} onChange={this.handleChange.bind(this)} onKeyDown={this.onKeyDown.bind(this)} />
-        <AnswerPhoneIcon answer={this.call.bind(this)} />
-      </FlexColumnCenter>
+      <div className="offHook-container">
+        <div className="left">
+          <div>
+            <label className="label">Number</label>
+            <div className="input-container">
+              <input id="callNumber" className="phoneNumber" type="string" value={this.state.callNumber} onChange={this.handleChange.bind(this)} onKeyDown={this.onKeyDown.bind(this)} />
+              <StyledIcon className="input-icon" icon="backspace" />
+            </div>
+          </div>
+          <AnswerPhoneIcon answer={this.call.bind(this)} />
+        </div>
+        <div className="right">
+        <div className="keyboard">
+            <div className="key"><span>1</span></div>
+            <div className="key"><span>2</span></div>
+            <div className="key"><span>3</span></div>
+            <div className="key"><span>4</span></div>
+            <div className="key"><span>5</span></div>
+            <div className="key"><span>6</span></div>
+            <div className="key"><span>7</span></div>
+            <div className="key"><span>8</span></div>
+            <div className="key"><span>9</span></div>
+            <div className="key"><span>#</span></div>
+            <div className="key"><span>0</span></div>
+            <div className="key"><span>*</span></div>
+          </div>
+        </div>
+      </div>
     )
   }
 }
