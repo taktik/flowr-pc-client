@@ -1,3 +1,4 @@
+[![Build Status](https://travis-ci.com/taktik/flowr-desktop.svg?branch=base)](https://travis-ci.com/taktik/flowr-desktop)
 <p align="center">
   <img src="static/app-icons/icon.png" width="256">
 </p>
