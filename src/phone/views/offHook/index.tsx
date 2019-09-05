@@ -54,7 +54,7 @@ export class OffHook extends React.Component<OffHookProps, OffHookState> {
           <div>
             <label className="label">Number</label>
             <div className="input-container">
-              <input id="callNumber" className="phoneNumber" type="string" value={this.state.callNumber} onChange={this.handleChange.bind(this)} onKeyDown={this.onKeyDown.bind(this)} />
+              <input id="callNumber" className="number" type="string" value={this.state.callNumber} onChange={this.handleChange.bind(this)} onKeyDown={this.onKeyDown.bind(this)} />
               <StyledIcon className="input-icon" icon="backspace" />
             </div>
           </div>

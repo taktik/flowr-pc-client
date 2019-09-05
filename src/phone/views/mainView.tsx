@@ -33,7 +33,7 @@ export class MainView extends React.Component<MainViewProps> {
   render() {
     let template: JSX.Element
     // this.props.callState 
-    switch (ANSWERED_STATE) {
+    switch (OFF_HOOK_STATE) {
       case OFF_HOOK_STATE:
         template = (<OffHook translator={this.props.translator} lang={this.props.lang} call={this.props.call} />)
         break

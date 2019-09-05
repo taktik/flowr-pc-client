@@ -86,68 +86,26 @@ export class Calling extends React.Component<CallingProps, CallingState> {
   }
 
   render() {
-    let body = (<StyledIcon icon="phone" />)
+    let title = (<StyledIcon icon="phone" />)
 
     if (this.props.mode === CALL_OUT_STATE) {
-      return (
-        <div className="calling-container">
-          <h2 className="title">{this.props.translator.translate('Calling', this.props.lang)}</h2>
-          <div>
-            <PhoneNumber number={this.props.number}/>
-            <ElapsedTime><span>{this.state.elapsedTime}</span></ElapsedTime>
-          </div>
-          <FlexRowCenter className={this.props.className}>
-            <div>
-              <MuteMicIcon mute={this.props.mute}/>
-              <span className="buttonSpan">Mute</span>
-            </div>
-            <div>
-            <KeyPadIcon displayKeyPad={this.props.displayKeyPad}/>
-              <span className="buttonSpan">Keypad</span>
-            </div>
-            <div>
-            <SpeakerIcon speaker={this.props.speaker}/>
-              <span className="buttonSpan disabled">Speaker</span>
-            </div>
-          </FlexRowCenter>
-          <HangupPhoneIcon hangup={this.props.hangup} />
-        </div>
+      title = (
+        <h2 className="title">{this.props.translator.translate('Calling', this.props.lang)}</h2>    
       )
     }
     if (this.props.mode === ANSWERED_STATE) {
-      return (
-        <div className="calling-container">
-          <h2 className="title">{this.props.translator.translate('Answered', this.props.lang)}...</h2>
-          <div>
-          <PhoneNumber number={this.props.number}/>
-            <ElapsedTime><span>{this.state.elapsedTime}</span></ElapsedTime>
-          </div>
-          <FlexRowCenter className={this.props.className}>
-            <div>
-              <MuteMicIcon mute={this.props.mute}/>
-              <span className="buttonSpan">Mute</span>
-            </div>
-            <div>
-            <KeyPadIcon displayKeyPad={this.props.displayKeyPad}/>
-              <span className="buttonSpan">Keypad</span>
-            </div>
-            <div>
-            <SpeakerIcon speaker={this.props.speaker}/>
-              <span className="buttonSpan disabled">Speaker</span>
-            </div>
-          </FlexRowCenter>
-          <HangupPhoneIcon hangup={this.props.hangup} />
-        </div>
+      title = (
+        <h2 className="title">{this.props.translator.translate('Answered', this.props.lang)}...</h2>
       )
     }
     return (
       <div className="calling-container">
-          <h2 className="title">Calling </h2>
+          {title}
           <div>
             <h1 className="phoneNumber">+32 0492 25 41 79</h1>
             <ElapsedTime><span>{this.state.elapsedTime}</span></ElapsedTime>
           </div>
-          <FlexRowCenter className={this.props.className}>
+          <FlexRowCenter className={this.props.className}>}
             <div>
               <MuteMicIcon mute={this.props.mute}/>
               <span className="buttonSpan">Mute</span>
