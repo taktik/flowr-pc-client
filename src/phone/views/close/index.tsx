@@ -1,6 +1,5 @@
 import * as React from 'react'
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
-import { ClickableIcon } from '../clickableIcon';
+import { ClickableIcon } from '../clickableIcon'
 
 export interface ResizeProps {
   hide: () => void,

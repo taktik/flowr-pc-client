@@ -1,8 +1,8 @@
 import * as React from 'react'
 import * as ReactDOM from 'react-dom'
 import { Phone } from './phone'
-import styled from 'styled-components';
-import { fonts } from '~/renderer/constants';
+import styled from 'styled-components'
+import { fonts } from '~/renderer/constants'
 
 const url = new URL(window.location.href)
 const server = url.searchParams.get('server')
@@ -20,7 +20,7 @@ const StyledPhone = styled(Phone)`
   justify-content: center;
   align-items: center;
 `
-const styleElement = document.createElement('style');
+const styleElement = document.createElement('style')
 
 styleElement.textContent = `
 @font-face {
@@ -41,8 +41,8 @@ styleElement.textContent = `
   font-weight: 300;
   src: url(${fonts.robotoLight}) format('woff2');
 }
-`;
+`
 
-document.head.appendChild(styleElement);
+document.head.appendChild(styleElement)
 
-ReactDOM.render(<StyledPhone phoneServer={server} registerProps={registerProps} lang={lang} />, document.getElementById('phone'));
+ReactDOM.render(<StyledPhone phoneServer={server} registerProps={registerProps} lang={lang} />, document.getElementById('phone'))

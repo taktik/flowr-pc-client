@@ -2,13 +2,11 @@ import { BrowserWindow, Rectangle, app, ipcMain } from 'electron'
 import { resolve, join } from 'path'
 import { WindowModes } from './WindowModes'
 import { RegisterProps } from './views/phone'
-import { Translator } from 'src/translator/translator'
-import { fr } from './translations/fr'
 
 function buildFileUrl(fileName: string): string {
   let result: string
   if (process.env.ENV === 'dev') {
-    result = `http://localhost:4444/${fileName}`;
+    result = `http://localhost:4444/${fileName}`
   } else {
     result = join('file://', app.getAppPath(), 'build', fileName)
   }

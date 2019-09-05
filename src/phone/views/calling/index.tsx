@@ -1,9 +1,9 @@
 import * as React from 'react'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { CALL_OUT_STATE, ANSWERED_STATE, CallState } from '../../stateMachines/callStateMachine'
-import styled from 'styled-components';
-import { HangupPhoneIcon } from '../phoneButtons';
-import { FlexColumnCenter, FlexRowCenter } from '../flex';
+import styled from 'styled-components'
+import { HangupPhoneIcon } from '../phoneButtons'
+import { FlexColumnCenter, FlexRowCenter } from '../flex'
 
 interface CallingProps {
   mode: CallState,

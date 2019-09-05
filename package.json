@@ -28,7 +28,7 @@
     "compile-win32": "electron-builder -w",
     "compile-darwin": "electron-builder -m",
     "compile-linux": "electron-builder -l",
-    "lint": "tslint \"src/**/*.ts*\"",
+    "lint": "tslint \"src/**/*.ts*\" --exclude \"src/wexond/**/*.ts*\" --project tsconfig.json",
     "lint-fix": "prettier --write \"src/**/*.ts*\" && tslint \"src/**/*.ts*\" --fix",
     "install-app-deps": "electron-builder install-app-deps",
     "install-widevine": "npm install castlabs/electron-releases#v5.0.3-wvvmp --no-save",

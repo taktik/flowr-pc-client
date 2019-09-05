@@ -1,5 +1,5 @@
 import { Store } from './src/store'
-import { BrowserWindowConstructorOptions } from 'electron';
+import { BrowserWindowConstructorOptions } from 'electron'
 
 export default function (flowrStore: Store): BrowserWindowConstructorOptions {
   const kiosk = flowrStore.get('isKiosk') || false

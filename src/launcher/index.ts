@@ -1,5 +1,5 @@
 import { ipcMain, app, BrowserWindow } from 'electron'
-import { resolve, extname } from 'path'
+import { resolve } from 'path'
 import { homedir } from 'os'
 import { remove } from 'fs-extra'
 import { autoUpdater } from 'electron-updater'

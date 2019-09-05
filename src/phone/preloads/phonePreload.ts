@@ -1,4 +1,4 @@
-import { IpcRenderer } from 'electron';
+import { IpcRenderer } from 'electron'
 
 declare global {
   namespace NodeJS {
@@ -44,6 +44,6 @@ process.once('loaded', () => {
   if (!production) {
     global.process = process
   }
-});
+})
 
-export {};
+export {}
