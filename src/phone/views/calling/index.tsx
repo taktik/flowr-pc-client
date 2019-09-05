@@ -1,10 +1,13 @@
 import * as React from 'react'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { CALL_OUT_STATE, ANSWERED_STATE, CallState } from '../../stateMachines/callStateMachine'
+import { PhoneNumber } from '../phoneNumber'
 import styled from 'styled-components';
 import { HangupPhoneIcon } from '../phoneButtons';
 import { MuteMicIcon, KeyPadIcon, SpeakerIcon } from '../otherButtons'
 import { FlexColumnCenter, FlexRowCenter } from '../flex';
+import { Translator } from '../../../translator/translator'
+
 import './Calling.css';
 
 interface CallingProps {
@@ -14,6 +17,9 @@ interface CallingProps {
   displayKeyPad: () => void,
   speaker: () => void,
   className?: string,
+  translator: Translator
+  lang?: string
+  number?: string
 }
 
 interface CallingState {
@@ -85,9 +91,9 @@ export class Calling extends React.Component<CallingProps, CallingState> {
     if (this.props.mode === CALL_OUT_STATE) {
       return (
         <div className="calling-container">
-          <h2 className="title">Calling </h2>
+          <h2 className="title">{this.props.translator.translate('Calling', this.props.lang)}</h2>
           <div>
-            <h1 className="phoneNumber">+32 0492 25 41 79</h1>
+            <PhoneNumber number={this.props.number}/>
             <ElapsedTime><span>{this.state.elapsedTime}</span></ElapsedTime>
           </div>
           <FlexRowCenter className={this.props.className}>
@@ -111,9 +117,9 @@ export class Calling extends React.Component<CallingProps, CallingState> {
     if (this.props.mode === ANSWERED_STATE) {
       return (
         <div className="calling-container">
-          <h2 className="title">Answered...</h2>
+          <h2 className="title">{this.props.translator.translate('Answered', this.props.lang)}...</h2>
           <div>
-            <h1 className="phoneNumber">+32 0492 25 41 79</h1>
+          <PhoneNumber number={this.props.number}/>
             <ElapsedTime><span>{this.state.elapsedTime}</span></ElapsedTime>
           </div>
           <FlexRowCenter className={this.props.className}>
