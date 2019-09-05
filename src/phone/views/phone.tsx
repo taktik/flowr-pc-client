@@ -40,9 +40,10 @@ export type RegisterProps = {
 
 const UpperRightIcon = styled(ClickableIcon)`
   position: fixed;
-  top: 5px;
-  right: 5px;
-  width: 50px;
+  top: 12px;
+  left: 12px;
+  width: 24px;
+  color: white;
 `
 
 export class Phone extends React.Component<PhoneProps, PhoneAppState> {

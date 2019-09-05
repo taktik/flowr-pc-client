@@ -8,6 +8,9 @@ import {
   faLongArrowAltLeft,
   faLongArrowAltRight,
   faWindowClose,
+  faMicrophoneSlash,
+  faTh,
+  faVolumeUp,
 } from '@fortawesome/free-solid-svg-icons'
 
 library.add(
@@ -19,4 +22,7 @@ library.add(
   faLongArrowAltLeft,
   faLongArrowAltRight,
   faWindowClose,
+  faMicrophoneSlash,
+  faTh,
+  faVolumeUp,
 )

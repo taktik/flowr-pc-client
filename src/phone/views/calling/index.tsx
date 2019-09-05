@@ -1,13 +1,18 @@
 import * as React from 'react'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { CALL_OUT_STATE, ANSWERED_STATE, CallState } from '../../stateMachines/callStateMachine'
-import styled from 'styled-components'
-import { HangupPhoneIcon } from '../phoneButtons'
-import { FlexColumnCenter, FlexRowCenter } from '../flex'
+import styled from 'styled-components';
+import { HangupPhoneIcon } from '../phoneButtons';
+import { MuteMicIcon, KeyPadIcon, SpeakerIcon } from '../otherButtons'
+import { FlexColumnCenter, FlexRowCenter } from '../flex';
+import './Calling.css';
 
 interface CallingProps {
   mode: CallState,
   hangup: () => void,
+  mute: () => void,
+  displayKeyPad: () => void,
+  speaker: () => void,
   className?: string,
 }
 
@@ -45,6 +50,11 @@ function formatElapsedTime(elapsedTime: number) {
 const ElapsedTime = styled(FlexRowCenter)`
   color: white;
   flex-grow: 2;
+  font-size: 24px;
+  font-family: 'Roboto', Arial, Helvetica, sans-serif;
+  font-weight: regular;
+  text-align: center;
+  width: 100%;
 `
 
 const StyledIcon = styled(FontAwesomeIcon)`
@@ -73,26 +83,80 @@ export class Calling extends React.Component<CallingProps, CallingState> {
     let body = (<StyledIcon icon="phone" />)
 
     if (this.props.mode === CALL_OUT_STATE) {
-      body = (
-        <FlexRowCenter>
-          <StyledIcon icon="phone-alt" />
-          <StyledIcon icon="long-arrow-alt-right" />
-        </FlexRowCenter>
+      return (
+        <div className="calling-container">
+          <h2 className="title">Calling </h2>
+          <div>
+            <h1 className="phoneNumber">+32 0492 25 41 79</h1>
+            <ElapsedTime><span>{this.state.elapsedTime}</span></ElapsedTime>
+          </div>
+          <FlexRowCenter className={this.props.className}>
+            <div>
+              <MuteMicIcon mute={this.props.mute}/>
+              <span className="buttonSpan">Mute</span>
+            </div>
+            <div>
+            <KeyPadIcon displayKeyPad={this.props.displayKeyPad}/>
+              <span className="buttonSpan">Keypad</span>
+            </div>
+            <div>
+            <SpeakerIcon speaker={this.props.speaker}/>
+              <span className="buttonSpan disabled">Speaker</span>
+            </div>
+          </FlexRowCenter>
+          <HangupPhoneIcon hangup={this.props.hangup} />
+        </div>
       )
-    } else if (this.props.mode === ANSWERED_STATE) {
-      body = (
-        <FlexRowCenter>
-          <StyledIcon icon="long-arrow-alt-right" />
-          <StyledIcon icon="phone" />
-        </FlexRowCenter>
+    }
+    if (this.props.mode === ANSWERED_STATE) {
+      return (
+        <div className="calling-container">
+          <h2 className="title">Answered...</h2>
+          <div>
+            <h1 className="phoneNumber">+32 0492 25 41 79</h1>
+            <ElapsedTime><span>{this.state.elapsedTime}</span></ElapsedTime>
+          </div>
+          <FlexRowCenter className={this.props.className}>
+            <div>
+              <MuteMicIcon mute={this.props.mute}/>
+              <span className="buttonSpan">Mute</span>
+            </div>
+            <div>
+            <KeyPadIcon displayKeyPad={this.props.displayKeyPad}/>
+              <span className="buttonSpan">Keypad</span>
+            </div>
+            <div>
+            <SpeakerIcon speaker={this.props.speaker}/>
+              <span className="buttonSpan disabled">Speaker</span>
+            </div>
+          </FlexRowCenter>
+          <HangupPhoneIcon hangup={this.props.hangup} />
+        </div>
       )
     }
     return (
-      <FlexColumnCenter className={this.props.className}>
-        {body}
-        <ElapsedTime>{this.state.elapsedTime}</ElapsedTime>
-        <HangupPhoneIcon hangup={this.props.hangup} />
-      </FlexColumnCenter>
+      <div className="calling-container">
+          <h2 className="title">Calling </h2>
+          <div>
+            <h1 className="phoneNumber">+32 0492 25 41 79</h1>
+            <ElapsedTime><span>{this.state.elapsedTime}</span></ElapsedTime>
+          </div>
+          <FlexRowCenter className={this.props.className}>
+            <div>
+              <MuteMicIcon mute={this.props.mute}/>
+              <span className="buttonSpan">Mute</span>
+            </div>
+            <div>
+            <KeyPadIcon displayKeyPad={this.props.displayKeyPad}/>
+              <span className="buttonSpan">Keypad</span>
+            </div>
+            <div>
+            <SpeakerIcon speaker={this.props.speaker}/>
+              <span className="buttonSpan disabled">Speaker</span>
+            </div>
+          </FlexRowCenter>
+          <HangupPhoneIcon hangup={this.props.hangup} />
+        </div>
     )
   }
 }

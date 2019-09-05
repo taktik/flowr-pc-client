@@ -13,13 +13,16 @@ interface MainViewProps {
   call: (callNumber: string) => void
   answer: () => void
   hangup: () => void
+  mute: () => void
+  speaker: () => void
+  displayKeyPad: () => void
   waiting: boolean
   translator: Translator
   lang?: string
 }
 
 const StyledCalling = styled(Calling)`
-  height: 40%;
+  height: 50%;
   width: 70%;
   ${robotoRegular}
 `
@@ -27,8 +30,8 @@ const StyledCalling = styled(Calling)`
 export class MainView extends React.Component<MainViewProps> {
   render() {
     let template: JSX.Element
-
-    switch (this.props.callState) {
+    // this.props.callState 
+    switch (INCOMING_STATE) {
       case OFF_HOOK_STATE:
         template = (<OffHook translator={this.props.translator} lang={this.props.lang} call={this.props.call} />)
         break
@@ -36,10 +39,10 @@ export class MainView extends React.Component<MainViewProps> {
         template = (<Incoming answer={this.props.answer} hangup={this.props.hangup} />)
         break
       case ANSWERED_STATE:
-        template = (<StyledCalling mode={ANSWERED_STATE} hangup={this.props.hangup} />)
+        template = (<StyledCalling mode={ANSWERED_STATE} hangup={this.props.hangup} mute={this.props.mute} speaker={this.props.speaker} displayKeyPad={this.props.displayKeyPad}/>)
         break
       case CALL_OUT_STATE:
-        template = (<StyledCalling mode={CALL_OUT_STATE} hangup={this.props.hangup} />)
+        template = (<StyledCalling mode={CALL_OUT_STATE} hangup={this.props.hangup} mute={this.props.mute} speaker={this.props.speaker} displayKeyPad={this.props.displayKeyPad}/>)
         break
       default:
         template = (<Unavailable translator={this.props.translator} lang={this.props.lang} />)
