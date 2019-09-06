@@ -32,8 +32,8 @@ const StyledCalling = styled(Calling)`
 export class MainView extends React.Component<MainViewProps> {
   render() {
     let template: JSX.Element
-    // this.props.callState 
-    switch (OFF_HOOK_STATE) {
+
+    switch (this.props.callState) {
       case OFF_HOOK_STATE:
         template = (<OffHook translator={this.props.translator} lang={this.props.lang} call={this.props.call} />)
         break
