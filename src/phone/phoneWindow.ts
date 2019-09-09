@@ -95,6 +95,13 @@ export class PhoneWindow extends BrowserWindow {
     ipcMain.on('phone-show', this.show.bind(this))
     ipcMain.on('phone-hide', this.hide.bind(this))
     ipcMain.on('register-props', this.updateRegisterProps.bind(this))
+    ipcMain.on('setDebugMode', (evt: any, debugMode: boolean) => {
+      if (debugMode) {
+        this.webContents.openDevTools()
+      } else {
+        this.webContents.closeDevTools()
+      }
+    })
   }
 
   updateRegisterProps(e: Event, registerProps: RegisterProps) {
