@@ -2,7 +2,7 @@ import { fsm } from 'typescript-state-machine'
 import StateMachineImpl = fsm.StateMachineImpl
 import State = fsm.State
 import CheckStateIs = fsm.CheckStateIs
-import { CallStateMachine, CallState, OFF_HOOK_STATE, IDLE_STATE as CALL_IDLE_STATE, CLIENT_NOT_RUNNING_STATE, INCOMING_STATE } from './callStateMachine'
+import { CallStateMachine, CallState, OFF_HOOK_STATE, IDLE_STATE as CALL_IDLE_STATE, CLIENT_NOT_RUNNING_STATE } from './callStateMachine'
 import { RegisterStateMachine, RegisterState, REGISTERED_STATE, UNREGISTERED_STATE, IDLE_STATE as REGISTER_IDLE_STATE } from './registerStateMachine'
 
 enum ServerReference {

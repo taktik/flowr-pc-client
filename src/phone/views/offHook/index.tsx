@@ -1,7 +1,6 @@
 import * as React from 'react'
 import { AnswerPhoneIcon } from '../phoneButtons'
 import styled from 'styled-components'
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { throttle } from '../../helper/throttle'
 import { Translator } from '../../../translator/translator'
 import './OffHook.css'

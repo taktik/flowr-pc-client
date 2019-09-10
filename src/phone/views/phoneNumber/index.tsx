@@ -1,6 +1,5 @@
 import * as React from 'react'
-import './PhoneNumber.css';
-
+import './PhoneNumber.css'
 
 interface PhoneNumberProps {
   number?: string
@@ -13,4 +12,3 @@ export class PhoneNumber extends React.Component<PhoneNumberProps> {
     )
   }
 }
-

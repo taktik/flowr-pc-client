@@ -1,6 +1,6 @@
 import * as React from 'react'
-import { FlexRowSpaceEvenly } from '../flex';
-import { AnswerPhoneIcon, HangupPhoneIcon } from '../phoneButtons';
+import { FlexRowSpaceEvenly } from '../flex'
+import { AnswerPhoneIcon, HangupPhoneIcon } from '../phoneButtons'
 import './Incoming.css'
 
 interface IncomingProps {
