@@ -1,10 +1,12 @@
 import * as React from 'react'
 import { AnswerPhoneIcon } from '../phoneButtons'
-import styled from 'styled-components';
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import styled from 'styled-components'
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { throttle } from '../../helper/throttle'
 import { Translator } from '../../../translator/translator'
 import './OffHook.css'
+import { Keyboard } from '../keyboard'
+import { ClickableIcon } from '../clickableIcon'
 
 type CallFunction = (callNumber: string) => void
 
@@ -20,7 +22,7 @@ interface OffHookState {
 
 const numberValidationRegExp = /^\+?[0-9]*$/
 
-const StyledIcon = styled(FontAwesomeIcon)`
+const StyledIcon = styled(ClickableIcon)`
   width: 36px;
 `
 
@@ -34,6 +36,14 @@ export class OffHook extends React.Component<OffHookProps, OffHookState> {
     if (e.keyCode === 13) {
       this.call()
     }
+  }
+
+  private addNumber(value: string) {
+    this.setState(state => ({ callNumber: `${state.callNumber}${value}` }))
+  }
+
+  private removeNumber() {
+    this.setState(state => ({ callNumber: state.callNumber ? state.callNumber.slice(0, -1) : '' }))
   }
 
   @throttle(1000)
@@ -55,26 +65,13 @@ export class OffHook extends React.Component<OffHookProps, OffHookState> {
             <label className="label">Number</label>
             <div className="input-container">
               <input id="callNumber" className="number" type="string" value={this.state.callNumber} onChange={this.handleChange.bind(this)} onKeyDown={this.onKeyDown.bind(this)} />
-              <StyledIcon className="input-icon" icon="backspace" />
+              <StyledIcon className="input-icon" icon="backspace" onClick={this.removeNumber.bind(this)} />
             </div>
           </div>
           <AnswerPhoneIcon answer={this.call.bind(this)} />
         </div>
         <div className="right">
-        <div className="keyboard">
-            <div className="key"><span>1</span></div>
-            <div className="key"><span>2</span></div>
-            <div className="key"><span>3</span></div>
-            <div className="key"><span>4</span></div>
-            <div className="key"><span>5</span></div>
-            <div className="key"><span>6</span></div>
-            <div className="key"><span>7</span></div>
-            <div className="key"><span>8</span></div>
-            <div className="key"><span>9</span></div>
-            <div className="key"><span>#</span></div>
-            <div className="key"><span>0</span></div>
-            <div className="key"><span>*</span></div>
-          </div>
+          <Keyboard keyPressed={this.addNumber.bind(this)} />
         </div>
       </div>
     )
