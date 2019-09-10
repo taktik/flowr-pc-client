@@ -14,12 +14,11 @@ interface MainViewProps {
   answer: () => void
   hangup: () => void
   mute: () => void
-  speaker: () => void
-  displayKeyPad: () => void
   waiting: boolean
   translator: Translator
   lang?: string
   number?: string
+  callingNumber: string
 }
 
 const StyledCalling = styled(Calling)`
@@ -32,7 +31,6 @@ const StyledCalling = styled(Calling)`
 export class MainView extends React.Component<MainViewProps> {
   render() {
     let template: JSX.Element
-
     switch (this.props.callState) {
       case OFF_HOOK_STATE:
         template = (<OffHook translator={this.props.translator} lang={this.props.lang} call={this.props.call} />)
@@ -41,10 +39,10 @@ export class MainView extends React.Component<MainViewProps> {
         template = (<Incoming answer={this.props.answer} hangup={this.props.hangup} />)
         break
       case ANSWERED_STATE:
-        template = (<StyledCalling mode={ANSWERED_STATE} translator={this.props.translator} lang={this.props.lang} hangup={this.props.hangup} mute={this.props.mute} speaker={this.props.speaker} displayKeyPad={this.props.displayKeyPad} number={this.props.number}/>)
+        template = (<StyledCalling mode={ANSWERED_STATE} translator={this.props.translator} lang={this.props.lang} hangup={this.props.hangup} mute={this.props.mute} number={this.props.number} callingNumber={this.props.callingNumber}/>)
         break
       case CALL_OUT_STATE:
-        template = (<StyledCalling mode={CALL_OUT_STATE} translator={this.props.translator} lang={this.props.lang} hangup={this.props.hangup} mute={this.props.mute} speaker={this.props.speaker} displayKeyPad={this.props.displayKeyPad} number={this.props.number}/>)
+        template = (<StyledCalling mode={CALL_OUT_STATE} translator={this.props.translator} lang={this.props.lang} hangup={this.props.hangup} mute={this.props.mute} number={this.props.number} callingNumber={this.props.callingNumber}/>)
         break
       default:
         template = (<Unavailable translator={this.props.translator} lang={this.props.lang} />)

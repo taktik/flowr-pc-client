@@ -13,7 +13,7 @@ export class Incoming extends React.Component<IncomingProps> {
     return (
       <div className="incoming-call-container">
         <h2 className="title">Incoming Call</h2>
-        <h1 className="phoneNumber">+32 0492 25 41 79</h1>
+        {/* <h1 className="phoneNumber">+32 0492 25 41 79</h1> */}
         <FlexRowSpaceEvenly>
           <div className="buttonContainer">
             <HangupPhoneIcon hangup={this.props.hangup} />

@@ -1,7 +1,7 @@
 import * as React from 'react'
-import styled from 'styled-components';
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import './OtherButtons.css';
+import styled from 'styled-components'
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
+import './OtherButtons.css'
 
 const StyledButton = styled.div`
   border: 1px solid rgba(255,255,255,0.8);
@@ -34,8 +34,6 @@ export class MuteMicIcon extends React.Component<MuteMicProps> {
   }
 }
 
-
-
 interface DisplayKeyPad {
   displayKeyPad: () => void
 }
@@ -49,7 +47,6 @@ export class KeyPadIcon extends React.Component<DisplayKeyPad> {
     )
   }
 }
-
 
 interface EnableSpeaker {
   speaker: () => void
