@@ -2,7 +2,7 @@ import * as React from 'react'
 import { AnswerPhoneIcon } from '../phoneButtons'
 import styled from 'styled-components'
 import { throttle } from '../../helper/throttle'
-import { Translator } from '../../../translator/translator'
+import { Translator } from '../../../../translator/translator'
 import { Keyboard } from '../keyboard'
 import { ClickableIcon } from '../clickableIcon'
 
@@ -70,7 +70,7 @@ export class OffHook extends React.Component<OffHookProps, OffHookState> {
       <div className="offHook-container">
         <div className="left">
           <div>
-            <label className="label">Number</label>
+            <label className="label">{this.props.translator.translate('Number', this.props.lang)}</label>
             <div className="input-container">
               <input id="callNumber" className="number" type="string" value={this.state.callNumber} onChange={this.handleChange} onKeyDown={e => e.preventDefault()} autoFocus />
               <StyledIcon className="input-icon" icon="backspace" onClick={this.removeNumber.bind(this)} />

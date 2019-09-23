@@ -1,5 +1,5 @@
 import * as React from 'react'
-import { Translator } from '../../../translator/translator'
+import { Translator } from '../../../../translator/translator'
 import './Unavailable.css'
 
 interface Props {

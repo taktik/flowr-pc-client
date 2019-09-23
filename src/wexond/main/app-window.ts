@@ -23,6 +23,8 @@ export interface WexondOptions {
   maxTab : number
 }
 export class AppWindow extends BrowserWindow {
+  private readonly _ipcEvents: {[key: string]: (...args: any[]) => void}
+
   public viewManager: ViewManager = new ViewManager();
 
   public windows: ProcessWindow[] = [];
@@ -152,7 +154,23 @@ export class AppWindow extends BrowserWindow {
     });
 
     if (platform() === 'win32') {
-      this.activateWindowCapturing();
+      this._ipcEvents = {
+        'select-window': (e: any, id: number) => {
+          this.selectWindow(this.windows.find(x => x.handle === id))
+        },
+        'detach-window': (e: any, id: number) => {
+          this.detachWindow(this.windows.find(x => x.handle === id))
+        },
+        'hide-window': () => {
+          if (this.selectedWindow) {
+            this.selectedWindow.hide()
+            this.isWindowHidden = true
+          }
+        },
+      }
+      this.activateWindowCapturing()
+    } else {
+      this._ipcEvents = {}
     }
   }
 
@@ -172,27 +190,15 @@ export class AppWindow extends BrowserWindow {
     this.on('resize', updateBounds);
 
     this.on('close', () => {
+      Object.entries(this._ipcEvents).forEach(event => ipcMain.removeListener(...event))
       for (const window of this.windows) {
-        this.detachWindow(window);
+        this.detachWindow(window)
       }
     });
 
     this.interval = setInterval(this.intervalCallback, 100);
 
-    ipcMain.on('select-window', (e: any, id: number) => {
-      this.selectWindow(this.windows.find(x => x.handle === id));
-    });
-
-    ipcMain.on('detach-window', (e: any, id: number) => {
-      this.detachWindow(this.windows.find(x => x.handle === id));
-    });
-
-    ipcMain.on('hide-window', () => {
-      if (this.selectedWindow) {
-        this.selectedWindow.hide();
-        this.isWindowHidden = true;
-      }
-    });
+    Object.entries(this._ipcEvents).forEach(event => ipcMain.on(...event))
 
     windowManager.on('window-activated', (window: Window) => {
       this.webContents.send('select-tab', window.handle);

@@ -24,90 +24,77 @@ export class ViewManager {
     this.fixBounds();
   }
 
+  private readonly _ipcEvents: {[key: string]: (...args: any[]) => void}
+
   constructor() {
-    ipcMain.on(
-      'browserview-create',
-      (e: Electron.IpcMessageEvent, { tabId, url }: any) => {
-        this.create(tabId, url);
+    this._ipcEvents = {
+      'browserview-create': (e: Electron.IpcMessageEvent, { tabId, url }: any) => {
+        this.create(tabId, url)
 
         appWindow.webContents.send(
           `browserview-created-${tabId}`,
           this.views[tabId].id,
-        );
+        )
       },
-    );
+      'browserview-select': (e: Electron.IpcMessageEvent, id: number, force: boolean) => {
+        const view = this.views[id]
+        this.select(id)
+        view.updateNavigationState()
 
-    ipcMain.on(
-      'browserview-select',
-      (e: Electron.IpcMessageEvent, id: number, force: boolean) => {
-        const view = this.views[id];
-        this.select(id);
-        view.updateNavigationState();
-
-        if (force) this.isHidden = false;
+        if (force) this.isHidden = false
       },
-    );
+      'clear-browsing-data': () => {
+        const ses = session.fromPartition('persist:view')
+        ses.clearCache((err: any) => {
+          if (err) log.error(err)
+        })
 
-    ipcMain.on('clear-browsing-data', () => {
-      const ses = session.fromPartition('persist:view');
-      ses.clearCache((err: any) => {
-        if (err) log.error(err);
-      });
-
-      ses.clearStorageData({
-        storages: [
-          'appcache',
-          'cookies',
-          'filesystem',
-          'indexdb',
-          'localstorage',
-          'shadercache',
-          'websql',
-          'serviceworkers',
-          'cachestorage',
-        ],
-      });
-    });
-
-    ipcMain.on(
-      'browserview-destroy',
-      (e: Electron.IpcMessageEvent, id: number) => {
-        this.destroy(id);
+        ses.clearStorageData({
+          storages: [
+            'appcache',
+            'cookies',
+            'filesystem',
+            'indexdb',
+            'localstorage',
+            'shadercache',
+            'websql',
+            'serviceworkers',
+            'cachestorage',
+          ],
+        })
       },
-    );
+      'browserview-destroy': (e: Electron.IpcMessageEvent, id: number) => {
+        this.destroy(id)
+      },
+      'browserview-call': async (e: any, data: any) => {
+        const view = this.views[data.tabId]
+        let scope: any = view
 
-    ipcMain.on('browserview-call', async (e: any, data: any) => {
-      const view = this.views[data.tabId];
-      let scope: any = view;
-
-      if (data.scope && data.scope.trim() !== '') {
-        const scopes = data.scope.split('.');
-        for (const s of scopes) {
-          scope = scope[s];
+        if (data.scope && data.scope.trim() !== '') {
+          const scopes = data.scope.split('.')
+          for (const s of scopes) {
+            scope = scope[s]
+          }
         }
-      }
 
-      let result = scope.apply(view.webContents, data.args);
+        let result = scope.apply(view.webContents, data.args);
 
-      if (result instanceof Promise) {
-        result = await result;
-      }
+        if (result instanceof Promise) {
+          result = await result
+        }
 
-      if (data.callId) {
-        appWindow.webContents.send(
-          `browserview-call-result-${data.callId}`,
-          result,
-        );
-      }
-    });
-
-    ipcMain.on('browserview-hide', () => {
-      this.hideView();
-    });
-
-    ipcMain.on('browserview-show', () => {
-      this.showView();
-    });
+        if (data.callId) {
+          appWindow.webContents.send(
+            `browserview-call-result-${data.callId}`,
+            result,
+          )
+        }
+      },
+      'browserview-hide': () => this.hideView(),
+      'browserview-show': () => this.showView(),
+      'browserview-clear': () => this.clear(),
+    }
+    Object.entries(this._ipcEvents).forEach(event => ipcMain.on(event[0], event[1]))
 
     setInterval(() => {
       for (const key in this.views) {
@@ -125,10 +112,6 @@ export class ViewManager {
         }
       }
     }, 200);
-
-    ipcMain.on('browserview-clear', () => {
-      this.clear();
-    });
 
     session.fromPartition('persist:view').on('will-download', (event) => {
       event.preventDefault()
@@ -152,6 +135,7 @@ export class ViewManager {
     for (const key in this.views) {
       this.destroy(parseInt(key, 10))
     }
+    Object.entries(this._ipcEvents).forEach(event => ipcMain.removeListener(event[0], event[1]))
   }
 
   public select(tabId: number) {
@@ -218,7 +202,7 @@ export class ViewManager {
       return;
     }
 
-    if (appWindow.getBrowserView() === view) {
+    if (appWindow && appWindow.getBrowserView() === view) {
       appWindow.setBrowserView(null);
     }
 

@@ -16,7 +16,7 @@ enum ServerReference {
   SM08 = 'SM-08',
   SM09 = 'SM-09',
   SM10 = 'SM-10', // unregistered
-  SM11 = 'SM-11', // registered -1 (broken state ?)
+  SM11 = 'SM-11', // registered -1 (broken state)
   SM12 = 'SM-12',
   SM13 = 'SM-13',
   SM14 = 'SM-14', // init sent
@@ -160,8 +160,12 @@ export class Dispatcher extends StateMachineImpl<ConnectionState> {
         this.registerState = REGISTERED_STATE
         break
       case ServerReference.SM10:
-      case ServerReference.SM11:
         this.registerState = UNREGISTERED_STATE
+        break
+      case ServerReference.SM11:
+        if (this._callStateMachine) {
+          this._callStateMachine.quit()
+        }
         break
       case ServerReference.SM12:
         this.callState = CLIENT_NOT_RUNNING_STATE

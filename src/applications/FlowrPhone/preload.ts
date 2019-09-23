@@ -28,7 +28,7 @@ const nodeRequire: {[key: string]: any} = packagesToExport.reduce((exported, pac
 const ipcRenderer = require('electron').ipcRenderer
 
 process.once('loaded', () => {
-  window.global = window.global || window
+  window.global = window.global || (window as any)
 
   global.require = (moduleName: string): any => {
     const requiredModule = nodeRequire[moduleName]

@@ -4,10 +4,10 @@ import { CALL_OUT_STATE, ANSWERED_STATE, CallState, OUTGOING_STATE } from '../..
 import styled from 'styled-components'
 import { HangupPhoneIcon } from '../phoneButtons'
 import { FlexRowCenter, FlexColumnCenter } from '../flex'
-import { Translator } from '../../../translator/translator'
+import { Translator } from '../../../../translator/translator'
 
 import './Calling.css'
-import { robotoMedium } from '~/shared/mixins'
+import { robotoMedium } from '..'
 import { RemoteCodes } from '../../remote'
 
 interface CallingProps {

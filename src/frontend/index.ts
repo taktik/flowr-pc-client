@@ -1,7 +1,7 @@
 import { resolve, join } from 'path'
 import { homedir } from 'os'
 import { ipcMain, Menu, app, BrowserWindowConstructorOptions } from 'electron'
-import { Store, initConfigData } from './src/store'
+import { initConfigData, Store } from './src/store'
 import { FlowrWindow } from './flowr-window'
 import { extend } from 'lodash'
 import { URL } from 'url'
@@ -9,10 +9,16 @@ const network = require('network')
 const deepExtend = require('deep-extend')
 import defaultBrowserWindowOptions from './defaultBrowserWindowOptions'
 const FlowrDataDir = resolve(homedir(), '.flowr')
-const CONFIG_NAME = 'user-preferences.json'
+export const FRONTEND_CONFIG_NAME = 'user-preferences'
+export const DEFAULT_FRONTEND_STORE = {
+  // 800x600 is the default size of our window
+  windowBounds: { width: 1280, height: 720 },
+  channelData: {},
+  isMaximized: false,
+}
 
 export function initFlowrConfig(data: object) {
-  initConfigData(join(FlowrDataDir, CONFIG_NAME), data)
+  initConfigData(join(FlowrDataDir, `${FRONTEND_CONFIG_NAME}.json`), data)
 }
 
 const RELOAD_INTERVAL = 120000 // 2min
@@ -22,28 +28,18 @@ let isHiddenMenuDisplayed = false
 let isLaunchedUrlCorrect = true
 let reloadTimeout: number | undefined
 
-const flowrStore = new Store(FlowrDataDir, {
-  // We'll call our data file 'user-preferences'
-  configName: CONFIG_NAME,
-  defaults: {
-    // 800x600 is the default size of our window
-    windowBounds: { width: 1280, height: 720 },
-    channelData: {},
-    isMaximized: false,
-  },
-})
-export function buildBrowserWindowConfig(options: BrowserWindowConstructorOptions): BrowserWindowConstructorOptions {
+export function buildBrowserWindowConfig(flowrStore: Store, options: BrowserWindowConstructorOptions): BrowserWindowConstructorOptions {
   return extend(options, defaultBrowserWindowOptions(flowrStore))
 }
 
-export async function createFlowrWindow(): Promise<FlowrWindow> {
+export async function createFlowrWindow(flowrStore: Store): Promise<FlowrWindow> {
   const mac = await getMacAddress()
 
   const defaultUrl = buildFileUrl('config.html')
   const kiosk = flowrStore.get('isKiosk') || false
   const url = new URL(flowrStore.get('extUrl') || defaultUrl)
   // Create the browser window.
-  const opts = buildBrowserWindowConfig({
+  const opts = buildBrowserWindowConfig(flowrStore, {
     icon: resolve(app.getAppPath(), 'static/app-icons/icon.png'),
     webPreferences: {
       nodeIntegration: false,
@@ -115,92 +111,88 @@ export async function createFlowrWindow(): Promise<FlowrWindow> {
     mainWindow.setMenuBarVisibility(true)
   }
 
-  ipcMain.on('FlowrIsInitializing', () => {
-    clearInterval(reloadTimeout)
-    isLaunchedUrlCorrect = true
-  })
-
-  ipcMain.on('getAppConfig', (evt: any) => {
-    const storedConfig =  flowrStore.get('flowrConfig')
-    const  config: any =  {
-      debugMode : isDebugMode,
-      isLaunchedUrlCorrect,
-      deinterlacing: flowrStore.get('deinterlacing'),
-    }
-    // no need to expose the complete config
-    if (storedConfig && storedConfig.ozoneApi) {
-      const ozoneApi = storedConfig.ozoneApi.hostProxy || ''
-      const flowrApi = (storedConfig.flowrApi && storedConfig.flowrApi.hostProxy) || ''
-      const socketApi = (storedConfig.socketApi && storedConfig.socketApi.host) || ''
-      const pushVodSocketApi = (storedConfig.pushVodSocketApi && storedConfig.pushVodSocketApi.host) || ''
-      const aneviaVodSocketApi = (storedConfig.aneviaVodSocketApi && storedConfig.aneviaVodSocketApi.host) || ''
-
-      config.appConfig = {
-        ozoneApi: {
-          hostProxy: ozoneApi,
-        },
-        flowrApi: {
-          hostProxy: flowrApi,
-        },
-        socketApi: {
-          host: socketApi,
-        },
-        pushVodSocketApi:{
-          host: pushVodSocketApi,
-        },
-        aneviaVodSocketApi:{
-          host: aneviaVodSocketApi,
-        },
+  const _ipcEvents: {[key: string]: (...args: any[]) => void} = {
+    FlowrIsInitializing: () => {
+      clearInterval(reloadTimeout)
+      isLaunchedUrlCorrect = true
+    },
+    getAppConfig: (evt: any) => {
+      const storedConfig =  flowrStore.get('flowrConfig')
+      const  config: any =  {
+        debugMode : isDebugMode,
+        isLaunchedUrlCorrect,
+        deinterlacing: flowrStore.get('deinterlacing'),
       }
-    }
+      // no need to expose the complete config
+      if (storedConfig && storedConfig.ozoneApi) {
+        const ozoneApi = storedConfig.ozoneApi.hostProxy || ''
+        const flowrApi = (storedConfig.flowrApi && storedConfig.flowrApi.hostProxy) || ''
+        const socketApi = (storedConfig.socketApi && storedConfig.socketApi.host) || ''
+        const pushVodSocketApi = (storedConfig.pushVodSocketApi && storedConfig.pushVodSocketApi.host) || ''
+        const aneviaVodSocketApi = (storedConfig.aneviaVodSocketApi && storedConfig.aneviaVodSocketApi.host) || ''
 
-    config.extUrl = flowrStore.get('extUrl')
-    config.isKiosk = flowrStore.get('isKiosk')
+        config.appConfig = {
+          ozoneApi: {
+            hostProxy: ozoneApi,
+          },
+          flowrApi: {
+            hostProxy: flowrApi,
+          },
+          socketApi: {
+            host: socketApi,
+          },
+          pushVodSocketApi:{
+            host: pushVodSocketApi,
+          },
+          aneviaVodSocketApi:{
+            host: aneviaVodSocketApi,
+          },
+        }
+      }
 
-    evt.sender.send('receiveConfig', config)
-  })
+      config.extUrl = flowrStore.get('extUrl')
+      config.isKiosk = flowrStore.get('isKiosk')
 
-  ipcMain.on('getMacAddress', async(evt: any) => {
-    const usedMacAddress = await getMacAddress()
-    evt.sender.send('receiveMacAddress', usedMacAddress)
-  })
-
-  ipcMain.on('updateAppConfig', (evt: any, data: any) => {
-    const currentConfig = flowrStore.get('flowrConfig')
-    const newConfig =  deepExtend(currentConfig, data)
-    console.log(JSON.stringify(data))
-    flowrStore.set('flowrConfig', newConfig)
-    app.relaunch()
-    app.quit()
-  })
-
-  ipcMain.on('setDebugMode', (evt: any, debugMode: boolean) => {
-    isDebugMode = debugMode
-    if (isDebugMode) {
-      mainWindow.webContents.openDevTools()
-    } else {
-      mainWindow.webContents.closeDevTools()
-    }
-  })
-
-  ipcMain.on('setDeinterlacingMode', (evt: any, deinterlacingMode: any) => {
-    flowrStore.set('deinterlacing', deinterlacingMode)
-  })
-
-  ipcMain.on('setKioskMode', (evt: any, isKiosk: boolean) => {
-    flowrStore.set('isKiosk', isKiosk)
-    app.relaunch()
-    app.quit()
-  })
-
-  ipcMain.on('setExtUrl', (evt: any, newExtURl: string) => {
-    console.log('set new ext url', newExtURl)
-    flowrStore.set('extUrl', newExtURl)
-    app.relaunch()
-    app.quit()
-  })
-
-  ipcMain.on('openConfigMode', displayHiddenMenu)
+      evt.sender.send('receiveConfig', config)
+    },
+    getMacAddress: async (evt: any) => {
+      const usedMacAddress = await getMacAddress()
+      evt.sender.send('receiveMacAddress', usedMacAddress)
+    },
+    updateAppConfig: (evt: any, data: any) => {
+      const currentConfig = flowrStore.get('flowrConfig')
+      const newConfig =  deepExtend(currentConfig, data)
+      console.log(JSON.stringify(data))
+      flowrStore.set('flowrConfig', newConfig)
+      app.relaunch()
+      app.quit()
+    },
+    setDebugMode: (evt: any, debugMode: boolean) => {
+      isDebugMode = debugMode
+      if (isDebugMode) {
+        mainWindow.webContents.openDevTools()
+      } else {
+        mainWindow.webContents.closeDevTools()
+      }
+    },
+    setDeinterlacingMode: (evt: any, deinterlacingMode: any) => {
+      flowrStore.set('deinterlacing', deinterlacingMode)
+    },
+    setKioskMode: (evt: any, isKiosk: boolean) => {
+      flowrStore.set('isKiosk', isKiosk)
+      app.relaunch()
+      app.quit()
+    },
+    setExtUrl: (evt: any, newExtURl: string) => {
+      console.log('set new ext url', newExtURl)
+      flowrStore.set('extUrl', newExtURl)
+      app.relaunch()
+      app.quit()
+    },
+    openConfigMode: displayHiddenMenu,
+  }
+  Object.entries(_ipcEvents).forEach(event => ipcMain.on(...event))
+  mainWindow.on('close', () => Object.entries(_ipcEvents).forEach(event => ipcMain.removeListener(...event)))
 
   function buildFileUrl(fileName: string): string {
     let result: string

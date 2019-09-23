@@ -122,6 +122,10 @@ export class CallStateMachine extends StateMachineImpl<CallState> {
     }
   }
 
+  quit() {
+    this._dispatcher.send('quit')
+  }
+
   stateChanged(from: CallState, to: CallState) {
     console.log(`Call transitioned from ${from.label} to ${to.label}`)
     if (this._outGoingCallTimeout) {

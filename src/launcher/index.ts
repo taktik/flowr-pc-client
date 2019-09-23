@@ -3,14 +3,19 @@ import { resolve } from 'path'
 import { homedir } from 'os'
 import { remove } from 'fs-extra'
 import { autoUpdater } from 'electron-updater'
-import { createFlowrWindow, initFlowrConfig, buildBrowserWindowConfig } from '../frontend'
+import { createFlowrWindow, initFlowrConfig, buildBrowserWindowConfig, FRONTEND_CONFIG_NAME, DEFAULT_FRONTEND_STORE } from '../frontend'
 import { createWexondWindow, setWexondLog } from '~/main'
 import { getMigrateUserPreferences } from './migration/fromFlowrClientToFlowrPcClient'
-import { PhoneWindow } from '../phone/phoneWindow'
 import { FlowrWindow } from 'src/frontend/flowr-window'
-import { OpenPhoneProps, createPhoneWindow } from '../phone'
 export const log = require('electron-log')
-const migrateUserPreferences = getMigrateUserPreferences()
+import { StoreManager, Store } from '../frontend/src/store'
+import { ApplicationManager } from '../application-manager/application-manager'
+const FlowrDataDir = resolve(homedir(), '.flowr')
+
+export const storeManager = new StoreManager(FlowrDataDir)
+const applicationManager = new ApplicationManager()
+
+const migrateUserPreferences = getMigrateUserPreferences(`${FRONTEND_CONFIG_NAME}.json`)
 if (migrateUserPreferences) {
   initFlowrConfig(migrateUserPreferences)
 }
@@ -24,9 +29,12 @@ log.transports.file.level = 'verbose'
 log.transports.file.file = resolve(app.getPath('userData'), 'log.log')
 setWexondLog(log)
 ipcMain.setMaxListeners(0)
+
 let flowrWindow: FlowrWindow | null = null
+let flowrStore: Store | null = null
+
 let wexondWindow: BrowserWindow | null = null
-let phoneWindow: PhoneWindow | null = null
+
 const gotTheLock = app.requestSingleInstanceLock()
 
 if (!gotTheLock) {
@@ -78,7 +86,9 @@ app.on('ready', async () => {
 
   ipcMain.on('open-browser', (event: Event, options: any) => {
     if (wexondWindow === null) {
-      wexondWindow = createWexondWindow(options, flowrWindow || undefined, buildBrowserWindowConfig({}))
+      flowrStore = flowrStore || initFlowrStore()
+      wexondWindow = createWexondWindow(options, flowrWindow || undefined, buildBrowserWindowConfig(flowrStore, {}))
+      applicationManager.wexondWindow = wexondWindow
       wexondWindow.on('close', () => {
         wexondWindow = null
       })
@@ -98,26 +108,6 @@ app.on('ready', async () => {
     }
     // flowrWindow.moveTop()
   })
-
-  ipcMain.on('openPhoneApp', (evt: any, openPhoneProps: OpenPhoneProps) => {
-    if (!flowrWindow) {
-      return
-    }
-
-    if (phoneWindow === null) {
-      phoneWindow = createPhoneWindow(openPhoneProps, flowrWindow, wexondWindow)
-      phoneWindow.on('close', () => phoneWindow = null)
-    }
-    if (openPhoneProps.registerProps) {
-      phoneWindow.registerProps = openPhoneProps.registerProps
-    }
-    if (openPhoneProps.lang) {
-      phoneWindow.changeLanguage(openPhoneProps.lang)
-    }
-    if (openPhoneProps.show) {
-      phoneWindow.open()
-    }
-  })
 })
 
 ipcMain.on('clear-application-data', async () => {
@@ -127,22 +117,25 @@ ipcMain.on('clear-application-data', async () => {
 })
 
 app.on('window-all-closed', () => {
+  applicationManager.destroy()
   app.quit()
 })
 
 async function initFlowr() {
-  flowrWindow = await createFlowrWindow()
+  try {
+    await applicationManager.initLocalApps()
+  } catch (e) {
+    console.error('Failed to initialize apps', e)
+  }
+  flowrStore = flowrStore || initFlowrStore()
+  flowrWindow = await createFlowrWindow(flowrStore)
+  applicationManager.flowrWindow = flowrWindow
   flowrWindow.on('close', () => {
-    if (phoneWindow) {
-      phoneWindow.close()
-    }
     flowrWindow = null
   })
-  ipcMain.on('flowrLanguageChanged', changeLanguage)
+  ipcMain.on('flowrLanguageChanged', (e: Event, lang: string) => applicationManager.languageChanged(lang))
 }
 
-function changeLanguage(e: Event, lang: string) {
-  if (phoneWindow) {
-    phoneWindow.changeLanguage(lang)
-  }
+function initFlowrStore(): Store {
+  return storeManager.createStore(FRONTEND_CONFIG_NAME, DEFAULT_FRONTEND_STORE)
 }

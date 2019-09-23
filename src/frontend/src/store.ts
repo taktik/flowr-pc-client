@@ -2,13 +2,34 @@ import { writeFileSync, ensureFileSync, readFileSync, existsSync } from 'fs-extr
 const path = require('path')
 
 export function initConfigData(configPath: string, data: object) {
-  if (! existsSync(configPath)) {
+  if (!existsSync(configPath)) {
     ensureFileSync(configPath)
     writeFileSync(configPath, JSON.stringify(data))
   }
 }
 
-export class Store {
+interface StoreConstructor {
+  new (storeDir: string, opts: any): Store
+}
+
+export interface Store {
+  path: string
+  data: {[key: string]: any}
+  get(key: string): any
+  set(key: string, val: any): void
+  bulkSet(data: {[key: string]: any}): void
+}
+
+/**
+ * Manage data persistance
+ * This structure of interface (StoreConstructor + Store) allows to type the constructor:
+ *  https://www.typescriptlang.org/docs/handbook/interfaces.html
+ * @param {String} storeDir name of the folder containing this store
+ * @param {Object} opts default values to use if store is empty
+ * @param {String} opts.configName name of the file containing this store
+ * @param {Object} opts.defaults default values to use if store is empty
+ */
+const StoreImpl: StoreConstructor = class StoreImpl implements Store {
   path: string
   data: {[key: string]: any}
 
@@ -32,6 +53,11 @@ export class Store {
     // we might lose that data. Note that in a real app, we would try/catch this.
     writeFileSync(this.path, JSON.stringify(this.data))
   }
+
+  bulkSet(data: {[key: string]: any}) {
+    this.data = { ...this.data, ...data }
+    writeFileSync(this.path, JSON.stringify(this.data))
+  }
 }
 
 function parseDataFile(filePath: string, defaults: any) {
@@ -42,5 +68,18 @@ function parseDataFile(filePath: string, defaults: any) {
   } catch (error) {
     // if there was some kind of error, return the passed in defaults instead.
     return defaults
+  }
+}
+
+export class StoreManager {
+  path: string
+
+  constructor(root: string) {
+    this.path = root
+  }
+
+  createStore(namespace: string = 'default', defaults: {[key: string]: any} = {}): Store {
+    const configName = `${namespace}.json`
+    return new StoreImpl(this.path, { configName, defaults })
   }
 }
