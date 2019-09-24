@@ -231,7 +231,7 @@ function applicationRenderer(name) {
     plugins: [
       CopyPlugin({
         files: ['*.woff2', '*.png', '*.svg'],
-        dest: `applications/${name}/assets`,
+        dest: '',
         resolve: production ? `./applications/${name}/assets` : `/applications/${name}/assets`,
       }),
       StyledComponentsPlugin(),

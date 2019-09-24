@@ -123,6 +123,7 @@ export class CallStateMachine extends StateMachineImpl<CallState> {
   }
 
   quit() {
+    console.log('State machine quit')
     this._dispatcher.send('quit')
   }
 

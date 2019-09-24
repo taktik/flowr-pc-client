@@ -216,7 +216,7 @@ export async function createFlowrWindow(flowrStore: Store): Promise<FlowrWindow>
     return new Promise(((resolve, reject) => {
       network.get_active_interface((err: Error, obj: any) => {
         if (err) {
-          throw (err)
+          reject(err)
         }
         if (obj && obj.mac_address) {
           resolve(obj.mac_address)

@@ -127,13 +127,18 @@ async function initFlowr() {
   } catch (e) {
     console.error('Failed to initialize apps', e)
   }
-  flowrStore = flowrStore || initFlowrStore()
-  flowrWindow = await createFlowrWindow(flowrStore)
-  applicationManager.flowrWindow = flowrWindow
-  flowrWindow.on('close', () => {
-    flowrWindow = null
-  })
-  ipcMain.on('flowrLanguageChanged', (e: Event, lang: string) => applicationManager.languageChanged(lang))
+
+  try {
+    flowrStore = flowrStore || initFlowrStore()
+    flowrWindow = await createFlowrWindow(flowrStore)
+    applicationManager.flowrWindow = flowrWindow
+    flowrWindow.on('close', () => {
+      flowrWindow = null
+    })
+    ipcMain.on('flowrLanguageChanged', (e: Event, lang: string) => applicationManager.languageChanged(lang))
+  } catch (e) {
+    console.error('Error in init', e)
+  }
 }
 
 function initFlowrStore(): Store {

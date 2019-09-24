@@ -1,11 +1,11 @@
 import { ApplicationConfig, FlowrApplication } from '@taktik/flowr-common-js'
 import { ipcMain, WebContents, BrowserWindow, app } from 'electron'
-import '../applications'
 import { resolve, join } from 'path'
 import { storeManager } from '../launcher'
 import { Store } from '../frontend/src/store'
 import * as fs from 'fs'
 import { FlowrWindow } from '../frontend/flowr-window'
+import { create, packageJSON } from '../applications/FlowrPhone'
 
 interface ApplicationInitConfig {
   application: FlowrApplication
@@ -150,8 +150,8 @@ export class ApplicationManager {
       console.log('Registering app', name)
       // Can't easily rename fusebox output, so we'll leave the ${name}/${name} folder/file structure for now
       // const { open, packageJSON } = await import(`./applications/${name}/${name}.js`)
-      const app = (await import(`./applications/${name}/${name}-loader.js`))[name]
-      const { create, packageJSON } = app
+      // const app = (await import(`./applications/${name}/${name}-loader.js`))[name]
+      // const { create, packageJSON } = app
       const preload = buildPreloadPath(name)
       const index = buildFileUrl(name)
       const store = storeManager.createStore(name)
