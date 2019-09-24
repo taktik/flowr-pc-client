@@ -232,13 +232,13 @@ function applicationRenderer(name) {
       CopyPlugin({
         files: ['*.woff2', '*.png', '*.svg'],
         dest: '',
-        resolve: production ? `./applications/${name}/assets` : `/applications/${name}/assets`,
+        resolve: production ? `./assets` : `/assets`,
       }),
       StyledComponentsPlugin(),
       CSSPlugin(),
       WebIndexPlugin({
         template: `src/applications/${name}/views/index.html`,
-        path: production ? `.applications/${name}` : `/applications/${name}`,
+        path: production ? `.` : `/`,
         target: `index.html`,
         bundles: [name],
       }),
