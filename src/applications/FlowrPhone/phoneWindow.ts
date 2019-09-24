@@ -63,7 +63,7 @@ export class PhoneWindow extends BrowserWindow {
   }
 
   set capabilities(capabilities: {[key: string]: boolean}) {
-    this.webContents.send('capabilities-changed', { capabilities })
+    this.webContents.send('capabilities-changed', capabilities)
     this._capabilities = capabilities
   }
 
