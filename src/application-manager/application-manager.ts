@@ -210,8 +210,9 @@ export class ApplicationManager {
         let applicationWindow = this.activeWindows[appName]
 
         if (!applicationWindow) {
+          const props = Object.assign({}, application.config, openConfig.config)
           applicationWindow = this.activeWindows[appName] = application.create({
-            props: application.config || {},
+            props,
             preload: application.preload,
             index: application.index,
             store: application.store,
