@@ -104,6 +104,12 @@ app.on('ready', async () => {
       wexondWindow.close()
     }
   })
+  ipcMain.on('close-apps', () => {
+    if (wexondWindow !== null) {
+      wexondWindow.close()
+    }
+    applicationManager.closeAllApps()
+  })
   ipcMain.on('open-flowr', () => {
     if (wexondWindow !== null) {
       wexondWindow.close()

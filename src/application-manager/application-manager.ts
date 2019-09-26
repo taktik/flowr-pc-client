@@ -259,4 +259,11 @@ export class ApplicationManager {
     ipcMain.removeListener('initialize-applications-sync', this.processApplicationsConfigs)
     ipcMain.removeListener('open-application', this.openApplication)
   }
+
+  closeAllApps() {
+    Object.values(this.activeWindows)
+      .forEach((win) => {
+        win.close()
+      })
+  }
 }
