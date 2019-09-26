@@ -40,61 +40,57 @@ const eventListeners: any = {};
 
 export const loadFilters = async () => {
   if (!existsSync(getPath('adblock'))) {
-    mkdirSync(getPath('adblock'));
+    mkdirSync(getPath('adblock'))
   }
 
-  const path = resolve(getPath('adblock/cache.dat'));
+  const path = resolve(getPath('adblock/cache.dat'))
 
   /*const { data } = await requestURL(
     'https://raw.githubusercontent.com/MajkiIT/polish-ads-filter/master/polish-adblock-filters/adblock.txt',
   );*/
 
-  const downloadFilters = () => {
-    const ops = [];
+  const downloadFilters = async () => {
+    const ops = []
 
     for (const key in lists) {
-      ops.push(Axios.get(lists[key]));
+      ops.push(Axios.get(lists[key]))
     }
 
-    Axios.all(ops).then(res => {
-      let data = '';
+    const res = await Axios.all(ops)
+    let data = ''
 
-      for (const res1 of res) {
-        data += res1.data;
-      }
+    for (const res1 of res) {
+      data += res1.data
+    }
 
-      engine = FiltersEngine.parse(data);
+    engine = FiltersEngine.parse(data)
 
-      writeFile(path, engine.serialize(), err => {
-        if (err) return console.error(err);
-      });
-    });
-  };
+    writeFile(path, engine.serialize(), err => {
+      if (err) return console.error(err)
+    })
+  }
 
   if (existsSync(path)) {
-    readFile(resolve(path), (err, buffer) => {
-      if (err) return console.error(err);
+    await new Promise((res, reject) => {
+      readFile(resolve(path), (err, buffer) => {
+        if (err) {
+          console.error(err)
+          return reject(err)
+        }
 
-      try {
-        engine = FiltersEngine.deserialize(buffer);
-      } catch (e) {
-        downloadFilters();
-      }
-
-      /*const { networkFilters, cosmeticFilters } = parseFilters(
-        data,
-        engine.config,
-      );
-
-      engine.update({
-        newNetworkFilters: networkFilters,
-        newCosmeticFilters: cosmeticFilters,
-      });*/
-    });
+        try {
+          engine = FiltersEngine.deserialize(buffer)
+          res()
+        } catch (e) {
+          downloadFilters()
+          reject(e)
+        }
+      })
+    })
   } else {
-    downloadFilters();
+    await downloadFilters()
   }
-};
+}
 
 const getTabByWebContentsId = (window: AppWindow, id: number) => {
   for (const key in window.viewManager.views) {

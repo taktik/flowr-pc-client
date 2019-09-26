@@ -57,7 +57,7 @@ app.on('window-all-closed', () => {
   }
 });
 
-export function createWexondWindow(wexondOptions: WexondOptions, parentWindow?: BrowserWindow, defaultBrowserWindow: BrowserWindowConstructorOptions = {}): AppWindow {
+export async function createWexondWindow(wexondOptions: WexondOptions, parentWindow?: BrowserWindow, defaultBrowserWindow: BrowserWindowConstructorOptions = {}): AppWindow {
   appWindow = new AppWindow(wexondOptions, parentWindow, defaultBrowserWindow);
   appWindow.on('close', () => {
     appWindow = null
@@ -102,8 +102,8 @@ export function createWexondWindow(wexondOptions: WexondOptions, parentWindow?: 
       });
     });
 
-  loadFilters();
-  loadExtensions();
-  runWebRequestService(appWindow);
+  await loadFilters()
+  loadExtensions()
+  runWebRequestService(appWindow)
   return appWindow
 }

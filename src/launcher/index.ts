@@ -67,10 +67,10 @@ app.on('ready', async () => {
     }
   })
 
-  ipcMain.on('open-browser', (event: Event, options: any) => {
+  ipcMain.on('open-browser', async (event: Event, options: any) => {
     if (wexondWindow === null) {
       flowrStore = flowrStore || initFlowrStore()
-      wexondWindow = createWexondWindow(options, flowrWindow || undefined, buildBrowserWindowConfig(flowrStore, {}))
+      wexondWindow = await createWexondWindow(options, flowrWindow || undefined, buildBrowserWindowConfig(flowrStore, {}))
       applicationManager.wexondWindow = wexondWindow
       wexondWindow.on('close', () => {
         wexondWindow = null
