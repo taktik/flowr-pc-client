@@ -66,3 +66,12 @@ export function create(options: PhoneOptions): PhoneWindow {
 }
 
 export const packageJSON: JSON = pkgJSON
+
+export function canOpen(capabilities?: {[key: string]: boolean}, props?: OpenPhoneProps) {
+  const canEmit = !capabilities || capabilities.emit
+  const requiredPropsAvailable = !!props &&
+      !!props.registerProps &&
+      !!props.registerProps.host &&
+      !!props.registerProps.username
+  return canEmit && requiredPropsAvailable
+}

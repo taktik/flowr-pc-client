@@ -5,7 +5,7 @@ import { storeManager } from '../launcher'
 import { Store } from '../frontend/src/store'
 import * as fs from 'fs'
 import { FlowrWindow } from '../frontend/flowr-window'
-import { create, packageJSON } from '../applications/FlowrPhone'
+import { create, packageJSON, canOpen } from '../applications/FlowrPhone'
 
 interface ApplicationInitConfig {
   application: FlowrApplication
@@ -13,9 +13,13 @@ interface ApplicationInitConfig {
   config?: ApplicationConfig
 }
 
+interface ApplicationCanOpenConfig {
+  application: FlowrApplication
+  config?: {[key: string]: any}
+}
+
 interface ApplicationOpenConfig {
   application: FlowrApplication
-  capabilities?: {[key: string]: boolean}
   config?: {[key: string]: any}
   show: boolean
 }
@@ -49,6 +53,7 @@ interface ApplicationInitError {
 
 interface FlowrApplicationInitializer {
   create: (...args: any[]) => FlowrApplicationWindow
+  canOpen: (capabilities?: {[key: string]: boolean}, props?: any) => boolean
   index: string
   package: ApplicationConfig
   preload?: string
@@ -117,8 +122,10 @@ export class ApplicationManager {
   constructor() {
     this.processApplicationsConfigs = this.processApplicationsConfigs.bind(this)
     this.openApplication = this.openApplication.bind(this)
+    this.canOpenApplication = this.canOpenApplication.bind(this)
     ipcMain.on('initialize-applications-sync', this.processApplicationsConfigs)
     ipcMain.on('open-application', this.openApplication)
+    ipcMain.on('can-open-application', this.canOpenApplication)
   }
 
   initLocalApps(): Promise<void[]> {
@@ -166,6 +173,7 @@ export class ApplicationManager {
         preload,
         index,
         store,
+        canOpen,
       }
       console.log('Successfully registered app', name)
     } catch (e) {
@@ -236,6 +244,18 @@ export class ApplicationManager {
     e.returnValue = { err }
   }
 
+  canOpenApplication(e: IpcMainEvent, openConfig: ApplicationCanOpenConfig) {
+    const appName = openConfig.application.name
+    const application = this.applications[appName]
+    let returnValue = false
+    try {
+      returnValue = !!application && application.canOpen(application.capabilities, openConfig.config)
+    } catch (e) {
+      console.error('Error retrieving open capabilities', e)
+    }
+    e.returnValue = returnValue
+  }
+
   languageChanged(lang: string) {
     Object.values(this.activeWindows).forEach(activeWindow => {
       this.setProperty(activeWindow, 'lang', lang)
@@ -258,6 +278,7 @@ export class ApplicationManager {
   destroy(): void {
     ipcMain.removeListener('initialize-applications-sync', this.processApplicationsConfigs)
     ipcMain.removeListener('open-application', this.openApplication)
+    ipcMain.removeListener('can-open-application', this.canOpenApplication)
   }
 
   closeAllApps() {

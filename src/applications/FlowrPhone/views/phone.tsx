@@ -4,7 +4,7 @@ import { IpcRenderer } from 'electron'
 import { WindowModes } from '../WindowModes'
 import { MainView } from './mainView'
 import './icons'
-import { CallState, CallStateMachine, INCOMING_STATE, CALL_OUT_STATE, OFF_HOOK_STATE } from '../stateMachines/callStateMachine'
+import { CallState, CallStateMachine, INCOMING_STATE, CALL_OUT_STATE, OFF_HOOK_STATE, ANSWERED_STATE } from '../stateMachines/callStateMachine'
 import { fsm } from 'typescript-state-machine'
 import TransitionListener = fsm.ListenerRegistration
 import { PhoneStateMachine } from '../stateMachines/factory'
@@ -115,7 +115,7 @@ export class Phone extends React.Component<PhoneProps, PhoneAppState> {
     ) {
       return
     }
-    if (!this.canEmit() && to === OFF_HOOK_STATE) {
+    if ((from === ANSWERED_STATE || !this.canEmit()) && to === OFF_HOOK_STATE) {
       this.hide()
     }
     this.setState({ callState: to, callingNumber: this.callStateMachine.callingNumber })
