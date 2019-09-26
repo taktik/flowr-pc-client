@@ -3,6 +3,7 @@ import { TOOLBAR_HEIGHT } from '~/renderer/app/constants/design';
 import { appWindow, log } from '.';
 import { View } from './view';
 import { sendToAllExtensions } from './extensions';
+import { clearBrowsingData } from '~/main/clearBrowsingData'
 
 declare const global: any;
 
@@ -43,26 +44,7 @@ export class ViewManager {
 
         if (force) this.isHidden = false
       },
-      'clear-browsing-data': () => {
-        const ses = session.fromPartition('persist:view')
-        ses.clearCache((err: any) => {
-          if (err) log.error(err)
-        })
-
-        ses.clearStorageData({
-          storages: [
-            'appcache',
-            'cookies',
-            'filesystem',
-            'indexdb',
-            'localstorage',
-            'shadercache',
-            'websql',
-            'serviceworkers',
-            'cachestorage',
-          ],
-        })
-      },
+      'clear-browsing-data': clearBrowsingData,
       'browserview-destroy': (e: Electron.IpcMessageEvent, id: number) => {
         this.destroy(id)
       },

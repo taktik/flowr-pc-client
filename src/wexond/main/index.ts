@@ -2,7 +2,6 @@ import { ipcMain, app, Menu, session, BrowserWindow, BrowserWindowConstructorOpt
 import { resolve, extname } from 'path';
 import { platform, homedir } from 'os';
 import { AppWindow, WexondOptions } from './app-window';
-import { autoUpdater } from 'electron-updater';
 import { loadExtensions } from './extensions';
 import { registerProtocols } from './protocols';
 import { runWebRequestService, loadFilters } from './services/web-request';
