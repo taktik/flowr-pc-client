@@ -111,10 +111,8 @@ export class CallStateMachine extends StateMachineImpl<CallState> {
       case INCOMING_STATE:
       case ANSWERED_STATE:
       case CALL_OUT_STATE:
-        this._dispatcher.send('terminate')
-        break
       case OUTGOING_STATE:
-        this.setState(OFF_HOOK_STATE)
+        this._dispatcher.send('terminate')
         break
       case OFF_HOOK_STATE:
         // Nothing to do
@@ -139,7 +137,7 @@ export class CallStateMachine extends StateMachineImpl<CallState> {
     this._dispatcher.send('call', { number: callNumber })
     this._callingNumber = callNumber
     this.setState(OUTGOING_STATE)
-    this._outGoingCallTimeout = setTimeout(() => this.setState(OFF_HOOK_STATE), 60000)
+    this._outGoingCallTimeout = setTimeout(this.terminate.bind(this), 60000)
   }
 
   answer() {

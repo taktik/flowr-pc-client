@@ -25,7 +25,7 @@ enum ServerReference {
   SM17 = 'SM-17', // status change
   SM18 = 'SM-18', // incoming call
   SM19 = 'SM-19',
-  SM20 = 'SM-20',
+  SM20 = 'SM-20', // unknown
 }
 
 interface ServerMessage {
@@ -163,6 +163,7 @@ export class Dispatcher extends StateMachineImpl<ConnectionState> {
         this.registerState = UNREGISTERED_STATE
         break
       case ServerReference.SM11:
+      case ServerReference.SM20:
         if (this._callStateMachine) {
           this._callStateMachine.quit()
         }
