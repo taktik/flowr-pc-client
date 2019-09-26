@@ -151,7 +151,10 @@ export class Calling extends React.Component<CallingProps, CallingState> {
               <span className="buttonSpan disabled">Speaker</span>
             </div> */}
           </FlexRowCenter>
-          <HangupPhoneIcon hangup={this.props.hangup} />
+          <div className="buttonContainer">
+            <HangupPhoneIcon hangup={this.props.hangup} />
+            <span className="buttonSpan">{this.props.translator.translate('Hang Up', this.props.lang)}</span>
+          </div>
         </div>
     )
   }

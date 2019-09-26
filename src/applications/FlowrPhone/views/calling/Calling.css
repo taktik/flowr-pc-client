@@ -21,12 +21,16 @@
     margin: 12px 0;
 }
 
-.buttonSpan {
-    width: 100%;
-    display:block;
+.buttonSpan{
     color: white;
+    font-family: 'Roboto', Arial, Helvetica, sans-serif;
+    font-weight: medium;
+    font-size: 18px;
+    letter-spacing: 0.4;
+    width: 100%;
+    text-align: center;
+    display: block;
     margin-top: 12px;
-    font-size: 16px;
 }
 
 .disabled {

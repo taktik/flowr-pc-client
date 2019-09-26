@@ -68,18 +68,16 @@ export class OffHook extends React.Component<OffHookProps, OffHookState> {
   render() {
     return (
       <div className="offHook-container">
-        <div className="left">
-          <div>
-            <label className="label">{this.props.translator.translate('Number', this.props.lang)}</label>
-            <div className="input-container">
-              <input id="callNumber" className="number" type="string" value={this.state.callNumber} onChange={this.handleChange} onKeyDown={e => e.preventDefault()} autoFocus />
-              <StyledIcon className="input-icon" icon="backspace" onClick={this.removeNumber.bind(this)} />
-            </div>
+        <div>
+          <label className="label">{this.props.translator.translate('Number', this.props.lang)}</label>
+          <div className="input-container">
+            <input id="callNumber" className="number" type="string" value={this.state.callNumber} onChange={this.handleChange} onKeyDown={e => e.preventDefault()} autoFocus />
+            <StyledIcon className="input-icon" icon="backspace" onClick={this.removeNumber.bind(this)} />
           </div>
-          <AnswerPhoneIcon answer={this.call.bind(this)} />
         </div>
-        <div className="right">
-          <Keyboard keyPressed={this.addNumber.bind(this)} />
+        <div className="container-flex">
+          <div className="left"><Keyboard keyPressed={this.addNumber.bind(this)} /></div>
+          <div className="right"><AnswerPhoneIcon answer={this.call.bind(this)} /></div>
         </div>
       </div>
     )
