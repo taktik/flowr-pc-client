@@ -25,7 +25,7 @@ enum ServerReference {
   SM17 = 'SM-17', // status change
   SM18 = 'SM-18', // incoming call
   SM19 = 'SM-19',
-  SM20 = 'SM-20',
+  SM20 = 'SM-20', // unknown
 }
 
 interface ServerMessage {
@@ -163,6 +163,7 @@ export class Dispatcher extends StateMachineImpl<ConnectionState> {
         this.registerState = UNREGISTERED_STATE
         break
       case ServerReference.SM11:
+      case ServerReference.SM20:
         if (this._callStateMachine) {
           this._callStateMachine.quit()
         }
@@ -251,6 +252,12 @@ export class Dispatcher extends StateMachineImpl<ConnectionState> {
     this._registerStateMachine.onLeaveState(REGISTERED_STATE, this._callStateMachine.terminate.bind(this._callStateMachine))
     this._callStateMachine.onEnterState(OFF_HOOK_STATE, this.updateRegisterStatus.bind(this))
     this.connect()
+  }
+
+  setState(state: ConnectionState) {
+    if (!this.inState(state)) {
+      super.setState(state)
+    }
   }
 
   @CheckStateIs(CONNECTED_STATE, 'Cannot send message while disconnected')

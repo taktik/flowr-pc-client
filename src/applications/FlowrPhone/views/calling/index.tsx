@@ -112,7 +112,9 @@ export class Calling extends React.Component<CallingProps, CallingState> {
 
     if ([ANSWERED_STATE, CALL_OUT_STATE].includes(this.props.mode)) {
       elapsedTime = (<ElapsedTime><span>{this.state.elapsedTime}</span></ElapsedTime>)
-      this.startTick()
+      if (!this.tickRequest) {
+        this.startTick()
+      }
     } else {
       elapsedTime = (<Rotating icon="circle-notch" spin />)
     }
@@ -149,7 +151,10 @@ export class Calling extends React.Component<CallingProps, CallingState> {
               <span className="buttonSpan disabled">Speaker</span>
             </div> */}
           </FlexRowCenter>
-          <HangupPhoneIcon hangup={this.props.hangup} />
+          <div className="buttonContainer">
+            <HangupPhoneIcon hangup={this.props.hangup} />
+            <span className="buttonSpan">{this.props.translator.translate('Hang Up', this.props.lang)}</span>
+          </div>
         </div>
     )
   }

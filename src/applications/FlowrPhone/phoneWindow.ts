@@ -12,9 +12,9 @@ interface PhoneAppProps {
 
 function buildPositionFromParents(parentRectangle: Rectangle) {
   return {
-    width: Math.round(.5 * parentRectangle.width),
-    height: Math.round(.5 * parentRectangle.height),
-    x: Math.round(parentRectangle.x + .3 * parentRectangle.width),
+    width: Math.round(.6 * parentRectangle.width),
+    height: Math.round(.6 * parentRectangle.height),
+    x: Math.round(parentRectangle.x + .2 * parentRectangle.width),
     y: Math.round(parentRectangle.y),
   }
 }

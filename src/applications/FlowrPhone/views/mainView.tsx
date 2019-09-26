@@ -49,7 +49,7 @@ export class MainView extends React.Component<MainViewProps> {
         template = templateIfCapable((<OffHook translator={this.props.translator} lang={this.props.lang} call={this.props.call} />), PhoneCapabilities.EMIT)
         break
       case INCOMING_STATE:
-        template = templateIfCapable((<Incoming answer={this.props.answer} hangup={this.props.hangup} />), PhoneCapabilities.RECEIVE)
+        template = templateIfCapable((<Incoming answer={this.props.answer} hangup={this.props.hangup} translator={this.props.translator} lang={this.props.lang}/>), PhoneCapabilities.RECEIVE)
         break
       case ANSWERED_STATE:
         template = templateIfCapable((<StyledCalling mode={ANSWERED_STATE} translator={this.props.translator} lang={this.props.lang} hangup={this.props.hangup} mute={this.props.mute} number={this.props.number} callingNumber={this.props.callingNumber}/>), PhoneCapabilities.RECEIVE)
