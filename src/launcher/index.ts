@@ -1,7 +1,7 @@
 import { ipcMain, app, BrowserWindow } from 'electron'
 import { resolve } from 'path'
 import { homedir } from 'os'
-import { removeSync } from 'fs-extra'
+import { removeSync, remove } from 'fs-extra'
 import { autoUpdater } from 'electron-updater'
 import { createFlowrWindow, initFlowrConfig, buildBrowserWindowConfig, FRONTEND_CONFIG_NAME, DEFAULT_FRONTEND_STORE } from '../frontend'
 import { createWexondWindow, setWexondLog } from '~/main'
