@@ -238,7 +238,7 @@ function applicationRenderer(name) {
       CSSPlugin(),
       WebIndexPlugin({
         template: `src/applications/${name}/views/index.html`,
-        path: production ? `.` : `/`,
+        path: production ? `.` : `/applications/${name}`,
         target: `index.html`,
         bundles: [name],
       }),

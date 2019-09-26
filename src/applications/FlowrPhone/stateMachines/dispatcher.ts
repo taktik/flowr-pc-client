@@ -253,6 +253,12 @@ export class Dispatcher extends StateMachineImpl<ConnectionState> {
     this.connect()
   }
 
+  setState(state: ConnectionState) {
+    if (!this.inState(state)) {
+      super.setState(state)
+    }
+  }
+
   @CheckStateIs(CONNECTED_STATE, 'Cannot send message while disconnected')
   send(action: string, payload: {[key: string]: string} = {}) {
     if (this._websocket) {

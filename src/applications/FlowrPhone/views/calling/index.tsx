@@ -91,8 +91,11 @@ export class Calling extends React.Component<CallingProps, CallingState> {
   constructor(props: CallingProps) {
     super(props)
     this.state = { elapsedTime: formatElapsedTime(0), displayKeyPad: false }
-
     this.onKeyDown = this.onKeyDown.bind(this)
+
+    if ([ANSWERED_STATE, CALL_OUT_STATE].includes(props.mode)) {
+      this.startTick()
+    }
   }
 
   startTick() {
@@ -112,7 +115,6 @@ export class Calling extends React.Component<CallingProps, CallingState> {
 
     if ([ANSWERED_STATE, CALL_OUT_STATE].includes(this.props.mode)) {
       elapsedTime = (<ElapsedTime><span>{this.state.elapsedTime}</span></ElapsedTime>)
-      this.startTick()
     } else {
       elapsedTime = (<Rotating icon="circle-notch" spin />)
     }
