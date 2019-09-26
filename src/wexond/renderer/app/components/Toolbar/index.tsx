@@ -7,10 +7,11 @@ import { StyledToolbar, Buttons, Separator } from './style';
 import { NavigationButtons } from '../NavigationButtons';
 import { Tabbar } from '../Tabbar';
 import ToolbarButton from '../ToolbarButton';
-import { icons } from '../../constants';
+import { icons, TOOLBAR_ICON_HEIGHT } from '../../constants';
 import { ipcRenderer } from 'electron';
 import BrowserAction from '../BrowserAction';
 import { Find } from '../Find';
+import { backToFlowr } from '~/renderer/app/utils';
 
 const onUpdateClick = () => {
   ipcRenderer.send('update-install');
@@ -46,6 +47,10 @@ export const Toolbar = observer(() => {
     blockedAds = selectedTab.blockedAds;
   }
 
+  const onHomePress = () => {
+    backToFlowr()
+  }
+
   return (
       <StyledToolbar isHTMLFullscreen={store.isHTMLFullscreen}>
         <NavigationButtons />
@@ -71,6 +76,12 @@ export const Toolbar = observer(() => {
             />
           )}
         </Buttons>
+        <ToolbarButton
+          disabled={false}
+          size={TOOLBAR_ICON_HEIGHT}
+          icon={icons.home}
+          onClick={onHomePress}
+        />
       </StyledToolbar>
   );
 });

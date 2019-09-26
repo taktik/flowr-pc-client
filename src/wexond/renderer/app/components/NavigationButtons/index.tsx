@@ -25,10 +25,6 @@ const onRefreshClick = () => {
   }
 };
 
-const onHomePress = () => {
-  backToFlowr()
-}
-
 export const NavigationButtons = observer(() => {
   const { selectedTab } = store.tabs;
 
@@ -42,12 +38,6 @@ export const NavigationButtons = observer(() => {
 
   return (
     <StyledContainer isFullscreen={store.isFullscreen}>
-      <ToolbarButton
-        disabled={false}
-        size={TOOLBAR_ICON_HEIGHT}
-        icon={icons.window}
-        onClick={onHomePress}
-      />
       <ToolbarButton
         disabled={!store.navigationState.canGoBack}
         size={TOOLBAR_ICON_HEIGHT}

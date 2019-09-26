@@ -1,7 +1,7 @@
 import { ipcMain, app, BrowserWindow } from 'electron'
 import { resolve } from 'path'
 import { homedir } from 'os'
-import { remove } from 'fs-extra'
+import { removeSync, remove } from 'fs-extra'
 import { autoUpdater } from 'electron-updater'
 import { createFlowrWindow, initFlowrConfig, buildBrowserWindowConfig, FRONTEND_CONFIG_NAME, DEFAULT_FRONTEND_STORE } from '../frontend'
 import { createWexondWindow, setWexondLog } from '~/main'
@@ -23,8 +23,9 @@ if (migrateUserPreferences) {
 app.commandLine.appendSwitch('widevine-cdm-path', resolve('/Applications/Google Chrome.app/Contents/Versions/74.0.3729.169/Google Chrome Framework.framework/Versions/A/Libraries/WidevineCdm/_platform_specific/mac_x64'))
 // The version of plugin can be got from `chrome://components` page in Chrome.
 app.commandLine.appendSwitch('widevine-cdm-version', '4.10.1303.2')
-
-app.setPath('userData', resolve(homedir(), '.flowr-electron'))
+const userAppData = resolve(homedir(), '.flowr-electron')
+removeSync(userAppData)
+app.setPath('userData', userAppData)
 log.transports.file.level = 'verbose'
 log.transports.file.file = resolve(app.getPath('userData'), 'log.log')
 setWexondLog(log)
