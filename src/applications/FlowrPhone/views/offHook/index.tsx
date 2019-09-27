@@ -77,8 +77,18 @@ export class OffHook extends React.Component<OffHookProps, OffHookState> {
         </div>
         <div className="container-flex">
           <div className="left"><Keyboard keyPressed={this.addNumber.bind(this)} /></div>
-          <div className="right"><AnswerPhoneIcon answer={this.call.bind(this)} /></div>
+          <div className="right">
+            <AnswerPhoneIcon answer={this.call.bind(this)} />
+            <div className="helper">
+              <span>{this.props.translator.translate('Press 0 for external calls', this.props.lang)}<br/></span>
+              <span>{this.props.translator.translate('Enter the number and press the green button to start the call', this.props.lang)}<br/></span>
+              <span>{this.props.translator.translate('To hang up, hang up the phone or press the red button', this.props.lang)}<br/></span>
+              <br/>
+              <div>{this.props.translator.translate('Extra credit is necessary for all phone call towards mobiles, international numbers or special numbers', this.props.lang)}</div>
+            </div>
+          </div>
         </div>
+        
       </div>
     )
   }

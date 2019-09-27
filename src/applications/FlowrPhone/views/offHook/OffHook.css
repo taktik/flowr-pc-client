@@ -10,7 +10,7 @@
     box-sizing: border-box;
 }
 
-.container-flex{
+.container-flex {
     display: flex;
     flex-flow: row nowrap;
     align-items: center;
@@ -20,15 +20,31 @@
     flex-grow: 1;
 }
 
-.right, .left{
+.right, .left {
     height: 100%;
     padding-top: 36px;
     box-sizing:border-box;
     height: 100%;
 }
 
+.helper {
+    color: rgba(255,255,255,0.8);
+    font-size: 16px;
+    font-family: 'Roboto', Arial, Helvetica, sans-serif;
+}
 
-.left{
+.helper span {
+    margin: 4px 0;
+    display: block;
+}
+
+.helper div {
+    color: rgba(255,255,255,0.6);
+    font-size: 14px;
+    padding-top: 8px;
+    border-top: 1px solid rgba(255,255,255,0.6);
+}
+.left {
     display: flex;
     flex-flow: column nowrap;
     justify-content: space-between;
@@ -39,18 +55,19 @@
     margin-right: 12px;
 }
 
-.right{
+.right {
     width: 50%;
     display: flex;
+    flex-flow: column nowrap;
     align-items: center;
-    justify-content: center;
+    justify-content: space-around;
 }
 
 .left > div:first-child {
     width: 100%;
 }
 
-.input-container{
+.input-container {
     display: flex;
     flex-flow: row nowrap;
     justify-content: space-around;
@@ -60,11 +77,11 @@
     border-bottom: 1px solid rgba(255,255,255,0.42);
 }
 
-.input-container:focus-within{
+.input-container:focus-within {
     background: rgba(0,0,0,0.24);
 }
 
-.number{
+.number {
     font-family: 'Roboto', Arial, Helvetica, sans-serif;
     font-size: 36px;
     font-weight: normal;
