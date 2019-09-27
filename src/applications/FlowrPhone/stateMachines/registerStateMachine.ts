@@ -78,9 +78,9 @@ export class RegisterStateMachine extends StateMachineImpl<RegisterState> {
   private attemptToRegister() {
     if (validRegisterProps(this._registerProps)) {
       this.register()
-      clearTimeout(this._registerTimeout)
-      this._registerTimeout = setTimeout(this.attemptToRegister.bind(this), 5000)
     }
+    clearTimeout(this._registerTimeout)
+    this._registerTimeout = setTimeout(this.attemptToRegister.bind(this), 5000)
   }
 
   private clearRegisterAttempts() {
