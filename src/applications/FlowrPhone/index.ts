@@ -14,6 +14,8 @@ interface PhoneOptions extends ApplicationOptions {
 }
 
 export function create(options: PhoneOptions): PhoneWindow {
+  // Most of these functions are to be moved outside...
+  // ...applications should not have control over other windows, they should request it
   function mute() {
     if (options.flowrWindow) {
       muteWindow(options.flowrWindow)
@@ -44,6 +46,19 @@ export function create(options: PhoneOptions): PhoneWindow {
     }
   }
 
+  function keepFocus(win: BrowserWindow) {
+    if (win) {
+      win.focus()
+      win.on('blur', win.focus)
+    }
+  }
+
+  function releaseFocus(win: BrowserWindow) {
+    if (win) {
+      win.removeListener('blur', win.focus)
+    }
+  }
+
   const phoneAppProps = {
     phoneServer: options.flowrWindow.phoneServerUrl,
     registerProps: options.props.registerProps,
@@ -58,9 +73,18 @@ export function create(options: PhoneOptions): PhoneWindow {
     options.index,
     phoneAppProps,
   )
-  phoneWindow.on('show', mute)
-  phoneWindow.on('hide', unmute)
-  phoneWindow.on('close', unmute)
+  phoneWindow.on('show', () => {
+    mute()
+    keepFocus(phoneWindow)
+  })
+  phoneWindow.on('hide', () => {
+    unmute()
+    releaseFocus(phoneWindow)
+  })
+  phoneWindow.on('close', () => {
+    unmute()
+    releaseFocus(phoneWindow)
+  })
 
   return phoneWindow
 }

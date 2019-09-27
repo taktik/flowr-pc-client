@@ -101,8 +101,9 @@ export class Calling extends React.Component<CallingProps, CallingState> {
   }
 
   tick() {
-    const elapsedTime = Date.now() - this.firstTick
-    this.setState({ elapsedTime: formatElapsedTime(elapsedTime) })
+    const rawElapsedTime = Date.now() - this.firstTick
+    const elapsedTime = formatElapsedTime(rawElapsedTime)
+    this.setState({ elapsedTime })
     this.tickRequest = requestAnimationFrame(this.tick.bind(this))
   }
 
@@ -112,7 +113,7 @@ export class Calling extends React.Component<CallingProps, CallingState> {
 
     if ([ANSWERED_STATE, CALL_OUT_STATE].includes(this.props.mode)) {
       elapsedTime = (<ElapsedTime><span>{this.state.elapsedTime}</span></ElapsedTime>)
-      if (!this.tickRequest) {
+      if (!this.firstTick) {
         this.startTick()
       }
     } else {

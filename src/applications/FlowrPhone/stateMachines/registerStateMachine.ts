@@ -37,6 +37,10 @@ const CONNECTION_TRANSITIONS = {
   [RegisterStatesNames.REGISTERED]: [UNREGISTERED_STATE, IDLE_STATE],
 }
 
+function validRegisterProps(registerProps: RegisterProps) {
+  return !!registerProps && !!registerProps.host && !!registerProps.username
+}
+
 export class RegisterStateMachine extends StateMachineImpl<RegisterState> {
   private _dispatcher: Dispatcher
   private _registerProps: RegisterProps | null = null
@@ -72,7 +76,7 @@ export class RegisterStateMachine extends StateMachineImpl<RegisterState> {
   }
 
   private attemptToRegister() {
-    if (this._registerProps) {
+    if (validRegisterProps(this._registerProps)) {
       this.register()
       clearTimeout(this._registerTimeout)
       this._registerTimeout = setTimeout(this.attemptToRegister.bind(this), 5000)
@@ -87,7 +91,7 @@ export class RegisterStateMachine extends StateMachineImpl<RegisterState> {
   }
 
   private register() {
-    if (this._registerProps) {
+    if (validRegisterProps(this._registerProps)) {
       this.send('register', this._registerProps)
     }
   }

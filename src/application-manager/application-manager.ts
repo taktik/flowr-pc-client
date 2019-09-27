@@ -21,7 +21,6 @@ interface ApplicationCanOpenConfig {
 interface ApplicationOpenConfig {
   application: FlowrApplication
   config?: {[key: string]: any}
-  show: boolean
 }
 
 export interface FlowrApplicationWindow extends BrowserWindow {
@@ -211,14 +210,15 @@ export class ApplicationManager {
     let err: string | null = null
 
     try {
-      const appName = openConfig.application.name
+      const appName = openConfig.application ? openConfig.application.name : ''
 
       if (this.isRegistered(appName)) {
         const application = this.applications[appName]
+        const config = openConfig.config || {}
         let applicationWindow = this.activeWindows[appName]
 
         if (!applicationWindow) {
-          const props = Object.assign({}, application.config, openConfig.config)
+          const props = Object.assign({}, application.config, config)
           applicationWindow = this.activeWindows[appName] = application.create({
             props,
             preload: application.preload,
@@ -231,10 +231,16 @@ export class ApplicationManager {
           applicationWindow.on('close', () => delete this.activeWindows[appName])
         } else {
           this.setProperty(applicationWindow, 'capabilities', application.capabilities)
-          this.setProperties(applicationWindow, openConfig.config || {})
+          this.setProperties(applicationWindow, config)
         }
-        if (openConfig.show) {
+        if (config.show) {
           applicationWindow.show()
+        }
+      } else {
+        if (appName) {
+          err = `Cannot open application ${appName}, it is not registered.`
+        } else {
+          err = 'No application provided.'
         }
       }
     } catch (e) {
@@ -245,7 +251,7 @@ export class ApplicationManager {
   }
 
   canOpenApplication(e: IpcMainEvent, openConfig: ApplicationCanOpenConfig) {
-    const appName = openConfig.application.name
+    const appName = openConfig.application ? openConfig.application.name : ''
     const application = this.applications[appName]
     let returnValue = false
     try {

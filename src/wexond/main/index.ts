@@ -102,7 +102,7 @@ export async function createWexondWindow(wexondOptions: WexondOptions, parentWin
       });
     });
 
-  await loadFilters()
+  loadFilters()
   loadExtensions()
   runWebRequestService(appWindow)
   return appWindow

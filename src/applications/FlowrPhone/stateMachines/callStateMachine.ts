@@ -108,10 +108,12 @@ export class CallStateMachine extends StateMachineImpl<CallState> {
 
   terminate() {
     switch (this.state) {
+      case OUTGOING_STATE:
+        this.setState(OFF_HOOK_STATE)
+        // no break is intentional, it should also send a terminate
       case INCOMING_STATE:
       case ANSWERED_STATE:
       case CALL_OUT_STATE:
-      case OUTGOING_STATE:
         this._dispatcher.send('terminate')
         break
       case OFF_HOOK_STATE:
@@ -141,6 +143,7 @@ export class CallStateMachine extends StateMachineImpl<CallState> {
   }
 
   answer() {
+    this._callingNumber = '' // no information about caller (for now ?)
     this._dispatcher.send('answer')
   }
 }

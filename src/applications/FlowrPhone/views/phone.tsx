@@ -115,7 +115,7 @@ export class Phone extends React.Component<PhoneProps, PhoneAppState> {
     ) {
       return
     }
-    if ((from === ANSWERED_STATE || !this.canEmit()) && to === OFF_HOOK_STATE) {
+    if (([INCOMING_STATE, ANSWERED_STATE].includes(from) || !this.canEmit()) && to === OFF_HOOK_STATE) {
       this.hide()
     }
     this.setState({ callState: to, callingNumber: this.callStateMachine.callingNumber })
