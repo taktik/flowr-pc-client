@@ -287,10 +287,13 @@ export class ApplicationManager {
     ipcMain.removeListener('can-open-application', this.canOpenApplication)
   }
 
-  closeAllApps() {
+  hideAllApplications() {
     Object.values(this.activeWindows)
-      .forEach((win) => {
-        win.close()
-      })
+      .forEach(win => win.hide())
+  }
+
+  closeAllApplications() {
+    Object.values(this.activeWindows)
+      .forEach(win => win.close())
   }
 }

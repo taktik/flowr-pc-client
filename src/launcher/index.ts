@@ -86,11 +86,14 @@ app.on('ready', async () => {
       wexondWindow.close()
     }
   })
-  ipcMain.on('close-apps', () => {
+  ipcMain.on('hide-applications', () => {
+    applicationManager.hideAllApplications()
+  })
+  ipcMain.on('close-applications', () => {
     if (wexondWindow !== null) {
       wexondWindow.close()
     }
-    applicationManager.closeAllApps()
+    applicationManager.closeAllApplications()
   })
   ipcMain.on('open-flowr', () => {
     if (wexondWindow !== null) {
