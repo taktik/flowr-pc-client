@@ -120,7 +120,7 @@ export const SearchBox = observer(() => {
         <SearchIcon />
         <Input
           autoFocus
-          placeholder={translate("Search or type in URL")}
+          placeholder={translate('Search or type in URL')}
           onKeyPress={onKeyPress}
           onFocus={onInputFocus}
           onChange={onInput}
