@@ -2,6 +2,8 @@ language: node_js
 node_js: '11'
 sudo: enabled
 dist: trusty
+before_install:
+- echo "//registry.npmjs.org/:_authToken=\${NPM_TOKEN}" > .npmrc
 install:
 - npm ci
 cache:
