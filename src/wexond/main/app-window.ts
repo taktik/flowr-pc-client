@@ -40,7 +40,7 @@ export class AppWindow extends BrowserWindow {
   public willAttachWindow = false;
   public isWindowHidden = false;
 
-  public interval: any;
+  public interval: number | null = null
 
   constructor(options: WexondOptions, parent?: BrowserWindow, defaultBrowserWindow: BrowserWindowConstructorOptions = {}) {
     super(extend({
@@ -167,10 +167,29 @@ export class AppWindow extends BrowserWindow {
             this.isWindowHidden = true
           }
         },
+        setDebugMode: (evt: any, debugMode: boolean) => {
+          if (debugMode) {
+            this.webContents.openDevTools({ mode: 'detach' })
+          } else {
+            this.webContents.closeDevTools()
+          }
+        },
       }
       this.activateWindowCapturing()
     } else {
-      this._ipcEvents = {}
+      this._ipcEvents = {
+        setDebugMode: (evt: any, debugMode: boolean) => {
+          if (debugMode) {
+            this.webContents.openDevTools({ mode: 'detach' })
+          } else {
+            this.webContents.closeDevTools()
+          }
+        },
+      }
+      this.on('close', () => {
+        Object.entries(this._ipcEvents).forEach(event => ipcMain.removeListener(...event))
+      })
+      Object.entries(this._ipcEvents).forEach(event => ipcMain.on(...event))
     }
   }
 
@@ -194,7 +213,12 @@ export class AppWindow extends BrowserWindow {
       for (const window of this.windows) {
         this.detachWindow(window)
       }
-    });
+
+      if (this.interval) {
+        clearInterval(this.interval)
+        this.interval = null
+      }
+    })
 
     this.interval = setInterval(this.intervalCallback, 100);
 
