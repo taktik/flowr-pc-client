@@ -4,7 +4,7 @@ sudo: enabled
 dist: trusty
 before_install:
 - npm config set '@taktik:registry' 'https://npm.taktik.be/repository/npm/'
-- npm config set '//registry.npmjs.org/:_authToken' "${NPM_TOKEN}"
+- npm config set '//npm.taktik.be/repository/npm/:_authToken' "${NPM_TOKEN}"
 install:
 - npm ci
 cache:
