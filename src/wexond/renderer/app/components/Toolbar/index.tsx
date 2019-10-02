@@ -12,6 +12,7 @@ import { ipcRenderer } from 'electron';
 import BrowserAction from '../BrowserAction';
 import { Find } from '../Find';
 import { backToFlowr } from '~/renderer/app/utils';
+import { barcoKeyBoardController } from 'src/barcoKeyboard/barcoKeyBoardController';
 
 const onUpdateClick = () => {
   ipcRenderer.send('update-install');
@@ -52,7 +53,7 @@ export const Toolbar = observer(() => {
   }
 
   const onKeyboardPress = () => {
-    fetch('http://localhost:9000/keyboard/toggle', { method: 'GET', mode: 'no-cors' })
+    barcoKeyBoardController.toggle()
   }
 
   return (

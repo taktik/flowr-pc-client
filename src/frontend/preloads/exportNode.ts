@@ -1,3 +1,4 @@
+import { barcoKeyBoardController } from '../../barcoKeyboard/barcoKeyBoardController'
 declare global {
   namespace NodeJS {
     interface Global {
@@ -47,7 +48,7 @@ function myFocusFunction(event: Event): void {
   if (element.tagName === 'INPUT') {
     const inputElement = element as HTMLInputElement
     if (inputElement.type === 'text' || inputElement.type === 'password') {
-      fetch('http://localhost:9000/keyboard/open', { method: 'GET', mode: 'no-cors' })
+      barcoKeyBoardController.open()
     }
   }
 }
@@ -56,7 +57,7 @@ function myBlurFunction(event: Event): void {
   if (element.tagName === 'INPUT') {
     const inputElement = element as HTMLInputElement
     if (inputElement.type === 'text' || inputElement.type === 'password') {
-      fetch('http://localhost:9000/keyboard/close', { method: 'GET', mode: 'no-cors' })
+      barcoKeyBoardController.close()
     }
   }
 }
