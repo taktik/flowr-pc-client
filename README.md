@@ -95,20 +95,3 @@ We used [i18n-manager](https://github.com/gilmarsquinelato/i18n-manager) to edit
 Two script are available to help build and publish
 `./script/build help`
 `./script/maven help`
-
-## Push dev build to device and install it
-
-Go in the root of flowr-desktop directory and type in
-
-`scp ./dist/flowr-desktop-build taktik@deviceIp:/home/taktik`
-Where `flowr-desktop-build`is your previously generated build and `deviceIp`is the ip of the target device.
-
-Ssh your device:
-`ssh taktik@deviceIp`
-
-Install package using apt-get:
-`sudo apt-get install /home/taktik/flowr-desktop-build`
-
-Restart:
-
-`killall flowr-desktop`
