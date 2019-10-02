@@ -42,6 +42,27 @@ function handleHiddenMenuCode(event: KeyboardEvent): any {
   }
 }
 
+function myFocusFunction(event: Event): void {
+  const element = event.target as HTMLElement
+  if (element.tagName === 'INPUT') {
+    const inputElement = element as HTMLInputElement
+    if (inputElement.type === 'text' || inputElement.type === 'password') {
+      fetch('http://localhost:9000/keyboard/open', { method: 'GET', mode: 'no-cors' })
+    }
+  }
+}
+function myBlurFunction(event: Event): void {
+  const element = event.target as HTMLElement
+  if (element.tagName === 'INPUT') {
+    const inputElement = element as HTMLInputElement
+    if (inputElement.type === 'text' || inputElement.type === 'password') {
+      fetch('http://localhost:9000/keyboard/close', { method: 'GET', mode: 'no-cors' })
+    }
+  }
+}
+window.addEventListener('focus', myFocusFunction, true)
+window.addEventListener('blur', myBlurFunction, true)
+
 window.addEventListener('keydown', handleHiddenMenuCode, true)
 process.once('loaded', () => {
   global.nodeRequire = (moduleName: string): any => {

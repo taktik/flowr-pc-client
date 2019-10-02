@@ -40,6 +40,7 @@ $ npm run dev
 ## Other commands
 
 You can also run other commands, for other tasks like building the app or linting the code, by using the commands described below.
+Also take a look at the [build](#build) script.
 
 ### Usage:
 
@@ -89,8 +90,25 @@ Translation are located in `src/wexdond/local`.
 We used [i18n-manager](https://github.com/gilmarsquinelato/i18n-manager) to edit local directory.
 
 
-## Build and publish
+## <a id="build"></a> Build and publish
 
 Two script are available to help build and publish
 `./script/build help`
 `./script/maven help`
+
+## Push dev build to device and install it
+
+Go in the root of flowr-desktop directory and type in
+
+`scp ./dist/flowr-desktop-build taktik@deviceIp:/home/taktik`
+Where `flowr-desktop-build`is your previously generated build and `deviceIp`is the ip of the target device.
+
+Ssh your device:
+`ssh taktik@deviceIp`
+
+Install package using apt-get:
+`sudo apt-get install /home/taktik/flowr-desktop-build`
+
+Restart:
+
+`killall flowr-desktop`

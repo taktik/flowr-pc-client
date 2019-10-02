@@ -15,6 +15,7 @@ import settings from '~/shared/resources/icons/settings.svg';
 import extensions from '~/shared/resources/icons/extensions.svg';
 import window from '~/shared/resources/icons/window.svg';
 import home from '~/shared/resources/icons/home.svg';
+import keyboard from '~/shared/resources/icons/keyboard.svg';
 import more from '~/shared/resources/icons/more.svg';
 import find from '~/shared/resources/icons/find.svg';
 import edit from '~/shared/resources/icons/edit.svg';
@@ -49,6 +50,7 @@ export const icons = {
   extensions,
   window,
   home,
+  keyboard,
   more,
   find,
   edit,

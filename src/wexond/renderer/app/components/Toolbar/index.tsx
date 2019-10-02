@@ -51,6 +51,10 @@ export const Toolbar = observer(() => {
     backToFlowr()
   }
 
+  const onKeyboardPress = () => {
+    fetch('http://localhost:9000/keyboard/toggle', { method: 'GET', mode: 'no-cors' })
+  }
+
   return (
       <StyledToolbar isHTMLFullscreen={store.isHTMLFullscreen}>
         <NavigationButtons />
@@ -81,6 +85,12 @@ export const Toolbar = observer(() => {
           size={TOOLBAR_ICON_HEIGHT}
           icon={icons.home}
           onClick={onHomePress}
+        />
+        <ToolbarButton
+          disabled={false}
+          size={TOOLBAR_ICON_HEIGHT}
+          icon={icons.keyboard}
+          onClick={onKeyboardPress}
         />
       </StyledToolbar>
   );
