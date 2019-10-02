@@ -14,9 +14,21 @@ export class Player {
   private currentPipeline?: any
   private segmentInterval: number
   private currentStreams?: any
+  private readonly _ipcEvents: {[key: string]: (...args: any[]) => void}
 
   constructor(private store: Store) {
-    this.initListener()
+    this._ipcEvents = {
+      closestream: this.closestream.bind(this),
+      pausestream: this.pausestream.bind(this),
+      resumestream: this.resumestream.bind(this),
+      getaudiostream: this.getaudiostream.bind(this),
+      getSubtitleStreams: this.getSubtitleStreams.bind(this),
+      setaudiostream: this.setaudiostream.bind(this),
+      setsubtitlestream: this.setsubtitlestream.bind(this),
+      typeofstream: this.typeofstream.bind(this),
+      openurl: this.openUrl.bind(this),
+    }
+    Object.entries(this._ipcEvents).forEach(event => ipcMain.on(event[0], event[1]))
   }
 
   updateChannelData (stream: any) {
@@ -25,128 +37,121 @@ export class Player {
     this.store.set('channelData', channelData)
   }
 
-  private initListener () {
+  closestream(evt: any) {
+    this.currentPipeline ? this.currentPipeline.kill() : void
+    evt.sender.send('streamclosed')
+    clearInterval(this.segmentInterval)
+  }
 
-    ipcMain.on('closestream', (evt: any) => {
-      this.currentPipeline ? this.currentPipeline.kill() : void
-      evt.sender.send('streamclosed')
-      clearInterval(this.segmentInterval)
-    })
+  pausestream(evt: any) {
+    this.currentPipeline ? this.currentPipeline.kill('SIGSTOP') : void
+    evt.sender.send('streampaused')
+  }
 
-    ipcMain.on('pausestream', (evt: any) => {
-      this.currentPipeline ? this.currentPipeline.kill('SIGSTOP') : void
-      evt.sender.send('streampaused')
-    })
+  resumestream(evt: any) {
+    this.currentPipeline ? this.currentPipeline.kill('SIGCONT') : void
+    evt.sender.send('streamresumed')
+  }
 
-    ipcMain.on('resumestream', (evt: any) => {
-      this.currentPipeline ? this.currentPipeline.kill('SIGCONT') : void
-      evt.sender.send('streamresumed')
+  getaudiostream(evt: any) {
+    const audio = (this.currentStreams) ? this.currentStreams.audio : {}
+    evt.sender.send('audiostreams', audio)
+  }
 
-    })
+  getSubtitleStreams(evt: any) {
+    const subtitles = (this.currentStreams) ? this.currentStreams.subtitles : {}
+    evt.sender.send('subtitleStreams', subtitles)
+  }
 
-    ipcMain.on('getaudiostream' , (evt: any) => {
-      const audio = (this.currentStreams) ? this.currentStreams.audio : {}
-      evt.sender.send('audiostreams', audio)
-    })
+  setaudiostream(evt: any, selectedAudioStream: any) {
+    // retrieve proper
+    this.currentStreams.audio.currentStream = selectedAudioStream
+    this.playUrl(this.currentStreams.url, this.currentStreams, evt)
+    this.updateChannelData(this.currentStreams)
+  }
 
-    ipcMain.on('getSubtitleStreams' , (evt: any) => {
-      const subtitles = (this.currentStreams) ? this.currentStreams.subtitles : {}
-      evt.sender.send('subtitleStreams', subtitles)
-    })
-
-    ipcMain.on('setaudiostream', (evt: any, selectedAudioStream: any) => {
-
-            // retrieve proper
-      this.currentStreams.audio.currentStream = selectedAudioStream
+  setsubtitlestream(evt: any, selectedSubtitleStream: any) {
+    // retrieve proper
+    if (selectedSubtitleStream !== this.currentStreams.subtitles.currentStream) {
+      this.currentStreams.subtitles.currentStream = selectedSubtitleStream
       this.playUrl(this.currentStreams.url, this.currentStreams, evt)
       this.updateChannelData(this.currentStreams)
-    })
+    }
+  }
 
-    ipcMain.on('setsubtitlestream', (evt: any, selectedSubtitleStream: any) => {
-            // retrieve proper
-      if (selectedSubtitleStream !== this.currentStreams.subtitles.currentStream) {
-        this.currentStreams.subtitles.currentStream = selectedSubtitleStream
-        this.playUrl(this.currentStreams.url, this.currentStreams, evt)
-        this.updateChannelData(this.currentStreams)
+  typeofstream(evt: any, url: string) {
+    const sendTypeOfStream = (stream: any) => {
+      if (stream.video && stream.video.tracks && stream.video.tracks.length > 0) {
+        // is video
+        evt.sender.send('typeofstream', 'video')
+      } else if (stream.audio && stream.audio.tracks && stream.audio.tracks.length > 0) {
+        // is audio
+        evt.sender.send('typeofstream', 'audio')
       }
-    })
-
-    ipcMain.on('typeofstream', (evt: any, url: string) => {
-      const sendTypeOfStream = (stream: any) => {
-        if (stream.video && stream.video.tracks && stream.video.tracks.length > 0) {
-          // is video
-          evt.sender.send('typeofstream', 'video')
-        } else if (stream.audio && stream.audio.tracks && stream.audio.tracks.length > 0) {
-          // is audio
-          evt.sender.send('typeofstream', 'audio')
+    }
+    const channelData = this.store.get('channelData')
+    const stream = channelData[url]
+    if (stream) {
+      sendTypeOfStream(stream)
+    } else {
+      ffprobe(`${url}?timeout=${ffprobeTimeout}`, { path: ffprobePath }, (err: Error, metadata: any) => {
+        if (metadata) {
+          this.currentStreams = this.processStreams(metadata.streams, url)
+          this.updateChannelData(this.currentStreams)
+          sendTypeOfStream(this.currentStreams)
+        } else {
+          console.log('ffprobe failure')
         }
-      }
-      const channelData = this.store.get('channelData')
-      const stream = channelData[url]
-      if (stream) {
-        sendTypeOfStream(stream)
-      } else {
-        ffprobe(`${url}?timeout=${ffprobeTimeout}`, { path: ffprobePath }, (err: Error, metadata: any) => {
-          if (metadata) {
-            this.currentStreams = this.processStreams(metadata.streams, url)
-            this.updateChannelData(this.currentStreams)
-            sendTypeOfStream(this.currentStreams)
-          } else {
-            console.log('ffprobe failure')
-          }
-        })
-      }
-    })
+      })
+    }
+  }
 
-    ipcMain.on('openurl', (evt: any, url: string) => {
+  openUrl(evt: any, url: string) {
+    const channelData = this.store.get('channelData')
 
-      const channelData = this.store.get('channelData')
+    if (channelData[url]) {
+      let localCurrentStream: any
+      this.currentStreams = localCurrentStream = channelData[url]
+      this.playUrl(url, this.currentStreams, evt)
 
-      if (channelData[url]) {
-        let localCurrentStream: any
-        this.currentStreams = localCurrentStream = channelData[url]
-        this.playUrl(url, this.currentStreams, evt)
+      ffprobe(`${url}?timeout=${ffprobeTimeout}`, { path: ffprobePath }, (err: Error, metadata?: any) => {
+        if (metadata) {
+          const newStreamData = this.processStreams(metadata.streams, url)
+          // callback might be received when the streams has already change, do not pay attention.
 
-        ffprobe(`${url}?timeout=${ffprobeTimeout}`, { path: ffprobePath }, (err: Error, metadata?: any) => {
-          if (metadata) {
-            const newStreamData = this.processStreams(metadata.streams, url)
-            // callback might be received when the streams has already change, do not pay attention.
+          if (this.currentStreams.video && this.currentStreams.video.tracks && this.currentStreams.video.tracks.length > 0) {
+            if (this.currentStreams.video.tracks[0].codec_name !== newStreamData.video.tracks[0].codec_name && localCurrentStream.url === this.currentStreams.url) {
+              console.log('probe play url:', url)
+              this.playUrl(newStreamData.url, newStreamData, evt)
 
-            if (this.currentStreams.video && this.currentStreams.video.tracks && this.currentStreams.video.tracks.length > 0) {
-              if (this.currentStreams.video.tracks[0].codec_name !== newStreamData.video.tracks[0].codec_name && localCurrentStream.url === this.currentStreams.url) {
-                console.log('probe play url:', url)
-                this.playUrl(newStreamData.url, newStreamData, evt)
+            } else {
+              console.log('-----------do not play old data')
+            }
 
-              } else {
-                console.log('-----------do not play old data')
-              }
-
-              if (localCurrentStream.url === this.currentStreams.url) {
-                // we keep current subtilte and audio
-                newStreamData.subtitles.currentStream = this.currentStreams.subtitles.currentStream
-                newStreamData.audio.currentStream = this.currentStreams.audio.currentStream
-                this.currentStreams = newStreamData
-              }
-            } else if (this.currentStreams.audio && this.currentStreams.audio.tracks) {
+            if (localCurrentStream.url === this.currentStreams.url) {
+              // we keep current subtilte and audio
+              newStreamData.subtitles.currentStream = this.currentStreams.subtitles.currentStream
+              newStreamData.audio.currentStream = this.currentStreams.audio.currentStream
               this.currentStreams = newStreamData
             }
-            this.updateChannelData(this.currentStreams)
+          } else if (this.currentStreams.audio && this.currentStreams.audio.tracks) {
+            this.currentStreams = newStreamData
           }
-        })
-      } else {
-        ffprobe(`${url}?timeout=${ffprobeTimeout}`, { path: ffprobePath }, (err: Error, metadata: any) => {
+          this.updateChannelData(this.currentStreams)
+        }
+      })
+    } else {
+      ffprobe(`${url}?timeout=${ffprobeTimeout}`, { path: ffprobePath }, (err: Error, metadata: any) => {
+        if (metadata) {
+          this.currentStreams = this.processStreams(metadata.streams, url)
+          this.updateChannelData(this.currentStreams)
+          this.playUrl(this.currentStreams.url, this.currentStreams, evt)
 
-          if (metadata) {
-            this.currentStreams = this.processStreams(metadata.streams, url)
-            this.updateChannelData(this.currentStreams)
-            this.playUrl(this.currentStreams.url, this.currentStreams, evt)
-
-          } else {
-            console.log('ffprobe failure')
-          }
-        })
-      }
-    })
+        } else {
+          console.log('ffprobe failure')
+        }
+      })
+    }
   }
 
   handleConversionError (evt: any) {
@@ -268,5 +273,6 @@ export class Player {
       this.currentPipeline.kill()
     }
     clearInterval(this.segmentInterval)
+    Object.entries(this._ipcEvents).forEach(event => ipcMain.removeListener(event[0], event[1]))
   }
 }

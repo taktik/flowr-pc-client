@@ -2,11 +2,11 @@ import { existsSync, readFileSync } from 'fs-extra'
 import { join } from 'path'
 const electron = require('electron')
 
-export function getMigrateUserPreferences(): object | null {
+export function getMigrateUserPreferences(configName: string): object | null {
   try {
     const userDataPath: string = (electron.app || electron.remote.app).getPath('userData')
     // We'll use the `configName` property to set the file name and path.join to bring it all together as a string
-    const oldPath = join(userDataPath, '../flowrclient', 'user-preferences.json')
+    const oldPath = join(userDataPath, '../flowrclient', configName)
     if (existsSync(oldPath)) {
       const oldUserPreferences = JSON.parse(readFileSync(oldPath) as any)
       const extUrl = oldUserPreferences.extUrl.url

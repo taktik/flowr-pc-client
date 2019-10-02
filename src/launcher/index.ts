@@ -1,16 +1,20 @@
 import { ipcMain, app, BrowserWindow } from 'electron'
 import { resolve } from 'path'
 import { homedir } from 'os'
-import { remove } from 'fs-extra'
-import { autoUpdater } from 'electron-updater'
-import { createFlowrWindow, initFlowrConfig, buildBrowserWindowConfig } from '../frontend'
+import { createFlowrWindow, initFlowrConfig, buildBrowserWindowConfig, FRONTEND_CONFIG_NAME, DEFAULT_FRONTEND_STORE } from '../frontend'
 import { createWexondWindow, setWexondLog } from '~/main'
+import { clearBrowsingData } from '~/main/clearBrowsingData'
 import { getMigrateUserPreferences } from './migration/fromFlowrClientToFlowrPcClient'
-import { PhoneWindow } from '../phone/phoneWindow'
 import { FlowrWindow } from 'src/frontend/flowr-window'
-import { OpenPhoneProps, createPhoneWindow } from '../phone'
 export const log = require('electron-log')
-const migrateUserPreferences = getMigrateUserPreferences()
+import { StoreManager, Store } from '../frontend/src/store'
+import { ApplicationManager } from '../application-manager/application-manager'
+const FlowrDataDir = resolve(homedir(), '.flowr')
+
+export const storeManager = new StoreManager(FlowrDataDir)
+const applicationManager = new ApplicationManager()
+
+const migrateUserPreferences = getMigrateUserPreferences(`${FRONTEND_CONFIG_NAME}.json`)
 if (migrateUserPreferences) {
   initFlowrConfig(migrateUserPreferences)
 }
@@ -18,15 +22,19 @@ if (migrateUserPreferences) {
 app.commandLine.appendSwitch('widevine-cdm-path', resolve('/Applications/Google Chrome.app/Contents/Versions/74.0.3729.169/Google Chrome Framework.framework/Versions/A/Libraries/WidevineCdm/_platform_specific/mac_x64'))
 // The version of plugin can be got from `chrome://components` page in Chrome.
 app.commandLine.appendSwitch('widevine-cdm-version', '4.10.1303.2')
+const userAppData = resolve(homedir(), '.flowr-electron')
 
-app.setPath('userData', resolve(homedir(), '.flowr-electron'))
+app.setPath('userData', userAppData)
 log.transports.file.level = 'verbose'
 log.transports.file.file = resolve(app.getPath('userData'), 'log.log')
 setWexondLog(log)
 ipcMain.setMaxListeners(0)
+
 let flowrWindow: FlowrWindow | null = null
+let flowrStore: Store | null = null
+
 let wexondWindow: BrowserWindow | null = null
-let phoneWindow: PhoneWindow | null = null
+
 const gotTheLock = app.requestSingleInstanceLock()
 
 if (!gotTheLock) {
@@ -45,7 +53,7 @@ process.on('uncaughtException', error => {
 })
 
 app.on('ready', async () => {
-
+  clearBrowsingData()
   app.on('activate', async () => {
     if (flowrWindow === null) {
       await initFlowr()
@@ -53,32 +61,17 @@ app.on('ready', async () => {
   })
   await initFlowr()
 
-  autoUpdater.on('update-downloaded', ({ version }) => {
-    // TODO
-    if (flowrWindow) {
-      flowrWindow.webContents.send('update-available', version)
-    }
-  })
-
-  ipcMain.on('update-install', () => {
-    autoUpdater.quitAndInstall()
-  })
-
-  ipcMain.on('update-check', () => {
-    if (process.env.ENV !== 'dev') {
-      autoUpdater.checkForUpdates()
-    }
-  })
-
   ipcMain.on('window-focus', () => {
     if (flowrWindow) {
       flowrWindow.webContents.focus()
     }
   })
 
-  ipcMain.on('open-browser', (event: Event, options: any) => {
+  ipcMain.on('open-browser', async (event: Event, options: any) => {
     if (wexondWindow === null) {
-      wexondWindow = createWexondWindow(options, flowrWindow || undefined, buildBrowserWindowConfig({}))
+      flowrStore = flowrStore || initFlowrStore()
+      wexondWindow = await createWexondWindow(options, flowrWindow || undefined, buildBrowserWindowConfig(flowrStore, {}))
+      applicationManager.wexondWindow = wexondWindow
       wexondWindow.on('close', () => {
         wexondWindow = null
       })
@@ -93,57 +86,50 @@ app.on('ready', async () => {
       wexondWindow.close()
     }
   })
+  ipcMain.on('hide-applications', () => {
+    applicationManager.hideAllApplications()
+  })
+  ipcMain.on('close-applications', () => {
+    if (wexondWindow !== null) {
+      wexondWindow.close()
+    }
+    applicationManager.closeAllApplications()
+  })
   ipcMain.on('open-flowr', () => {
     if (wexondWindow !== null) {
       wexondWindow.close()
     }
     // flowrWindow.moveTop()
   })
-
-  ipcMain.on('openPhoneApp', (evt: any, openPhoneProps: OpenPhoneProps) => {
-    if (!flowrWindow) {
-      return
-    }
-
-    if (phoneWindow === null) {
-      phoneWindow = createPhoneWindow(openPhoneProps, flowrWindow, wexondWindow)
-      phoneWindow.on('close', () => phoneWindow = null)
-    }
-    if (openPhoneProps.registerProps) {
-      phoneWindow.registerProps = openPhoneProps.registerProps
-    }
-    if (openPhoneProps.lang) {
-      phoneWindow.changeLanguage(openPhoneProps.lang)
-    }
-    if (openPhoneProps.show) {
-      phoneWindow.open()
-    }
-  })
 })
 
-ipcMain.on('clear-application-data', async () => {
-  await remove(app.getPath('userData'))
-  app.relaunch()
-  app.exit()
-})
+ipcMain.on('clear-application-data', clearBrowsingData)
 
 app.on('window-all-closed', () => {
+  applicationManager.destroy()
   app.quit()
 })
 
 async function initFlowr() {
-  flowrWindow = await createFlowrWindow()
-  flowrWindow.on('close', () => {
-    if (phoneWindow) {
-      phoneWindow.close()
-    }
-    flowrWindow = null
-  })
-  ipcMain.on('flowrLanguageChanged', changeLanguage)
+  try {
+    await applicationManager.initLocalApps()
+  } catch (e) {
+    console.error('Failed to initialize apps', e)
+  }
+
+  try {
+    flowrStore = flowrStore || initFlowrStore()
+    flowrWindow = await createFlowrWindow(flowrStore)
+    applicationManager.flowrWindow = flowrWindow
+    flowrWindow.on('close', () => {
+      flowrWindow = null
+    })
+    ipcMain.on('flowrLanguageChanged', (e: Event, lang: string) => applicationManager.languageChanged(lang))
+  } catch (e) {
+    console.error('Error in init', e)
+  }
 }
 
-function changeLanguage(e: Event, lang: string) {
-  if (phoneWindow) {
-    phoneWindow.changeLanguage(lang)
-  }
+function initFlowrStore(): Store {
+  return storeManager.createStore(FRONTEND_CONFIG_NAME, DEFAULT_FRONTEND_STORE)
 }

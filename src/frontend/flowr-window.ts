@@ -41,7 +41,7 @@ export class FlowrWindow extends BrowserWindow {
         const width = size[0]
         let height = size[1]
         if (!store.get('isMaximized')) {
-          height =  (size[0] - 16) * 9 / 16
+          height =  Math.floor((size[0] - 16) * 9 / 16)
           this.setSize(width, height + 40)
           store.set('windowBounds', { width, height })
 

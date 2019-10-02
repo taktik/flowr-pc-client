@@ -23,6 +23,8 @@ export interface WexondOptions {
   maxTab : number
 }
 export class AppWindow extends BrowserWindow {
+  private readonly _ipcEvents: {[key: string]: (...args: any[]) => void}
+
   public viewManager: ViewManager = new ViewManager();
 
   public windows: ProcessWindow[] = [];
@@ -38,7 +40,7 @@ export class AppWindow extends BrowserWindow {
   public willAttachWindow = false;
   public isWindowHidden = false;
 
-  public interval: any;
+  public interval: number | null = null
 
   constructor(options: WexondOptions, parent?: BrowserWindow, defaultBrowserWindow: BrowserWindowConstructorOptions = {}) {
     super(extend({
@@ -152,7 +154,42 @@ export class AppWindow extends BrowserWindow {
     });
 
     if (platform() === 'win32') {
-      this.activateWindowCapturing();
+      this._ipcEvents = {
+        'select-window': (e: any, id: number) => {
+          this.selectWindow(this.windows.find(x => x.handle === id))
+        },
+        'detach-window': (e: any, id: number) => {
+          this.detachWindow(this.windows.find(x => x.handle === id))
+        },
+        'hide-window': () => {
+          if (this.selectedWindow) {
+            this.selectedWindow.hide()
+            this.isWindowHidden = true
+          }
+        },
+        setDebugMode: (evt: any, debugMode: boolean) => {
+          if (debugMode) {
+            this.webContents.openDevTools({ mode: 'detach' })
+          } else {
+            this.webContents.closeDevTools()
+          }
+        },
+      }
+      this.activateWindowCapturing()
+    } else {
+      this._ipcEvents = {
+        setDebugMode: (evt: any, debugMode: boolean) => {
+          if (debugMode) {
+            this.webContents.openDevTools({ mode: 'detach' })
+          } else {
+            this.webContents.closeDevTools()
+          }
+        },
+      }
+      this.on('close', () => {
+        Object.entries(this._ipcEvents).forEach(event => ipcMain.removeListener(...event))
+      })
+      Object.entries(this._ipcEvents).forEach(event => ipcMain.on(...event))
     }
   }
 
@@ -172,27 +209,20 @@ export class AppWindow extends BrowserWindow {
     this.on('resize', updateBounds);
 
     this.on('close', () => {
+      Object.entries(this._ipcEvents).forEach(event => ipcMain.removeListener(...event))
       for (const window of this.windows) {
-        this.detachWindow(window);
+        this.detachWindow(window)
       }
-    });
+
+      if (this.interval) {
+        clearInterval(this.interval)
+        this.interval = null
+      }
+    })
 
     this.interval = setInterval(this.intervalCallback, 100);
 
-    ipcMain.on('select-window', (e: any, id: number) => {
-      this.selectWindow(this.windows.find(x => x.handle === id));
-    });
-
-    ipcMain.on('detach-window', (e: any, id: number) => {
-      this.detachWindow(this.windows.find(x => x.handle === id));
-    });
-
-    ipcMain.on('hide-window', () => {
-      if (this.selectedWindow) {
-        this.selectedWindow.hide();
-        this.isWindowHidden = true;
-      }
-    });
+    Object.entries(this._ipcEvents).forEach(event => ipcMain.on(...event))
 
     windowManager.on('window-activated', (window: Window) => {
       this.webContents.send('select-tab', window.handle);

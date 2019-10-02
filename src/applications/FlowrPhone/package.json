@@ -1,0 +1,20 @@
+{
+  "title": "Flowr Phone",
+  "version": "1.0.0",
+  "description": "SIP phone application that runs on flowr-desktop client",
+  "author": {
+      "name": "LM",
+      "email": "lm@taktik.com"
+  },
+  "capabilities": [
+      {
+        "name": "receive",
+        "type": "PACKAGE"
+      },
+      {
+        "name": "emit",
+        "type": "PACKAGE"
+      }
+  ],
+  "flowrDependencies": ["store"]
+}

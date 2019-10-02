@@ -1,0 +1,116 @@
+.offHook-container {
+    width: 100%;
+    height: 100%;
+    margin: 0;
+    display: flex;
+    flex-flow: column nowrap;
+    justify-content: space-between;
+    align-items: stretch;
+    padding: 12px 12px 12px 48px;
+    box-sizing: border-box;
+}
+
+.container-flex {
+    display: flex;
+    flex-flow: row nowrap;
+    align-items: center;
+    justify-content: space-around;
+    margin: 0;
+    padding: 0;
+    flex-grow: 1;
+}
+
+.right, .left {
+    height: 100%;
+    padding-top: 36px;
+    box-sizing:border-box;
+    height: 100%;
+}
+
+.helper {
+    color: rgba(255,255,255,0.8);
+    font-size: 16px;
+    font-family: 'Roboto', Arial, Helvetica, sans-serif;
+    font-weight: bold;
+}
+
+.helper span {
+    margin: 4px 0;
+    display: block;
+}
+
+.helper div {
+    color: rgba(255,255,255,0.6);
+    font-size: 14px;
+    padding-top: 8px;
+    border-top: 1px solid rgba(255,255,255,0.6);
+}
+.left {
+    display: flex;
+    flex-flow: column nowrap;
+    justify-content: space-between;
+    align-items: center;
+    width: 50%;
+    padding-bottom: 4px;
+    padding-top: 48px;
+    margin-right: 12px;
+}
+
+.right {
+    width: 50%;
+    display: flex;
+    flex-flow: column nowrap;
+    align-items: center;
+    justify-content: space-around;
+}
+
+.left > div:first-child {
+    width: 100%;
+}
+
+.input-container {
+    display: flex;
+    flex-flow: row nowrap;
+    justify-content: space-around;
+    align-items: center;
+    border-radius: 8px 8px 0 0;
+    padding: 8px;
+    border-bottom: 1px solid rgba(255,255,255,0.42);
+}
+
+.input-container:focus-within {
+    background: rgba(0,0,0,0.24);
+}
+
+.number {
+    font-family: 'Roboto', Arial, Helvetica, sans-serif;
+    font-size: 36px;
+    font-weight: normal;
+    place-self: center;
+    margin: 0;
+    background: transparent;
+    box-sizing: border-box;
+    width: 100%;
+    border: none;
+    color: white;
+}
+
+.number:focus {
+    outline: 0;
+}
+
+.input-icon {
+    color: white;
+    width: 36px;
+}
+.buttonSpan {
+    color: white;
+    font-family: 'Roboto', Arial, Helvetica, sans-serif;
+    font-weight: medium;
+    font-size: 18px;
+    letter-spacing: 0.4;
+    width: 100%;
+    text-align: center;
+    display: block;
+    margin-top: 12px;
+}

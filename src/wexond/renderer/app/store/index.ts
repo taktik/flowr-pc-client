@@ -159,18 +159,10 @@ export class Store {
       }
 
       const param = new URLSearchParams(location.search);
-      let url: string
-      if (param.has('openUrl')) {
-        url = param.get('openUrl')
-        if (url) {
-          this.tabs.addTab({ url, active: true });
-        }
+      const url: string = param.get('openUrl')
+      if (url) {
+        this.tabs.addTab({ url, active: true });
       }
-      ipcRenderer.on('open-tab', (event: Event, param: any) => {
-        if (param.openUrl) {
-          this.tabs.addTab({ url: param.openUrl, active: true });
-        }
-      });
     });
 
     this.settings = {

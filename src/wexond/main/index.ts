@@ -2,7 +2,6 @@ import { ipcMain, app, Menu, session, BrowserWindow, BrowserWindowConstructorOpt
 import { resolve, extname } from 'path';
 import { platform, homedir } from 'os';
 import { AppWindow, WexondOptions } from './app-window';
-import { autoUpdater } from 'electron-updater';
 import { loadExtensions } from './extensions';
 import { registerProtocols } from './protocols';
 import { runWebRequestService, loadFilters } from './services/web-request';
@@ -58,7 +57,7 @@ app.on('window-all-closed', () => {
   }
 });
 
-export function createWexondWindow(wexondOptions: WexondOptions, parentWindow?: BrowserWindow, defaultBrowserWindow: BrowserWindowConstructorOptions = {}): AppWindow {
+export async function createWexondWindow(wexondOptions: WexondOptions, parentWindow?: BrowserWindow, defaultBrowserWindow: BrowserWindowConstructorOptions = {}): AppWindow {
   appWindow = new AppWindow(wexondOptions, parentWindow, defaultBrowserWindow);
   appWindow.on('close', () => {
     appWindow = null
@@ -103,8 +102,8 @@ export function createWexondWindow(wexondOptions: WexondOptions, parentWindow?: 
       });
     });
 
-  loadFilters();
-  loadExtensions();
-  runWebRequestService(appWindow);
+  loadFilters()
+  loadExtensions()
+  runWebRequestService(appWindow)
   return appWindow
 }

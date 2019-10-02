@@ -68,16 +68,18 @@ const getCopyPlugin = () => {
 };
 
 const main = () => {
-  const fuse = FuseBox.init(getConfig('server', 'main'));
+  const config = getConfig('server', 'main')
+  config.plugins.push(JSONPlugin())
+  const fuse = FuseBox.init(config)
 
-  const app = fuse.bundle('main').instructions('> [launcher/index.ts]');
+  const app = fuse.bundle('main').instructions('> [launcher/index.ts]')
 
   if (!production) {
-    app.watch();
+    app.watch()
   }
 
-  fuse.run();
-};
+  fuse.run()
+}
 
 const renderer = (name, port) => {
   const cfg = getRendererConfig('electron', name);
@@ -182,9 +184,121 @@ const exportNode = () => {
   fuse.run()
 }
 
+function bundleApplication(name) {
+  applicationMain(name)
+  applicationRenderer(name)
+  applicationPreload(name)
+}
+
+function applicationMain(name) {
+  const config = {
+    homeDir: 'src/',
+    cache: !production,
+    target: 'electron',
+    output: `build/applications/${name}/$name-loader.js`,
+    globals: { default: name },
+    useTypescriptCompiler: true,
+    plugins: [
+      JSONPlugin(),
+      EnvPlugin({ NODE_ENV: production ? 'production' : 'development' }),
+      production &&
+        QuantumPlugin({
+          bakeApiIntoBundle: name,
+          treeshake: true,
+          removeExportsInterop: false,
+          uglify: {
+            es6: true,
+          },
+        }),
+    ],
+    log: {
+      showBundledFiles: false,
+    },
+  }
+  const fuse = FuseBox.init(config)
+  fuse.bundle(name).instructions(`> [applications/${name}/index.ts]`)
+  fuse.run()
+}
+
+function applicationRenderer(name) {
+  const config = {
+    homeDir: 'src/',
+    cache: !production,
+    target: 'electron',
+    output: `build/applications/${name}/$name.js`,
+    globals: { default: name },
+    useTypescriptCompiler: true,
+    plugins: [
+      CopyPlugin({
+        files: ['*.woff2', '*.png', '*.svg'],
+        dest: '',
+        resolve: production ? `./assets` : `/assets`,
+      }),
+      StyledComponentsPlugin(),
+      CSSPlugin(),
+      WebIndexPlugin({
+        template: `src/applications/${name}/views/index.html`,
+        path: production ? `.` : `/applications/${name}`,
+        target: `index.html`,
+        bundles: [name],
+      }),
+      EnvPlugin({ NODE_ENV: production ? 'production' : 'development' }),
+      production &&
+        QuantumPlugin({
+          bakeApiIntoBundle: name,
+          treeshake: true,
+          removeExportsInterop: false,
+          uglify: {
+            es6: true,
+          },
+        }),
+    ],
+    log: {
+      showBundledFiles: false,
+    },
+  }
+  const fuse = FuseBox.init(config)
+  const app = fuse.bundle(name).instructions(`> [applications/${name}/views/index.tsx] + fuse-box-css`)
+
+  if (!production) {
+    const port = 4445
+    fuse.dev({ httpServer: false, port, socketURI: `ws://localhost:${port}` })
+    app.hmr({ port, socketURI: `ws://localhost:${port}`, reload: true }).watch()
+  }
+
+  fuse.run()
+}
+
+function applicationPreload(name) {
+  const config = {
+    homeDir: 'src/',
+    cache: !production,
+    target: 'electron',
+    output: 'build/applications/preloads/$name.js',
+    useTypescriptCompiler: true,
+    plugins: [
+      EnvPlugin({ NODE_ENV: production ? 'production' : 'development' }),
+      production &&
+        QuantumPlugin({
+          bakeApiIntoBundle: name,
+          treeshake: true,
+          removeExportsInterop: false,
+          uglify: {
+            es6: true,
+          },
+        }),
+    ],
+    log: {
+      showBundledFiles: false,
+    },
+  }
+  const fuse = FuseBox.init(config)
+  fuse.bundle(name).instructions(`> [applications/${name}/preload.ts]`)
+  fuse.run()
+}
+
 renderer('app', 4444)
-bundlePhoneApp()
-phonePreload()
+bundleApplication('FlowrPhone')
 preload('view-preload')
 preload('background-preload')
 exportNode()
