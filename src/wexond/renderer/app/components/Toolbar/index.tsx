@@ -12,7 +12,7 @@ import { ipcRenderer } from 'electron';
 import BrowserAction from '../BrowserAction';
 import { Find } from '../Find';
 import { backToFlowr } from '~/renderer/app/utils';
-import { barcoKeyBoardController } from 'src/barcoKeyboard/barcoKeyBoardController';
+import { barcoKeyBoardController } from '../../../../../barcoKeyboard/barcoKeyBoardController';
 
 const onUpdateClick = () => {
   ipcRenderer.send('update-install');
