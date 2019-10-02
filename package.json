@@ -1,6 +1,6 @@
 {
   "name": "flowr-desktop",
-  "version": "0.3.13",
+  "version": "1.0.0",
   "author": {
     "email": "hj@taktik.com",
     "name": "Hubert Jacquin"
@@ -17,7 +17,7 @@
   "main": "build/main.js",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/taktik/wexond.git"
+    "url": "git+https://github.com/taktik/flowr-desktop.git"
   },
   "scripts": {
     "dev": "cross-env NODE_ENV='dev' node fuse.js",

@@ -8,6 +8,7 @@ const {
   StyledComponentsPlugin,
   CSSResourcePlugin,
   CSSPlugin,
+  Sparky,
 } = require('fuse-box');
 
 const { spawn } = require('child_process');
@@ -297,10 +298,15 @@ function applicationPreload(name) {
   fuse.run()
 }
 
-renderer('app', 4444)
-bundleApplication('FlowrPhone')
-preload('view-preload')
-preload('background-preload')
-exportNode()
+Sparky.task("clean", () => {
+  return Sparky.src("build").clean("build");
+});
 
-main()
+Sparky.task("default", ["clean"], () => {
+  renderer('app', 4444)
+  bundleApplication('FlowrPhone')
+  preload('view-preload')
+  preload('background-preload')
+  exportNode()
+  main()
+});
