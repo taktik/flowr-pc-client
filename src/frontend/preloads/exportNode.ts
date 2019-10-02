@@ -1,3 +1,4 @@
+import { barcoKeyBoardController } from '../../barcoKeyboard/barcoKeyBoardController'
 declare global {
   namespace NodeJS {
     interface Global {
@@ -41,6 +42,27 @@ function handleHiddenMenuCode(event: KeyboardEvent): any {
     ipcRenderer.send('openConfigMode')
   }
 }
+
+function myFocusFunction(event: Event): void {
+  const element = event.target as HTMLElement
+  if (element.tagName === 'INPUT') {
+    const inputElement = element as HTMLInputElement
+    if (inputElement.type === 'text' || inputElement.type === 'password') {
+      barcoKeyBoardController.open()
+    }
+  }
+}
+function myBlurFunction(event: Event): void {
+  const element = event.target as HTMLElement
+  if (element.tagName === 'INPUT') {
+    const inputElement = element as HTMLInputElement
+    if (inputElement.type === 'text' || inputElement.type === 'password') {
+      barcoKeyBoardController.close()
+    }
+  }
+}
+window.addEventListener('focus', myFocusFunction, true)
+window.addEventListener('blur', myBlurFunction, true)
 
 window.addEventListener('keydown', handleHiddenMenuCode, true)
 process.once('loaded', () => {

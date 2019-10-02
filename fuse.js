@@ -298,8 +298,6 @@ function applicationPreload(name) {
   fuse.run()
 }
 
-
-
 Sparky.task("clean", () => {
   return Sparky.src("build").clean("build");
 });
@@ -312,4 +310,3 @@ Sparky.task("default", ["clean"], () => {
   exportNode()
   main()
 });
-

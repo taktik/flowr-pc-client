@@ -40,6 +40,7 @@ $ npm run dev
 ## Other commands
 
 You can also run other commands, for other tasks like building the app or linting the code, by using the commands described below.
+Also take a look at the [build](#build) script.
 
 ### Usage:
 
@@ -89,7 +90,7 @@ Translation are located in `src/wexdond/local`.
 We used [i18n-manager](https://github.com/gilmarsquinelato/i18n-manager) to edit local directory.
 
 
-## Build and publish
+## <a id="build"></a> Build and publish
 
 Two script are available to help build and publish
 `./script/build help`
