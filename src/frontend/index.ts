@@ -16,7 +16,12 @@ export const DEFAULT_FRONTEND_STORE = {
   channelData: {},
   isMaximized: false,
 }
-
+type NetworkInteface = {
+  name: string,
+  type:string,
+  ip_address: string,
+  mac_address: string,
+}
 export function initFlowrConfig(data: object) {
   initConfigData(join(FlowrDataDir, `${FRONTEND_CONFIG_NAME}.json`), data)
 }
@@ -216,7 +221,14 @@ export async function createFlowrWindow(flowrStore: Store): Promise<FlowrWindow>
     return new Promise(((resolve, reject) => {
       network.get_active_interface((err: Error, obj: any) => {
         if (err) {
-          reject(err)
+          console.warn('No active network interface found')
+          network.get_interfaces_list((interfaces: NetworkInteface[]) => {
+            if (interfaces.length > 0) {
+              resolve(interfaces[0].mac_address)
+            } else {
+              reject('No network interface found')
+            }
+          })
         }
         if (obj && obj.mac_address) {
           resolve(obj.mac_address)
