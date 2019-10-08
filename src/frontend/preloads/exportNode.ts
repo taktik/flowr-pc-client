@@ -48,7 +48,7 @@ function handleHiddenMenuCode(event: KeyboardEvent): any {
   }
 }
 
-function actionKeyBoard(type: number) {
+function actionKeyboard(type: number) {
   if (type === KEYBOARD_OPEN) {
     barcoKeyBoardController.open()
   } else {
@@ -56,39 +56,33 @@ function actionKeyBoard(type: number) {
   }
 }
 
-const actionKeyboardDebounced = debounce(actionKeyBoard, 50)
+const actionKeyboardDebounced = debounce(actionKeyboard, 50)
 
-function focusFunction(event: Event): void {
+function shouldActionKeyboard(event: Event) {
   const element = event.target as HTMLElement
   if (element.tagName === 'INPUT') {
     const inputElement = element as HTMLInputElement
-    if (inputElement.type === 'text' || inputElement.type === 'password') {
-      actionKeyboardDebounced(KEYBOARD_OPEN)
+    if (inputElement.type === 'text' || inputElement.type === 'password' || inputElement.type === 'number') {
+      return true
     }
   }
+  return false
 }
-function blurFunction(event: Event): void {
-  const element = event.target as HTMLElement
-  if (element.tagName === 'INPUT') {
-    const inputElement = element as HTMLInputElement
-    if (inputElement.type === 'text' || inputElement.type === 'password') {
-      actionKeyboardDebounced(KEYBOARD_CLOSE)
-    }
+
+function openKeyboard(event: Event): void {
+  if (shouldActionKeyboard(event)) {
+    actionKeyboardDebounced(KEYBOARD_OPEN)
   }
 }
-function clickFunction(event: Event): void {
-  const element = event.target as HTMLElement
-  if (element.tagName === 'INPUT') {
-    const inputElement = element as HTMLInputElement
-    if (inputElement.type === 'text' || inputElement.type === 'password') {
-      actionKeyboardDebounced(KEYBOARD_OPEN)
-    }
+function closeKeyboard(event: Event): void {
+  if (shouldActionKeyboard(event)) {
+    actionKeyboardDebounced(KEYBOARD_CLOSE)
   }
 }
 
-window.addEventListener('focus', focusFunction, true)
-window.addEventListener('blur', blurFunction, true)
-window.addEventListener('click', clickFunction)
+window.addEventListener('focus', openKeyboard, true)
+window.addEventListener('blur', closeKeyboard, true)
+window.addEventListener('click', openKeyboard)
 
 window.addEventListener('keydown', handleHiddenMenuCode, true)
 process.once('loaded', () => {
