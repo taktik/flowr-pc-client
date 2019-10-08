@@ -1,4 +1,9 @@
 import { barcoKeyBoardController } from '../../barcoKeyboard/barcoKeyBoardController'
+import { debounce } from 'lodash'
+
+const KEYBOARD_CLOSE = 0
+const KEYBOARD_OPEN = 1
+
 declare global {
   namespace NodeJS {
     interface Global {
@@ -43,26 +48,47 @@ function handleHiddenMenuCode(event: KeyboardEvent): any {
   }
 }
 
-function myFocusFunction(event: Event): void {
+function actionKeyBoard(type: number) {
+  if (type === KEYBOARD_OPEN) {
+    barcoKeyBoardController.open()
+  } else {
+    barcoKeyBoardController.close()
+  }
+}
+
+const actionKeyboardDebounced = debounce(actionKeyBoard, 50)
+
+function focusFunction(event: Event): void {
   const element = event.target as HTMLElement
   if (element.tagName === 'INPUT') {
     const inputElement = element as HTMLInputElement
     if (inputElement.type === 'text' || inputElement.type === 'password') {
-      barcoKeyBoardController.open()
+      actionKeyboardDebounced(KEYBOARD_OPEN)
     }
   }
 }
-function myBlurFunction(event: Event): void {
+function blurFunction(event: Event): void {
   const element = event.target as HTMLElement
   if (element.tagName === 'INPUT') {
     const inputElement = element as HTMLInputElement
     if (inputElement.type === 'text' || inputElement.type === 'password') {
-      barcoKeyBoardController.close()
+      actionKeyboardDebounced(KEYBOARD_CLOSE)
     }
   }
 }
-window.addEventListener('focus', myFocusFunction, true)
-window.addEventListener('blur', myBlurFunction, true)
+function clickFunction(event: Event): void {
+  const element = event.target as HTMLElement
+  if (element.tagName === 'INPUT') {
+    const inputElement = element as HTMLInputElement
+    if (inputElement.type === 'text' || inputElement.type === 'password') {
+      actionKeyboardDebounced(KEYBOARD_OPEN)
+    }
+  }
+}
+
+window.addEventListener('focus', focusFunction, true)
+window.addEventListener('blur', blurFunction, true)
+window.addEventListener('click', clickFunction)
 
 window.addEventListener('keydown', handleHiddenMenuCode, true)
 process.once('loaded', () => {
