@@ -30,6 +30,10 @@ export const Tabbar = observer(() => {
         <Tabs />
       </TabsContainer>
       { !store.tabs.isMaxTab && <AddTab
+        style={{'background-color': store.overlay.isNewTab ?
+            'rgb(227, 237, 243)'
+            :  'transparent',
+        }}
         icon={icons.add}
         size={TOOLBAR_ICON_HEIGHT}
         onClick={onAddTabClick}

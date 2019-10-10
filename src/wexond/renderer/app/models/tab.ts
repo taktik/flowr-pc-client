@@ -297,6 +297,11 @@ export class Tab {
   }
 
   @action
+  public unselect() {
+    this.tabGroup.selectedTabId = undefined
+  }
+
+  @action
   public select() {
     if (!this.isClosing) {
       store.canToggleMenu = this.isSelected;
