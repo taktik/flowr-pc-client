@@ -404,6 +404,8 @@ export class TabsStore {
   }
 
   public onNewTab() {
+    const { selectedTab } = store.tabs;
+    selectedTab.unselect()
     store.overlay.isNewTab = true;
     store.overlay.visible = true;
     ipcRenderer.send('hide-window');
