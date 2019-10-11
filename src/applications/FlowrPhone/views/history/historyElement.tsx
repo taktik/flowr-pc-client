@@ -10,7 +10,6 @@ interface HistoryElementProps extends PhoneHistory {
   select: (phoneNumber: string) => void
 }
 
-
 const StyledIcon = styled(FontAwesomeIcon)`
   width: 36px;
 `
