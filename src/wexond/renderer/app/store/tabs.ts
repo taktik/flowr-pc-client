@@ -404,10 +404,15 @@ export class TabsStore {
   }
 
   public onNewTab() {
-    const { selectedTab } = store.tabs;
-    selectedTab.unselect()
-    store.overlay.isNewTab = true;
-    store.overlay.visible = true;
-    ipcRenderer.send('hide-window');
+    const { selectedTab } = store.tabs
+    if (selectedTab) {
+      selectedTab.unselect()
+    }
+
+    if (! store.overlay.isNewTab || ! store.overlay.visible) {
+      store.overlay.isNewTab = true
+      store.overlay.visible = true
+      ipcRenderer.send('hide-window')
+    }
   }
 }
