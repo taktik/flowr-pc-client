@@ -66,14 +66,16 @@ export function create(options: PhoneOptions): PhoneWindow {
       win.removeListener('blur', win.focus)
     }
   }
-  const { history, favorites, currentUser } = options.config
+  const { registerProps, lang, history, favorites, currentUser } = options.config
 
   const phoneAppProps = {
     phoneServer: options.flowrWindow.phoneServerUrl,
-    registerProps: options.config.registerProps,
-    lang: options.config.lang,
     capabilities: options.capabilities,
-    config: { history, favorites, currentUser },
+    registerProps,
+    lang,
+    history,
+    favorites,
+    currentUser,
   }
 
   const phoneWindow = new PhoneWindow(

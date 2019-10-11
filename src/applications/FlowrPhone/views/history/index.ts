@@ -32,27 +32,33 @@ export class History {
   historySize: number = 50 // number of calls to keep
 
   set store(store: HistoryStore | undefined) {
-    console.log('SET STORE', store)
-    this.list = store ? store.list : []
-    this.user = store ? store.user : ''
+    const user = store ? store.user : ''
+
+    if (this.user !== user) {
+      console.log('Stored user is different from current one, reset data.')
+      this.save({ user: this.user, list: [] })
+    } else {
+      this.list = store ? store.list : []
+    }
   }
 
   get user() {
     return this._user
   }
   set user(user: string) {
+    console.log('SET HISTORY USER', user, 'from', this.user)
     if (this.user !== user) {
-      console.log('THE USER IS DIFFERENT !')
+      console.log('Setting different user, reset data.')
+      this._user = user
       this.save({ user, list: [] })
     }
-    this._user = user
   }
 
   constructor(props: HistoryProps) {
     this.save = props.save
 
     if (props.currentUser) {
-      this.user = props.currentUser
+      this._user = props.currentUser
     }
 
     if (props.historySize) {

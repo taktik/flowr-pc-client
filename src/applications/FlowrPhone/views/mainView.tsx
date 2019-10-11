@@ -103,7 +103,7 @@ export class MainView extends React.Component<MainViewProps, MainViewState> {
         template = templateIfCapable(this.baseTemplateForRoute(), PhoneCapabilities.EMIT)
         break
       case INCOMING_STATE:
-        template = templateIfCapable((<Incoming answer={this.props.answer} hangup={this.props.hangup} translator={this.props.translator} lang={this.props.lang}/>), PhoneCapabilities.RECEIVE)
+        template = templateIfCapable((<Incoming answer={this.props.answer} hangup={this.props.hangup} translator={this.props.translator} lang={this.props.lang} callingNumber={this.props.callingNumber}/>), PhoneCapabilities.RECEIVE)
         break
       case ANSWERED_STATE:
         template = templateIfCapable((<StyledCalling mode={ANSWERED_STATE} sendKey={this.props.sendKey} {...this.baseCallingProps()}/>), PhoneCapabilities.RECEIVE)

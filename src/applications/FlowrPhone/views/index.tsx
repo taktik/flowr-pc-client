@@ -11,7 +11,9 @@ const host = url.searchParams.get('host')
 const lang = url.searchParams.get('lang') || undefined
 const registerProps = username && host ? { username, host } : null
 const encodedCapabilities = url.searchParams.get('capabilities')
-const encodedConfig = url.searchParams.get('config')
+const history = url.searchParams.has('history')
+const favorites = url.searchParams.has('favorites')
+const currentUser = url.searchParams.get('currentUser') || ''
 
 let capabilities
 
@@ -19,14 +21,6 @@ try {
   capabilities = encodedCapabilities && JSON.parse(decodeURIComponent(encodedCapabilities))
 } catch (e) {
   console.error('Failed to parse capabilities', e)
-}
-
-let config
-
-try {
-  config = encodedConfig && JSON.parse(decodeURIComponent(encodedConfig))
-} catch (e) {
-  console.error('Failed to parse config', e)
 }
 
 const StyledPhone = styled(Phone)`
@@ -84,5 +78,7 @@ ReactDOM.render(<StyledPhone
   registerProps={registerProps}
   lang={lang}
   capabilities={capabilities}
-  config={config}
+  history={history}
+  favorites={favorites}
+  currentUser={currentUser}
 />, document.getElementById('phone'))

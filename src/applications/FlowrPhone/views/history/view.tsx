@@ -30,7 +30,7 @@ export class HistoryView extends React.Component<HistoryProps> {
       <div className="history-container">
         <div className="backbtn" onClick={this.back.bind(this)}><StyledIcon className="extra-btn-icon" icon="arrow-left" onClick={this.back.bind(this)} /></div>
         {
-          this.props.phoneCalls.map(call => (<HistoryElement favorite={this.findFavoriteForNumber(call.number)} select={this.props.select} {...call}></HistoryElement>))
+          this.props.phoneCalls.map(call => (<HistoryElement favorite={this.findFavoriteForNumber(call.number)} select={this.props.select} {...call} key={`${call.number}-${call.date}`}></HistoryElement>))
         }
       </div>
     )
