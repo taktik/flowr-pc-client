@@ -14,6 +14,8 @@ import {
   faAsterisk,
   faBackspace,
   faCircleNotch,
+  faHistory,
+  faVoicemail,
 } from '@fortawesome/free-solid-svg-icons'
 
 library.add(
@@ -31,4 +33,6 @@ library.add(
   faAsterisk,
   faBackspace,
   faCircleNotch,
+  faHistory,
+  faVoicemail,
 )

@@ -1,4 +1,5 @@
 import { CallState, INCOMING_STATE, ANSWERED_STATE, CALL_OUT_STATE, OUTGOING_STATE } from '../../stateMachines/callStateMachine'
+import './history.css'
 
 export enum PhoneCallStatus {
   EMITTED = 'EMITTED',

@@ -88,11 +88,13 @@ export class OffHook extends React.Component<OffHookProps, OffHookState> {
               <br/>
               <div>{this.props.translator.translate('Extra credit is necessary for all phone call towards mobiles, international numbers or special numbers', this.props.lang)}</div>
             </div>
+            <div className="extra-btn-container">
+                <div onClick={this.props.goToHistory}><StyledIcon className="extra-btn-icon" icon="history" onClick={this.removeNumber.bind(this)} /></div>
+                <div onClick={this.props.goToHistory}><StyledIcon className="extra-btn-icon" icon="voicemail" onClick={this.removeNumber.bind(this)} /></div>
+              </div>
           </div>
         </div>
-        <div>
-          <div onClick={this.props.goToHistory}>History</div>
-        </div>
+        
       </div>
     )
   }

@@ -3,11 +3,17 @@ import { PhoneHistory, PhoneCallStatus } from '.'
 import { PhoneFavorite } from '../favorites'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { formatElapsedTime, formatDate } from '../../helper/time'
+import styled from 'styled-components'
 
 interface HistoryElementProps extends PhoneHistory {
   favorite?: PhoneFavorite
   select: (phoneNumber: string) => void
 }
+
+
+const StyledIcon = styled(FontAwesomeIcon)`
+  width: 36px;
+`
 
 export class HistoryElement extends React.Component<HistoryElementProps> {
   select() {
@@ -27,10 +33,10 @@ export class HistoryElement extends React.Component<HistoryElementProps> {
   phoneStatusIcon(): JSX.Element {
     switch (this.props.status) {
       case PhoneCallStatus.EMITTED:
-        return (<FontAwesomeIcon icon="long-arrow-alt-right"></FontAwesomeIcon>)
+        return (<StyledIcon icon="long-arrow-alt-right"></StyledIcon>)
       case PhoneCallStatus.MISSED:
       case PhoneCallStatus.RECEIVED:
-        return (<FontAwesomeIcon icon="long-arrow-alt-left"></FontAwesomeIcon>)
+        return (<StyledIcon icon="long-arrow-alt-left"></StyledIcon>)
       default:
         return (<div></div>)
     }
@@ -38,13 +44,11 @@ export class HistoryElement extends React.Component<HistoryElementProps> {
 
   render() {
     return (
-      <div onClick={this.select.bind(this)}>
+      <div onClick={this.select.bind(this)} className="history-element">
+        <div className="statusIcon">{this.phoneStatusIcon()}</div>
         {this.header()}
-        <div>
-          <div>{formatDate(this.props.date)}</div>
-          <div>{formatElapsedTime(this.props.duration)}</div>
-          {this.phoneStatusIcon()}
-        </div>
+        <div className="date"><span>{formatDate(this.props.date)}</span></div>
+        <div className="elapsedTime">{formatElapsedTime(this.props.duration)}</div>
       </div>
     )
   }
