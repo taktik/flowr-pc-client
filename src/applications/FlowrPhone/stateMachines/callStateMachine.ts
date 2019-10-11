@@ -108,6 +108,7 @@ export class CallStateMachine extends StateMachineImpl<CallState> {
   }
 
   terminate() {
+    this._callingNumber = ''
     switch (this.state) {
       case OUTGOING_STATE:
         this.setState(OFF_HOOK_STATE)
@@ -144,7 +145,6 @@ export class CallStateMachine extends StateMachineImpl<CallState> {
   }
 
   answer() {
-    this._callingNumber = '' // no information about caller (for now ?)
     this._dispatcher.send('answer')
   }
 

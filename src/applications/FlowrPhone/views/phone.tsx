@@ -20,19 +20,15 @@ declare global {
   }
 }
 
-export interface PhoneConfig {
-  currentUser: string
-  history: boolean
-  favorites: boolean
-}
-
 type PhoneProps = {
   phoneServer: string | null,
   className?: string,
   registerProps: RegisterProps | null,
   lang?: string,
   capabilities?: {[key: string]: boolean},
-  config: PhoneConfig,
+  currentUser: string,
+  history: boolean,
+  favorites: boolean,
 }
 
 type PhoneAppState = {
@@ -88,7 +84,8 @@ export class Phone extends React.Component<PhoneProps, PhoneAppState> {
     'change-language': (e: Event, lang: string) => this.setState({ lang }),
     'mute-changed': this.muteStatusChanged.bind(this),
     'capabilities-changed': this.capabilitiesChanged.bind(this),
-    'config-changed': this.capabilitiesChanged.bind(this),
+    'history-changed': this.historyChanged.bind(this),
+    'current-user-changed': this.currentUserChanged.bind(this),
     'store-updated': this.storeUpdated.bind(this),
   }
 
@@ -115,8 +112,7 @@ export class Phone extends React.Component<PhoneProps, PhoneAppState> {
     this.registerStateMachine.onLeaveState(REGISTERED_STATE, this.unlistenToCallStateMachine.bind(this))
 
     this._translator.addKeys('fr', fr)
-
-    this.setHistory(props.config.history, props.config.currentUser)
+    this.setHistory(props.history, props.currentUser)
 
     this.state = {
       callState: null,
@@ -193,14 +189,21 @@ export class Phone extends React.Component<PhoneProps, PhoneAppState> {
     this.setState({ capabilities })
   }
 
-  configChanged(e: Event, config: PhoneConfig) {
-    this.setHistory(config.history, config.currentUser)
+  historyChanged(e: Event, history: boolean) {
+    if (this._history && !history) {
+      console.log('History functionality revoked')
+      delete this._history
+    }
+  }
+
+  currentUserChanged(e: Event, currentUser: string) {
+    if (this._history) {
+      this._history.user = currentUser
+    }
   }
 
   storeUpdated(e: Event, storeData: PhoneStore) {
-    console.log('RECEIVED STORE UPDATE', storeData)
     if (this._history) {
-      console.log('SETTING HISTORY STORE')
       this._history.store = storeData.history
       this.setState({ phoneHistory: this._history.list })
     }
