@@ -16,6 +16,7 @@ import {
   faCircleNotch,
   faHistory,
   faVoicemail,
+  faArrowLeft,
 } from '@fortawesome/free-solid-svg-icons'
 
 library.add(
@@ -35,4 +36,5 @@ library.add(
   faCircleNotch,
   faHistory,
   faVoicemail,
+  faArrowLeft,
 )

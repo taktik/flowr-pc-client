@@ -1,10 +1,40 @@
 .calling-container {
-    width: 100%;
+    width: calc(100% - 48px);
     height: 100%;
     margin: 0;
-    display: grid;
-    grid-template-columns: 1fr;
-    grid-template-rows: 48px 1fr 1fr 1fr;
+    display: flex;
+    flex-flow: column nowrap;
+    align-items: center;
+    justify-content: space-around;
+    box-sizing: border-box;
+    background: rgba(0,0,0,0.62);
+    margin-left: 48px;
+    overflow: hidden;
+}
+
+.calling-container > .flex-container {
+    display: flex;
+    flex-flow: row nowrap;
+    align-items: center;
+    justify-content: space-around;
+    height: auto;
+    max-height: 100%;
+    flex-grow: 1;
+    width: 100%;
+}
+
+.flex-column{
+    display: flex;
+    flex-flow: column nowrap;
+    align-items: center;
+    justify-content: space-around;
+    min-width: 50%;
+    flex-grow: 1;
+    height: 100%;
+}
+
+.keyboard {
+    height: 100%;
     box-sizing: border-box;
 }
 

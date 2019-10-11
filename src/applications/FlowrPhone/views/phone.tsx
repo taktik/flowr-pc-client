@@ -54,10 +54,15 @@ export type RegisterProps = {
 
 const UpperRightIcon = styled(ClickableIcon)`
   position: fixed;
-  top: 12px;
-  left: 12px;
-  width: 24px;
+  top: 0;
+  left: 0;
+  width: 48px;
+  height: 48px;
+  padding: 8px;
+  box-sizing: border-box;
   color: white;
+  background: rgba(0,0,0,0.62);
+  border-radius: 4px 0 0 4px;
 `
 
 export enum PhoneCapabilities {

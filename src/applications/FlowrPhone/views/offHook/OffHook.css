@@ -6,18 +6,29 @@
     flex-flow: column nowrap;
     justify-content: space-between;
     align-items: stretch;
-    padding: 24px 12px 12px 48px;
+    padding: 0;
     box-sizing: border-box;
+    
+}
+
+.offHook-container .top-container { 
+    background: rgba(0,0,0,0.62);
+    padding: 12px;
+    width: calc(100% - 48px);
+    box-sizing: border-box;
+    margin-left: 48px;
 }
 
 .container-flex {
+    background: rgba(0,0,0,0.62);
     display: flex;
     flex-flow: row nowrap;
     align-items: center;
     justify-content: space-around;
-    margin: 0;
+    margin: 0 0 0 48px;
     padding: 0;
     flex-grow: 1;
+    width: calc(100% - 48px);
 }
 
 .right, .left {
@@ -114,26 +125,32 @@
     display: block;
     margin-top: 12px;
 }
-
+ 
 .extra-btn-container{
+    position: absolute;
+    left: 0;
+    bottom: 0;
     color: white;
     display:flex;
-    flex-flow: row wrap;
-    align-items: center;
-    justify-content: center;
+    flex-flow: column wrap;
+    align-items: flex-start;
+    justify-content: flex-start;
 }
 
 .extra-btn-container > div {
     background: rgba(0,0,0,0.62);
-    border-radius: 50%;
+    border-radius: 4px 0 0 4px;
     height: 48px;
     width: 48px;
-    border-radius: 50%;
     display: flex;
     align-items: center;
     justify-content: center;
     padding: 8px;
     box-sizing: border-box;
-    margin: 0 4px;
+    margin: 4px 0;
+}
+
+.extra-btn-container > div:last-child{
+    margin: 4px 0 0;
 }
 

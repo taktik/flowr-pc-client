@@ -3,7 +3,7 @@ import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { CALL_OUT_STATE, ANSWERED_STATE, CallState, OUTGOING_STATE } from '../../stateMachines/callStateMachine'
 import styled from 'styled-components'
 import { HangupPhoneIcon } from '../phoneButtons'
-import { FlexRowCenter, FlexColumnCenter } from '../flex'
+import { FlexRowCenter } from '../flex'
 import { Translator } from '../../../../translator/translator'
 import { formatElapsedTime } from '../../helper/time'
 
@@ -32,7 +32,6 @@ interface CallingState {
 
 const ElapsedTime = styled(FlexRowCenter)`
   color: white;
-  flex-grow: 2;
   font-size: 24px;
   font-family: 'Roboto', Arial, Helvetica, sans-serif;
   font-weight: regular;
@@ -41,7 +40,7 @@ const ElapsedTime = styled(FlexRowCenter)`
 `
 
 const Rotating = styled(FontAwesomeIcon)`
-  width: 50px;
+  width: 40px;
   color: white;
   animation: rotate 2s linear infinite;
   @keyframes rotate {
@@ -54,6 +53,7 @@ const Rotating = styled(FontAwesomeIcon)`
 const PhoneNumber = styled.h1`
   color: white;
   ${robotoMedium}
+  margin: 0;
 `
 
 export class Calling extends React.Component<CallingProps, CallingState> {
@@ -99,37 +99,44 @@ export class Calling extends React.Component<CallingProps, CallingState> {
     let keyboard
 
     if (this.props.sendKey && this.state.displayKeyPad) {
-      keyboard = (<div><Keyboard keyPressed={this.props.sendKey.bind(this)}/></div>)
+      keyboard = (<div className="keyboard"><Keyboard keyPressed={this.props.sendKey.bind(this)}/></div>)
     } else {
-      keyboard = (<div></div>)
+      keyboard = (<div className="keyboard"></div>)
     }
 
     return (
       <div className="calling-container">
         {title}
-        <FlexColumnCenter>
-          <PhoneNumber>{this.props.callingNumber}</PhoneNumber>
-          { elapsedTime }
-        </FlexColumnCenter>
-        <FlexRowCenter className={this.props.className}>
-          {/*<div>
-            <MuteMicIcon mute={this.props.mute}/>
-            <span className="buttonSpan">Mute</span>
-          </div>*/
-          <div>
-            <KeyPadIcon displayKeyPad={this.toggleKeyboard.bind(this)}/>
-            <span className="buttonSpan">Keypad</span>
+        <PhoneNumber>{this.props.callingNumber}</PhoneNumber>
+        { elapsedTime }
+        <div className="flex-container">
+          <div className="flex-column">
+            {/* <FlexRowCenter className={this.props.className}>
+              {<div>
+                <MuteMicIcon mute={this.props.mute}/>
+                <span className="buttonSpan">Mute</span>
+              </div>
+              <div>
+                <KeyPadIcon displayKeyPad={this.toggleKeyboard.bind(this)}/>
+                <span className="buttonSpan">Keypad</span>
+              </div>
+              <div>
+                <SpeakerIcon speaker={this.props.speaker}/>
+                <span className="buttonSpan disabled">Speaker</span>
+              </div>}
+            </FlexRowCenter> */}
+
+            <div className="buttonContainer">
+              <KeyPadIcon displayKeyPad={this.toggleKeyboard.bind(this)}/>
+              <span className="buttonSpan">Keypad</span>
+            </div>
+            <div className="buttonContainer">
+              <HangupPhoneIcon hangup={this.props.hangup} />
+              <span className="buttonSpan">{this.props.translator.translate('Hang Up', this.props.lang)}</span>
+            </div>
           </div>
-          /*<div>
-            <SpeakerIcon speaker={this.props.speaker}/>
-            <span className="buttonSpan disabled">Speaker</span>
-          </div>*/}
-        </FlexRowCenter>
-        <div className="buttonContainer">
-          <HangupPhoneIcon hangup={this.props.hangup} />
-          <span className="buttonSpan">{this.props.translator.translate('Hang Up', this.props.lang)}</span>
+          {keyboard}
         </div>
-        {keyboard}
       </div>
     )
   }

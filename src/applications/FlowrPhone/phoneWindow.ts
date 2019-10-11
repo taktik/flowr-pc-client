@@ -79,7 +79,7 @@ export class PhoneWindow extends BrowserWindow {
       transparent: true,
       show: false,
       parent,
-      backgroundColor: '#8C777777',
+      backgroundColor: '#00000000',
       webPreferences: {
         plugins: true,
         nodeIntegration: false,

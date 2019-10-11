@@ -70,7 +70,7 @@ export class OffHook extends React.Component<OffHookProps, OffHookState> {
   render() {
     return (
       <div className="offHook-container">
-        <div>
+        <div className="top-container">
           <label className="label">{this.props.translator.translate('Number', this.props.lang)}</label>
           <div className="input-container">
             <input id="callNumber" className="number" type="string" value={this.state.callNumber} onChange={this.handleChange} onKeyDown={e => e.preventDefault()} autoFocus />
@@ -88,11 +88,11 @@ export class OffHook extends React.Component<OffHookProps, OffHookState> {
               <br/>
               <div>{this.props.translator.translate('Extra credit is necessary for all phone call towards mobiles, international numbers or special numbers', this.props.lang)}</div>
             </div>
-            <div className="extra-btn-container">
-                <div onClick={this.props.goToHistory}><StyledIcon className="extra-btn-icon" icon="history" onClick={this.removeNumber.bind(this)} /></div>
-                <div onClick={this.props.goToHistory}><StyledIcon className="extra-btn-icon" icon="voicemail" onClick={this.removeNumber.bind(this)} /></div>
-              </div>
           </div>
+        </div>
+        <div className="extra-btn-container">
+          <div onClick={this.props.goToHistory}><StyledIcon className="extra-btn-icon" icon="history" onClick={this.removeNumber.bind(this)} /></div>
+          <div onClick={this.props.goToHistory}><StyledIcon className="extra-btn-icon" icon="voicemail" onClick={this.removeNumber.bind(this)} /></div>
         </div>
       </div>
     )
