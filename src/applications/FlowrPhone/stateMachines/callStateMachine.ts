@@ -64,10 +64,11 @@ export class CallStateMachine extends StateMachineImpl<CallState> {
   }
 
   set callingNumber(caller: string) {
+    const callerName = caller.replace(/.*'([a-zA-Z\s]+)'.+/, '$1')
     const splitCaller = caller.replace(/[><]/g, '').split(':')
     const numberAndServer = splitCaller[1]
     const callingNumber = numberAndServer ? numberAndServer.split('@')[0] : splitCaller[0] || ''
-    this._callingNumber = callingNumber
+    this._callingNumber = callerName !== caller ? `${callerName} : ${callingNumber}` : callingNumber
   }
 
   static getStateFromStatus(status: string) {
@@ -145,5 +146,17 @@ export class CallStateMachine extends StateMachineImpl<CallState> {
   answer() {
     this._callingNumber = '' // no information about caller (for now ?)
     this._dispatcher.send('answer')
+  }
+
+  sendKey(key: string) {
+    this._dispatcher.send('dtmf', { number: key })
+  }
+
+  isCallStarting(state: CallState) {
+    return [ANSWERED_STATE, CALL_OUT_STATE].includes(state)
+  }
+
+  isCallEnding(state: CallState) {
+    return [OFF_HOOK_STATE, IDLE_STATE, CLIENT_NOT_RUNNING_STATE].includes(state)
   }
 }

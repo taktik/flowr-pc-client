@@ -8,9 +8,10 @@ const url = new URL(window.location.href)
 const server = url.searchParams.get('server')
 const username = url.searchParams.get('username')
 const host = url.searchParams.get('host')
-const lang = url.searchParams.get('lang')
+const lang = url.searchParams.get('lang') || undefined
 const registerProps = username && host ? { username, host } : null
 const encodedCapabilities = url.searchParams.get('capabilities')
+const encodedConfig = url.searchParams.get('config')
 
 let capabilities
 
@@ -18,6 +19,14 @@ try {
   capabilities = encodedCapabilities && JSON.parse(decodeURIComponent(encodedCapabilities))
 } catch (e) {
   console.error('Failed to parse capabilities', e)
+}
+
+let config
+
+try {
+  config = encodedConfig && JSON.parse(decodeURIComponent(encodedConfig))
+} catch (e) {
+  console.error('Failed to parse config', e)
 }
 
 const StyledPhone = styled(Phone)`
@@ -70,4 +79,10 @@ export const robotoMedium = () => `
 
 document.head.appendChild(styleElement)
 
-ReactDOM.render(<StyledPhone phoneServer={server} registerProps={registerProps} lang={lang} capabilities={capabilities} />, document.getElementById('phone'))
+ReactDOM.render(<StyledPhone
+  phoneServer={server}
+  registerProps={registerProps}
+  lang={lang}
+  capabilities={capabilities}
+  config={config}
+/>, document.getElementById('phone'))

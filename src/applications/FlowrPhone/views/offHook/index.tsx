@@ -15,6 +15,8 @@ interface OffHookProps {
   call: CallFunction
   translator: Translator
   lang?: string
+  callNumber?: string
+  goToHistory: () => void
 }
 
 interface OffHookState {
@@ -30,7 +32,7 @@ const StyledIcon = styled(ClickableIcon)`
 export class OffHook extends React.Component<OffHookProps, OffHookState> {
   constructor(props: OffHookProps) {
     super(props)
-    this.state = { callNumber: '' }
+    this.state = { callNumber: props.callNumber || '' }
 
     this.handleChange = this.handleChange.bind(this)
     this.onKeyDown = this.onKeyDown.bind(this)
@@ -87,6 +89,9 @@ export class OffHook extends React.Component<OffHookProps, OffHookState> {
               <div>{this.props.translator.translate('Extra credit is necessary for all phone call towards mobiles, international numbers or special numbers', this.props.lang)}</div>
             </div>
           </div>
+        </div>
+        <div>
+          <div onClick={this.props.goToHistory}>History</div>
         </div>
       </div>
     )

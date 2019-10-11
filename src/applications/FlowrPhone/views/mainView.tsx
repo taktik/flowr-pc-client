@@ -8,10 +8,19 @@ import styled from 'styled-components'
 import { robotoRegular } from '.'
 import { Translator } from '../../../translator/translator'
 import { PhoneCapabilities } from './phone'
+import { HistoryView } from './history/view'
+import { PhoneHistory } from './history'
+
+enum PhoneRoute {
+  MAIN,
+  HISTORY,
+  FAVORITES,
+}
 
 interface MainViewProps {
   callState: CallState | null
   call: (callNumber: string) => void
+  sendKey: (key: string) => void
   answer: () => void
   hangup: () => void
   mute: () => void
@@ -21,6 +30,13 @@ interface MainViewProps {
   number?: string
   callingNumber: string
   capabilities: {[key: string]: boolean} | undefined
+  history: PhoneHistory[] | undefined
+  elapsedTime: number
+}
+
+interface MainViewState {
+  route: PhoneRoute
+  callNumber?: string
 }
 
 const StyledCalling = styled(Calling)`
@@ -30,7 +46,45 @@ const StyledCalling = styled(Calling)`
   box-sizing: border-box;
 `
 
-export class MainView extends React.Component<MainViewProps> {
+export class MainView extends React.Component<MainViewProps, MainViewState> {
+  constructor(props: MainViewProps) {
+    super(props)
+    this.state = { route: PhoneRoute.MAIN, callNumber: '' }
+  }
+
+  goToMain(callNumber: string) {
+    this.setState({ route: PhoneRoute.MAIN, callNumber })
+  }
+
+  goToHistory() {
+    this.setState({ route: PhoneRoute.HISTORY })
+  }
+
+  baseTemplateForRoute(): JSX.Element {
+    switch (this.state.route) {
+      case PhoneRoute.HISTORY:
+        if (this.props.history) {
+          return (<HistoryView phoneCalls={this.props.history} favorites={[]} select={this.goToMain.bind(this)}/>)
+        }
+      case PhoneRoute.FAVORITES:
+      case PhoneRoute.MAIN:
+      default:
+        return (<OffHook translator={this.props.translator} lang={this.props.lang} call={this.props.call} callNumber={this.state.callNumber} goToHistory={this.goToHistory.bind(this)}/>)
+    }
+  }
+
+  baseCallingProps() {
+    return {
+      translator: this.props.translator,
+      lang: this.props.lang,
+      hangup: this.props.hangup,
+      mute: this.props.mute,
+      number: this.props.number,
+      callingNumber: this.props.callingNumber,
+      elapsedTime: this.props.elapsedTime,
+    }
+  }
+
   render() {
     let template: JSX.Element
 
@@ -46,19 +100,19 @@ export class MainView extends React.Component<MainViewProps> {
 
     switch (this.props.callState) {
       case OFF_HOOK_STATE:
-        template = templateIfCapable((<OffHook translator={this.props.translator} lang={this.props.lang} call={this.props.call} />), PhoneCapabilities.EMIT)
+        template = templateIfCapable(this.baseTemplateForRoute(), PhoneCapabilities.EMIT)
         break
       case INCOMING_STATE:
         template = templateIfCapable((<Incoming answer={this.props.answer} hangup={this.props.hangup} translator={this.props.translator} lang={this.props.lang}/>), PhoneCapabilities.RECEIVE)
         break
       case ANSWERED_STATE:
-        template = templateIfCapable((<StyledCalling mode={ANSWERED_STATE} translator={this.props.translator} lang={this.props.lang} hangup={this.props.hangup} mute={this.props.mute} number={this.props.number} callingNumber={this.props.callingNumber}/>), PhoneCapabilities.RECEIVE)
+        template = templateIfCapable((<StyledCalling mode={ANSWERED_STATE} sendKey={this.props.sendKey} {...this.baseCallingProps()}/>), PhoneCapabilities.RECEIVE)
         break
       case CALL_OUT_STATE:
-        template = templateIfCapable((<StyledCalling mode={CALL_OUT_STATE} translator={this.props.translator} lang={this.props.lang} hangup={this.props.hangup} mute={this.props.mute} number={this.props.number} callingNumber={this.props.callingNumber}/>), PhoneCapabilities.EMIT)
+        template = templateIfCapable((<StyledCalling mode={CALL_OUT_STATE} sendKey={this.props.sendKey} {...this.baseCallingProps()}/>), PhoneCapabilities.EMIT)
         break
       case OUTGOING_STATE:
-        template = templateIfCapable((<StyledCalling mode={OUTGOING_STATE} translator={this.props.translator} lang={this.props.lang} hangup={this.props.hangup} mute={this.props.mute} number={this.props.number} callingNumber={this.props.callingNumber}/>), PhoneCapabilities.EMIT)
+        template = templateIfCapable((<StyledCalling mode={OUTGOING_STATE} {...this.baseCallingProps()}/>), PhoneCapabilities.EMIT)
         break
       default:
         template = unavailableTemplate

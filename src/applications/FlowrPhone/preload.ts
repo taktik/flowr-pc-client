@@ -23,6 +23,7 @@ const packagesToExport = [
   '@fortawesome/fontawesome-svg-core',
   '@fortawesome/free-solid-svg-icons',
   'styled-components',
+  'moment',
 ]
 const nodeRequire: {[key: string]: any} = packagesToExport.reduce((exported, pack) => Object.assign(exported, { [pack]: require(pack) }), {})
 const ipcRenderer = require('electron').ipcRenderer

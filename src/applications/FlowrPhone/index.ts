@@ -4,11 +4,19 @@ import { FlowrWindow } from '../../frontend/flowr-window'
 import { BrowserWindow } from 'electron'
 import { ApplicationOptions } from '../../application-manager/application-manager'
 import * as pkgJSON from './package.json'
+import { ApplicationConfig } from '@taktik/flowr-common-js'
 
-export type OpenPhoneProps = { registerProps: RegisterProps, show?: boolean, lang?: string }
+export type OpenPhoneProps = {
+  registerProps: RegisterProps,
+  history?: boolean,
+  favorites?: boolean,
+  currentUser?: string,
+  show?: boolean,
+  lang?: string,
+}
 
 interface PhoneOptions extends ApplicationOptions {
-  props: OpenPhoneProps,
+  config: OpenPhoneProps,
   flowrWindow: FlowrWindow,
   wexondWindow: BrowserWindow,
 }
@@ -58,20 +66,22 @@ export function create(options: PhoneOptions): PhoneWindow {
       win.removeListener('blur', win.focus)
     }
   }
+  const { history, favorites, currentUser } = options.config
 
   const phoneAppProps = {
     phoneServer: options.flowrWindow.phoneServerUrl,
-    registerProps: options.props.registerProps,
-    lang: options.props.lang,
+    registerProps: options.config.registerProps,
+    lang: options.config.lang,
     capabilities: options.capabilities,
+    config: { history, favorites, currentUser },
   }
 
   const phoneWindow = new PhoneWindow(
     options.flowrWindow,
-    options.store,
     options.preload,
     options.index,
     phoneAppProps,
+    options.store,
   )
   phoneWindow.on('show', () => {
     mute()
@@ -89,7 +99,7 @@ export function create(options: PhoneOptions): PhoneWindow {
   return phoneWindow
 }
 
-export const packageJSON: JSON = pkgJSON
+export const packageJSON: ApplicationConfig = pkgJSON
 
 export function canOpen(capabilities?: {[key: string]: boolean}, props?: OpenPhoneProps) {
   const canEmit = !capabilities || capabilities.emit

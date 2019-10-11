@@ -1,6 +1,6 @@
 import { BrowserWindow, Rectangle, ipcMain } from 'electron'
 import { WindowModes } from './WindowModes'
-import { RegisterProps } from './views/phone'
+import { RegisterProps, PhoneConfig } from './views/phone'
 import { Store } from '../../frontend/src/store'
 
 interface PhoneAppProps {
@@ -8,6 +8,7 @@ interface PhoneAppProps {
   registerProps?: RegisterProps
   lang?: string
   capabilities?: {[key: string]: boolean}
+  config: PhoneConfig
 }
 
 function buildPositionFromParents(parentRectangle: Rectangle) {
@@ -18,6 +19,7 @@ function buildPositionFromParents(parentRectangle: Rectangle) {
     y: Math.round(parentRectangle.y),
   }
 }
+
 export class PhoneWindow extends BrowserWindow {
   _mode: WindowModes | undefined
   _registerProps: RegisterProps | undefined
@@ -67,7 +69,11 @@ export class PhoneWindow extends BrowserWindow {
     this._capabilities = capabilities
   }
 
-  constructor(parent: BrowserWindow, private store: Store, preload: string, index: string, props: PhoneAppProps) {
+  set config(config: {[key: string]: any}) {
+    this.webContents.send('config-changed', config)
+  }
+
+  constructor(parent: BrowserWindow, preload: string | undefined, index: string, props: PhoneAppProps, private store?: Store | undefined) {
     super(Object.assign({
       frame: false,
       transparent: true,
@@ -101,7 +107,12 @@ export class PhoneWindow extends BrowserWindow {
       pageUrl.searchParams.append('capabilities', encodeURIComponent(JSON.stringify(props.capabilities)))
     }
 
+    if (props.config) {
+      pageUrl.searchParams.append('config', encodeURIComponent(JSON.stringify(props.config)))
+    }
+
     this.loadURL(pageUrl.href)
+
     this.mode = WindowModes.WIDGET
     this._ipcEvents = {
       'phone-maximize': () => this.mode = WindowModes.FULLSCREEN,
@@ -139,8 +150,14 @@ export class PhoneWindow extends BrowserWindow {
     this.webContents.send('mute-changed', this.webContents.isAudioMuted())
   }
 
-  updateStore(e: Event, data: {[key: string]: any}) {
-    this.store.bulkSet(data)
-    this.webContents.send('store-updated', this.store.data)
+  updateStore(e: Event, data: {[key: string]: any} = {}) {
+    if (this.store) {
+      if (Object.keys(data).length) {
+        this.store.bulkSet(data)
+      }
+      this.webContents.send('store-updated', this.store.data)
+    } else {
+      console.warn('No available store to save data')
+    }
   }
 }
