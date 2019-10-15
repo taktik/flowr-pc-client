@@ -15,9 +15,12 @@ const onMouseEnter = () => (store.tabs.scrollbarVisible = true);
 
 const onMouseLeave = () => (store.tabs.scrollbarVisible = false);
 
-const onAddTabClick = () => {
-  store.tabs.onNewTab();
-};
+const onAddTabClick = (e:React.MouseEvent) => {
+  e.stopPropagation()
+  store.tabs.onNewTab()
+  setTimeout(() => document.getElementById('search-box-input').focus(), 100)
+
+}
 
 export const Tabbar = observer(() => {
   return (
@@ -30,9 +33,13 @@ export const Tabbar = observer(() => {
         <Tabs />
       </TabsContainer>
       { !store.tabs.isMaxTab && <AddTab
+        style={{backgroundColor: store.overlay.isNewTab ?
+            'rgb(227, 237, 243)'
+            :  'transparent',
+        }}
         icon={icons.add}
         size={TOOLBAR_ICON_HEIGHT}
-        onClick={onAddTabClick}
+        onMouseDown={onAddTabClick}
         divRef={(r: any) => (store.addTab.ref = r)}
       />}
       <HorizontalScrollbar

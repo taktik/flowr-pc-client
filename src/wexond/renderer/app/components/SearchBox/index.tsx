@@ -115,10 +115,11 @@ export const SearchBox = observer(() => {
   }
 
   return (
-    <StyledSearchBox style={{ height }} onClick={onClick}>
+    <StyledSearchBox style={{ height }} onMouseUp={onClick}>
       <InputContainer>
         <SearchIcon />
         <Input
+          id="search-box-input"
           autoFocus
           placeholder={translate('Search or type in URL')}
           onKeyPress={onKeyPress}

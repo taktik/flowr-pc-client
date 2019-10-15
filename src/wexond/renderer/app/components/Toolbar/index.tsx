@@ -40,12 +40,12 @@ class BrowserActions extends React.Component {
 export const Toolbar = observer(() => {
   const { selectedTab } = store.tabs;
 
-  let isWindow = false;
+  let isWindow = true; // false
   let blockedAds: any = '';
 
   if (selectedTab) {
-    isWindow = selectedTab.isWindow;
-    blockedAds = selectedTab.blockedAds;
+    // isWindow = selectedTab.isWindow
+    blockedAds = selectedTab.blockedAds
   }
 
   const onHomePress = () => {
@@ -80,19 +80,19 @@ export const Toolbar = observer(() => {
               }}
             />
           )}
+          <ToolbarButton
+            disabled={false}
+            size={TOOLBAR_ICON_HEIGHT}
+            icon={icons.home}
+            onClick={onHomePress}
+          />
+          <ToolbarButton
+            disabled={false}
+            size={TOOLBAR_ICON_HEIGHT}
+            icon={icons.keyboard}
+            onClick={onKeyboardPress}
+          />
         </Buttons>
-        <ToolbarButton
-          disabled={false}
-          size={TOOLBAR_ICON_HEIGHT}
-          icon={icons.home}
-          onClick={onHomePress}
-        />
-        <ToolbarButton
-          disabled={false}
-          size={TOOLBAR_ICON_HEIGHT}
-          icon={icons.keyboard}
-          onClick={onKeyboardPress}
-        />
       </StyledToolbar>
   );
 });
