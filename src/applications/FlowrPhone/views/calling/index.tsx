@@ -102,15 +102,15 @@ export class Calling extends React.Component<CallingProps, CallingState> {
     let keyboard
 
     if (this.props.sendKey && this.state.displayKeyPad) {
-      keyboard = (<div className="keyboard"><Keyboard keyPressed={this.props.sendKey.bind(this)}/></div>)
+      keyboard = (<div className="extra-keyboard"><Keyboard keyPressed={this.props.sendKey.bind(this)}/></div>)
     } else {
-      keyboard = (<div className="keyboard"></div>)
+      keyboard = (<div></div>)
     }
 
     return (
       <div className="calling-container">
         {title}
-        <PhoneNumber>{formatCallingNumber(this.props.callingNumber)}</PhoneNumber>
+        <PhoneNumber className="phoneNumber">{formatCallingNumber(this.props.callingNumber)}</PhoneNumber>
         { elapsedTime }
         <div className="flex-container">
           <div className="flex-column">
@@ -131,7 +131,7 @@ export class Calling extends React.Component<CallingProps, CallingState> {
 
             <div className="buttonContainer">
               <KeyPadIcon displayKeyPad={this.toggleKeyboard.bind(this)}/>
-              <span className="buttonSpan">Keypad</span>
+              <span className="buttonSpan">{this.props.translator.translate('Keypad', this.props.lang)}</span>
             </div>
             <div className="buttonContainer">
               <HangupPhoneIcon hangup={this.props.hangup} />

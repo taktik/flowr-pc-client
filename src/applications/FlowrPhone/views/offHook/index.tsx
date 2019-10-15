@@ -18,6 +18,7 @@ interface OffHookProps {
   lang?: string
   callNumber?: CallingNumber
   goToHistory: () => void
+  callVoiceMail: CallFunction
 }
 
 interface OffHookState {
@@ -51,6 +52,10 @@ export class OffHook extends React.Component<OffHookProps, OffHookState> {
 
   private addNumber(value: string) {
     this.setState(state => ({ callNumber: { value: `${state.callNumber.value}${value}` } }))
+  }
+
+  private callVoiceMail(value: string) {
+    this.setState(state => ({ callNumber: { value: '43201' } }))
   }
 
   private removeNumber() {
@@ -92,8 +97,14 @@ export class OffHook extends React.Component<OffHookProps, OffHookState> {
           </div>
         </div>
         <div className="extra-btn-container">
-          <div onClick={this.props.goToHistory}><StyledIcon className="extra-btn-icon" icon="history" onClick={this.removeNumber.bind(this)} /></div>
-          <div onClick={this.props.goToHistory}><StyledIcon className="extra-btn-icon" icon="voicemail" onClick={this.removeNumber.bind(this)} /></div>
+          <div onClick={this.props.goToHistory}>
+            <StyledIcon className="extra-btn-icon" icon="history" onClick={this.removeNumber.bind(this)} />
+            {this.props.translator.translate('History', this.props.lang)}
+          </div>
+          <div onClick={this.callVoiceMail.bind(this)}>
+            <StyledIcon className="extra-btn-icon" icon="voicemail" onClick={this.callVoiceMail.bind(this)} />
+            {this.props.translator.translate('Voice Mail', this.props.lang)}
+          </div>
         </div>
       </div>
     )

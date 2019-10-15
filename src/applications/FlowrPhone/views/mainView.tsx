@@ -68,7 +68,7 @@ export class MainView extends React.Component<MainViewProps, MainViewState> {
     switch (this.state.route) {
       case PhoneRoute.HISTORY:
         if (this.props.history) {
-          return (<HistoryView phoneCalls={this.props.history} favorites={[]} select={this.goToMain.bind(this)}/>)
+          return (<HistoryView phoneCalls={this.props.history} favorites={[]} select={this.goToMain.bind(this)} translator={this.props.translator} lang={this.props.lang}/>)
         }
       case PhoneRoute.FAVORITES:
       case PhoneRoute.MAIN:

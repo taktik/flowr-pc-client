@@ -13,7 +13,7 @@ interface HistoryElementProps extends PhoneHistory {
 }
 
 const StyledIcon = styled(FontAwesomeIcon)`
-  width: 36px;
+  width: 28px;
 `
 
 export class HistoryElement extends React.Component<HistoryElementProps> {
@@ -40,10 +40,10 @@ export class HistoryElement extends React.Component<HistoryElementProps> {
   phoneStatusIcon(): JSX.Element {
     switch (this.props.status) {
       case PhoneCallStatus.EMITTED:
-        return (<StyledIcon icon="long-arrow-alt-right"></StyledIcon>)
+        return (<StyledIcon className="emitted" icon="long-arrow-alt-right"></StyledIcon>)
       case PhoneCallStatus.MISSED:
       case PhoneCallStatus.RECEIVED:
-        return (<StyledIcon icon="long-arrow-alt-left"></StyledIcon>)
+        return (<StyledIcon className="received" icon="long-arrow-alt-left"></StyledIcon>)
       default:
         return (<div></div>)
     }

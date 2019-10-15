@@ -54,16 +54,7 @@ export type RegisterProps = {
 }
 
 const UpperRightIcon = styled(ClickableIcon)`
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 48px;
-  height: 48px;
-  padding: 8px;
-  box-sizing: border-box;
-  color: white;
-  background: rgba(0,0,0,0.62);
-  border-radius: 4px 0 0 4px;
+  width: 36px;
 `
 
 export enum PhoneCapabilities {
@@ -306,7 +297,10 @@ export class Phone extends React.Component<PhoneProps, PhoneAppState> {
             sendKey={this.sendKey.bind(this)}
             elapsedTime={this.state.elapsedTime}
         />
-        <UpperRightIcon onClick={this.hide.bind(this)} icon="times" />
+        <div className="close-btn">
+          <UpperRightIcon onClick={this.hide.bind(this)} icon="times" />
+          <span>{this._translator.translate('Close', this.props.lang)}</span>
+        </div>
       </div>
     )
   }

@@ -178,6 +178,6 @@ export const Container = styled.div`
 `;
 
 export const Content = styled.div`
-  width: calc(100% - 64px);
+  width: calc(100% - 48px);
   max-width: 800px;
 `;

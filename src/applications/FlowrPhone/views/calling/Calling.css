@@ -1,5 +1,5 @@
 .calling-container {
-    width: calc(100% - 48px);
+    width: calc(100% - 80px);
     height: 100%;
     margin: 0;
     display: flex;
@@ -7,8 +7,8 @@
     align-items: center;
     justify-content: space-around;
     box-sizing: border-box;
-    background: rgba(0,0,0,0.62);
-    margin-left: 48px;
+    background: rgba(0,0,0,0.8);
+    margin-left: 80px;
     overflow: hidden;
 }
 
@@ -33,9 +33,10 @@
     height: 100%;
 }
 
-.keyboard {
+.extra-keyboard {
     height: 100%;
     box-sizing: border-box;
+    width: 50%;
 }
 
 .calling-container > div {
@@ -65,4 +66,14 @@
 
 .disabled {
     opacity: 0.42;
+}
+
+.phoneNumber{
+    overflow: hidden;
+    text-overflow: ellipsis;
+    padding: 0 24px;
+    white-space: nowrap;
+    box-sizing: border-box;
+    width: 100%;
+    line-height: 1;
 }

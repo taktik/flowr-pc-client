@@ -12,23 +12,23 @@
 }
 
 .offHook-container .top-container { 
-    background: rgba(0,0,0,0.62);
+    background: rgba(0,0,0,0.8);
     padding: 12px;
-    width: calc(100% - 48px);
+    width: calc(100% - 80px);
     box-sizing: border-box;
-    margin-left: 48px;
+    margin-left: 80px;
 }
 
 .container-flex {
-    background: rgba(0,0,0,0.62);
+    background: rgba(0,0,0,0.8);
     display: flex;
     flex-flow: row nowrap;
     align-items: center;
     justify-content: space-around;
-    margin: 0 0 0 48px;
+    margin: 0 0 0 80px;
     padding: 0;
     flex-grow: 1;
-    width: calc(100% - 48px);
+    width: calc(100% - 80px);
 }
 
 .right, .left {
@@ -63,7 +63,6 @@
     align-items: center;
     width: 40%;
     padding-bottom: 4px;
-    padding-top: 48px;
     margin-right: 12px;
 }
 
@@ -138,16 +137,20 @@
 }
 
 .extra-btn-container > div {
-    background: rgba(0,0,0,0.62);
+    background: rgba(0,0,0,0.8);
     border-radius: 4px 0 0 4px;
-    height: 48px;
-    width: 48px;
+    height: 80px;
+    width: 80px;
     display: flex;
+    flex-flow: column nowrap;
     align-items: center;
     justify-content: center;
     padding: 8px;
     box-sizing: border-box;
     margin: 4px 0;
+    font-size: 14px;
+    font-family: 'Roboto', sans-serif;
+    text-align: center;
 }
 
 .extra-btn-container > div:last-child{

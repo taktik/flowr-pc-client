@@ -1,11 +1,11 @@
 .incoming-call-container {
-    width: calc(100% - 48px);
+    width: calc(100% - 80px);
     height: 100%;
-    margin: 0 0 0 48px;
+    margin: 0 0 0 80px;
     display: grid;
     grid-template-columns: 1fr;
     grid-template-rows: 48px 1fr 1fr;
-    background: rgba(0,0,0,0.62);
+    background: rgba(0,0,0,0.8);
 }
 
 .title{
@@ -30,7 +30,7 @@
     color: white;
     font-family: 'Roboto', Arial, Helvetica, sans-serif;
     font-weight: medium;
-    font-size: 18px;
+    font-size: 20px;
     letter-spacing: 0.4;
     width: 100%;
     text-align: center;
