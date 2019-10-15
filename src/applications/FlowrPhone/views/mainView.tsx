@@ -7,7 +7,7 @@ import { CallState, OFF_HOOK_STATE, INCOMING_STATE, ANSWERED_STATE, CALL_OUT_STA
 import styled from 'styled-components'
 import { robotoRegular } from '.'
 import { Translator } from '../../../translator/translator'
-import { PhoneCapabilities } from './phone'
+import { PhoneCapabilities, CallingNumber } from './phone'
 import { HistoryView } from './history/view'
 import { PhoneHistory } from './history'
 
@@ -19,7 +19,7 @@ enum PhoneRoute {
 
 interface MainViewProps {
   callState: CallState | null
-  call: (callNumber: string) => void
+  call: (callNumber: CallingNumber) => void
   sendKey: (key: string) => void
   answer: () => void
   hangup: () => void
@@ -27,8 +27,7 @@ interface MainViewProps {
   waiting: boolean
   translator: Translator
   lang?: string
-  number?: string
-  callingNumber: string
+  callingNumber: CallingNumber
   capabilities: {[key: string]: boolean} | undefined
   history: PhoneHistory[] | undefined
   elapsedTime: number
@@ -36,7 +35,7 @@ interface MainViewProps {
 
 interface MainViewState {
   route: PhoneRoute
-  callNumber?: string
+  callNumber?: CallingNumber
 }
 
 const StyledCalling = styled(Calling)`
@@ -49,15 +48,20 @@ const StyledCalling = styled(Calling)`
 export class MainView extends React.Component<MainViewProps, MainViewState> {
   constructor(props: MainViewProps) {
     super(props)
-    this.state = { route: PhoneRoute.MAIN, callNumber: '' }
+    this.state = { route: PhoneRoute.MAIN, callNumber: { value: '' } }
   }
 
-  goToMain(callNumber: string) {
+  goToMain(callNumber: CallingNumber) {
     this.setState({ route: PhoneRoute.MAIN, callNumber })
   }
 
   goToHistory() {
     this.setState({ route: PhoneRoute.HISTORY })
+  }
+
+  call(callNumber: CallingNumber) {
+    this.props.call(callNumber)
+    this.setState({ callNumber: { value: '' } })
   }
 
   baseTemplateForRoute(): JSX.Element {
@@ -69,7 +73,7 @@ export class MainView extends React.Component<MainViewProps, MainViewState> {
       case PhoneRoute.FAVORITES:
       case PhoneRoute.MAIN:
       default:
-        return (<OffHook translator={this.props.translator} lang={this.props.lang} call={this.props.call} callNumber={this.state.callNumber} goToHistory={this.goToHistory.bind(this)}/>)
+        return (<OffHook translator={this.props.translator} lang={this.props.lang} call={this.call.bind(this)} callNumber={this.state.callNumber} goToHistory={this.goToHistory.bind(this)}/>)
     }
   }
 
@@ -79,7 +83,6 @@ export class MainView extends React.Component<MainViewProps, MainViewState> {
       lang: this.props.lang,
       hangup: this.props.hangup,
       mute: this.props.mute,
-      number: this.props.number,
       callingNumber: this.props.callingNumber,
       elapsedTime: this.props.elapsedTime,
     }

@@ -3,13 +3,13 @@ import { PhoneFavorite } from '../favorites'
 import { HistoryElement } from './historyElement'
 import { PhoneHistory } from '.'
 import { ClickableIcon } from '../clickableIcon'
-
+import { CallingNumber } from '../phone'
 import styled from 'styled-components'
 
 interface HistoryProps {
   phoneCalls: PhoneHistory[]
   favorites: PhoneFavorite[]
-  select: (phoneNumber: string) => void
+  select: (phoneNumber: CallingNumber) => void
 }
 
 const StyledIcon = styled(ClickableIcon)`
@@ -17,12 +17,13 @@ const StyledIcon = styled(ClickableIcon)`
 `
 
 export class HistoryView extends React.Component<HistoryProps> {
-  findFavoriteForNumber(phoneNumber: string): PhoneFavorite | undefined {
-    return this.props.favorites.find(favorite => favorite.number === phoneNumber)
+  findFavoriteForNumber(phoneNumber: CallingNumber | string): PhoneFavorite | undefined {
+    const value = typeof phoneNumber === 'string' ? phoneNumber : phoneNumber.value
+    return this.props.favorites.find(favorite => favorite.number === value)
   }
 
   back() {
-    this.props.select('')
+    this.props.select({ value: '' })
   }
 
   render() {

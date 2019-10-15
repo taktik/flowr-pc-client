@@ -37,10 +37,15 @@ type PhoneAppState = {
   waiting: boolean,
   lang?: string,
   isMute: boolean,
-  callingNumber: string,
+  callingNumber: CallingNumber,
   capabilities: {[key: string]: boolean} | undefined,
   phoneHistory: PhoneHistory[],
   elapsedTime: number,
+}
+
+export interface CallingNumber {
+  name?: string,
+  value: string
 }
 
 export type RegisterProps = {
@@ -105,9 +110,13 @@ export class Phone extends React.Component<PhoneProps, PhoneAppState> {
     }
   }
 
+  private callingNumberChanged(callingNumber: CallingNumber) {
+    this.setState({ callingNumber })
+  }
+
   constructor(props: PhoneProps) {
     super(props)
-    const { registerStateMachine, callStateMachine } = PhoneStateMachine.factory(props.phoneServer, props.registerProps)
+    const { registerStateMachine, callStateMachine } = PhoneStateMachine.factory(props.phoneServer, props.registerProps, this.callingNumberChanged.bind(this))
     this.registerStateMachine = registerStateMachine
     this.callStateMachine = callStateMachine
 
@@ -124,7 +133,7 @@ export class Phone extends React.Component<PhoneProps, PhoneAppState> {
       waiting: false,
       lang: props.lang,
       isMute: false,
-      callingNumber: this.callStateMachine.callingNumber,
+      callingNumber: { value: '' },
       capabilities: props.capabilities,
       phoneHistory: [],
       elapsedTime: 0,
@@ -167,26 +176,34 @@ export class Phone extends React.Component<PhoneProps, PhoneAppState> {
     if (this.tickRequest) {
       cancelAnimationFrame(this.tickRequest)
     }
+
     if (
         !this.canEmit() && to === CALL_OUT_STATE ||
         !this.canReceive() && to === INCOMING_STATE
     ) {
       return
     }
-    if (this.callStateMachine.isCallStarting(to)) {
+
+    if (this.callStateMachine.isCallingState(to)) {
       this.startTick()
-    } else if (this.callStateMachine.isCallEnding(to) && this._history) {
-      this._history.addToHistory({
-        date: Date.now(),
-        duration: this.state.elapsedTime,
-        number: this.state.callingNumber,
-        status: this._history.statusForState(from),
-      })
+    } else if (this.callStateMachine.isOffHookState(to)) {
+      const status = this._history.statusForState(from)
+      if (status && this._history) {
+        this._history.addToHistory({
+          date: Date.now(),
+          duration: this.state.elapsedTime,
+          number: this.state.callingNumber,
+          status,
+        })
+      }
+
+      this.callingNumberChanged({ value: '' })
     }
+
     if (([INCOMING_STATE, ANSWERED_STATE].includes(from) || !this.canEmit()) && to === OFF_HOOK_STATE) {
       this.hide()
     }
-    this.setState({ callState: to, callingNumber: this.callStateMachine.callingNumber, elapsedTime: 0 })
+    this.setState({ callState: to, elapsedTime: 0 })
   }
 
   capabilitiesChanged(e: Event, capabilities: {[key: string]: boolean} | undefined) {
@@ -232,7 +249,7 @@ export class Phone extends React.Component<PhoneProps, PhoneAppState> {
     this.setState({ callState: null })
   }
 
-  call(callNumber: string) {
+  call(callNumber: CallingNumber) {
     if (this.canEmit()) {
       this.callStateMachine.call(callNumber)
     }

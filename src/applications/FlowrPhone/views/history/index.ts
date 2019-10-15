@@ -1,5 +1,6 @@
 import { CallState, INCOMING_STATE, ANSWERED_STATE, CALL_OUT_STATE, OUTGOING_STATE } from '../../stateMachines/callStateMachine'
 import './history.css'
+import { CallingNumber } from '../phone'
 
 export enum PhoneCallStatus {
   EMITTED = 'EMITTED',
@@ -13,7 +14,7 @@ export interface HistoryStore {
 }
 
 export interface PhoneHistory {
-  number: string,
+  number: CallingNumber | string,
   date: number, // timestamp
   status: PhoneCallStatus,
   duration: number,

@@ -4,10 +4,12 @@ import { PhoneFavorite } from '../favorites'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { formatElapsedTime, formatDate } from '../../helper/time'
 import styled from 'styled-components'
+import { CallingNumber } from '../phone'
+import { formatCallingNumber } from '../../helper/format'
 
 interface HistoryElementProps extends PhoneHistory {
   favorite?: PhoneFavorite
-  select: (phoneNumber: string) => void
+  select: (phoneNumber: CallingNumber) => void
 }
 
 const StyledIcon = styled(FontAwesomeIcon)`
@@ -16,7 +18,13 @@ const StyledIcon = styled(FontAwesomeIcon)`
 
 export class HistoryElement extends React.Component<HistoryElementProps> {
   select() {
-    this.props.select(this.props.number)
+    if (this.props.favorite) {
+      this.props.select({ name: this.props.favorite.name, value: this.props.favorite.number })
+    } else if (typeof this.props.number === 'string') {
+      this.props.select({ value: this.props.number })
+    } else {
+      this.props.select(this.props.number)
+    }
   }
 
   header(): JSX.Element {
@@ -26,7 +34,7 @@ export class HistoryElement extends React.Component<HistoryElementProps> {
         <div className="number">{this.props.favorite.number}</div>
       </div>)
     }
-    return (<div className="header"><div className="title number">{this.props.number}</div></div>)
+    return (<div className="header"><div className="title number">{formatCallingNumber(this.props.number)}</div></div>)
   }
 
   phoneStatusIcon(): JSX.Element {

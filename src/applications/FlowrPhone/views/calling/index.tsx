@@ -12,6 +12,8 @@ import { robotoMedium } from '..'
 import { RemoteCodes } from '../../remote'
 import { Keyboard } from '../keyboard'
 import { KeyPadIcon } from '../otherButtons'
+import { CallingNumber } from '../phone'
+import { formatCallingNumber } from '../../helper/format'
 
 interface CallingProps {
   mode: CallState
@@ -21,8 +23,7 @@ interface CallingProps {
   className?: string
   translator: Translator
   lang?: string
-  number?: string
-  callingNumber: string
+  callingNumber: CallingNumber
   elapsedTime: number
 }
 
@@ -60,6 +61,8 @@ export class Calling extends React.Component<CallingProps, CallingState> {
   private onKeyDown(e: KeyboardEvent) {
     if (e.code === RemoteCodes.HANGUP_GESTURE || e.code === RemoteCodes.HANGUP_KEY) {
       this.props.hangup()
+    } else if (/^[0-9*#]$/.test(e.key.toString())) {
+      this.props.sendKey(e.key.toString())
     }
   }
 
@@ -107,7 +110,7 @@ export class Calling extends React.Component<CallingProps, CallingState> {
     return (
       <div className="calling-container">
         {title}
-        <PhoneNumber>{this.props.callingNumber}</PhoneNumber>
+        <PhoneNumber>{formatCallingNumber(this.props.callingNumber)}</PhoneNumber>
         { elapsedTime }
         <div className="flex-container">
           <div className="flex-column">

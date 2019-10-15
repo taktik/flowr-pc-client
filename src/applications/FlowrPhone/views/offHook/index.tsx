@@ -8,19 +8,20 @@ import { ClickableIcon } from '../clickableIcon'
 
 import './OffHook.css'
 import { RemoteCodes } from '../../remote'
+import { CallingNumber } from '../phone'
 
-type CallFunction = (callNumber: string) => void
+type CallFunction = (callNumber: CallingNumber) => void
 
 interface OffHookProps {
   call: CallFunction
   translator: Translator
   lang?: string
-  callNumber?: string
+  callNumber?: CallingNumber
   goToHistory: () => void
 }
 
 interface OffHookState {
-  callNumber: string
+  callNumber: CallingNumber
 }
 
 const numberValidationRegExp = /^\+?[0-9]*$/
@@ -32,7 +33,7 @@ const StyledIcon = styled(ClickableIcon)`
 export class OffHook extends React.Component<OffHookProps, OffHookState> {
   constructor(props: OffHookProps) {
     super(props)
-    this.state = { callNumber: props.callNumber || '' }
+    this.state = { callNumber: props.callNumber || { value: '' } }
 
     this.handleChange = this.handleChange.bind(this)
     this.onKeyDown = this.onKeyDown.bind(this)
@@ -49,11 +50,11 @@ export class OffHook extends React.Component<OffHookProps, OffHookState> {
   }
 
   private addNumber(value: string) {
-    this.setState(state => ({ callNumber: `${state.callNumber}${value}` }))
+    this.setState(state => ({ callNumber: { value: `${state.callNumber.value}${value}` } }))
   }
 
   private removeNumber() {
-    this.setState(state => ({ callNumber: state.callNumber ? state.callNumber.slice(0, -1) : '' }))
+    this.setState(state => ({ callNumber: { value: state.callNumber.value.slice(0, -1) } }))
   }
 
   @throttle(1000)
@@ -63,7 +64,7 @@ export class OffHook extends React.Component<OffHookProps, OffHookState> {
 
   handleChange(e: React.ChangeEvent<HTMLInputElement>) {
     if (numberValidationRegExp.test(e.target.value)) {
-      this.setState({ callNumber: e.target.value })
+      this.setState({ callNumber: { value: e.target.value } })
     }
   }
 
@@ -73,7 +74,7 @@ export class OffHook extends React.Component<OffHookProps, OffHookState> {
         <div className="top-container">
           <label className="label">{this.props.translator.translate('Number', this.props.lang)}</label>
           <div className="input-container">
-            <input id="callNumber" className="number" type="string" value={this.state.callNumber} onChange={this.handleChange} onKeyDown={e => e.preventDefault()} autoFocus />
+            <input id="callNumber" className="number" type="string" value={this.state.callNumber.value} onChange={this.handleChange} onKeyDown={e => e.preventDefault()} autoFocus />
             <StyledIcon className="input-icon" icon="backspace" onClick={this.removeNumber.bind(this)} />
           </div>
         </div>
