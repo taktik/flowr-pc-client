@@ -4,12 +4,15 @@ import { AnswerPhoneIcon, HangupPhoneIcon } from '../phoneButtons'
 import './Incoming.css'
 import { RemoteCodes } from '../../remote'
 import { Translator } from '../../../../translator/translator'
+import { CallingNumber } from '../phone'
+import { formatCallingNumber } from '../../helper/format'
 
 interface IncomingProps {
   answer: () => void
   hangup: () => void
   translator: Translator
   lang?: string
+  callingNumber: CallingNumber
 }
 
 export class Incoming extends React.Component<IncomingProps> {
@@ -25,11 +28,12 @@ export class Incoming extends React.Component<IncomingProps> {
     super(props)
     this.onKeyDown = this.onKeyDown.bind(this)
   }
+
   render() {
     return (
       <div className="incoming-call-container">
         <h2 className="title">{this.props.translator.translate('Incoming Call', this.props.lang)}</h2>
-        {/* <h1 className="phoneNumber">+32 0492 25 41 79</h1> */}
+        <h1 className="phoneNumber">{formatCallingNumber(this.props.callingNumber) || ''}</h1>
         <FlexRowSpaceEvenly>
           <div className="buttonContainer">
             <AnswerPhoneIcon answer={this.props.answer} />

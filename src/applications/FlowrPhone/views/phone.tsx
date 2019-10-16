@@ -12,6 +12,7 @@ import styled from 'styled-components'
 import { ClickableIcon } from './clickableIcon'
 import { Translator } from '../../../translator/translator'
 import { fr } from '../translations/fr'
+import { History, HistoryStore, PhoneHistory } from './history'
 
 declare global {
   interface Window {
@@ -25,6 +26,9 @@ type PhoneProps = {
   registerProps: RegisterProps | null,
   lang?: string,
   capabilities?: {[key: string]: boolean},
+  currentUser: string,
+  history: boolean,
+  favorites: boolean,
 }
 
 type PhoneAppState = {
@@ -33,8 +37,15 @@ type PhoneAppState = {
   waiting: boolean,
   lang?: string,
   isMute: boolean,
-  callingNumber: string,
+  callingNumber: CallingNumber,
   capabilities: {[key: string]: boolean} | undefined,
+  phoneHistory: PhoneHistory[],
+  elapsedTime: number,
+}
+
+export interface CallingNumber {
+  name?: string,
+  value: string
 }
 
 export type RegisterProps = {
@@ -43,16 +54,17 @@ export type RegisterProps = {
 }
 
 const UpperRightIcon = styled(ClickableIcon)`
-  position: fixed;
-  top: 12px;
-  left: 12px;
-  width: 24px;
-  color: white;
+  width: 36px;
 `
 
 export enum PhoneCapabilities {
   EMIT = 'emit',
   RECEIVE = 'receive',
+}
+
+interface PhoneStore {
+  history?: HistoryStore
+  favorites?: HistoryStore
 }
 
 export class Phone extends React.Component<PhoneProps, PhoneAppState> {
@@ -62,29 +74,72 @@ export class Phone extends React.Component<PhoneProps, PhoneAppState> {
   private _ipc: IpcRenderer = window.ipcRenderer
   private _translator: Translator = new Translator()
   private _capabilities: {[key: string]: boolean} | undefined
+  private _history: History | undefined = undefined
+
+  private tickRequest: number | null = null
+  private firstTick: number | undefined = undefined
+
+  private _ipcEvents: {[key: string]: (...args: any[]) => void} = {
+    'window-mode-changed': this.windowModeChanged.bind(this),
+    'register-props': this.receivedRegisterProps.bind(this),
+    'change-language': (e: Event, lang: string) => this.setState({ lang }),
+    'mute-changed': this.muteStatusChanged.bind(this),
+    'capabilities-changed': this.capabilitiesChanged.bind(this),
+    'history-changed': this.historyChanged.bind(this),
+    'current-user-changed': this.currentUserChanged.bind(this),
+    'store-updated': this.storeUpdated.bind(this),
+  }
 
   private ipcSend(message: string, payload: {[key: string]: any} = {}): () => void {
     return () => this._ipc.send(message, payload)
   }
 
+  private storeFor(namespace: string) {
+    return (data: {[key: string]: any}) => {
+      console.log('PHONE store', { [namespace]: data })
+      this.ipcSend('update-phone-store', { [namespace]: data })()
+    }
+  }
+
+  private callingNumberChanged(callingNumber: CallingNumber) {
+    this.setState({ callingNumber })
+  }
+
   constructor(props: PhoneProps) {
     super(props)
-    const { registerStateMachine, callStateMachine } = PhoneStateMachine.factory(props.phoneServer, props.registerProps)
+    const { registerStateMachine, callStateMachine } = PhoneStateMachine.factory(props.phoneServer, props.registerProps, this.callingNumberChanged.bind(this))
     this.registerStateMachine = registerStateMachine
     this.callStateMachine = callStateMachine
 
-    this._ipc.on('window-mode-changed', this.windowModeChanged.bind(this))
-    this._ipc.on('register-props', this.receivedRegisterProps.bind(this))
-    this._ipc.on('change-language', (e: Event, lang: string) => this.setState({ lang }))
-    this._ipc.on('mute-changed', this.muteStatusChanged.bind(this))
-    this._ipc.on('capabilities-changed', this.capabilitiesChanged.bind(this))
+    Object.entries(this._ipcEvents).forEach(entry => this._ipc.on(entry[0], entry[1]))
 
     this.registerStateMachine.onEnterState(REGISTERED_STATE, this.listenToCallStateMachine.bind(this))
     this.registerStateMachine.onLeaveState(REGISTERED_STATE, this.unlistenToCallStateMachine.bind(this))
 
     this._translator.addKeys('fr', fr)
+    this.setHistory(props.history, props.currentUser)
 
-    this.state = { callState: null, waiting: false, lang: props.lang, isMute: false, callingNumber: this.callStateMachine.callingNumber, capabilities: props.capabilities }
+    this.state = {
+      callState: null,
+      waiting: false,
+      lang: props.lang,
+      isMute: false,
+      callingNumber: { value: '' },
+      capabilities: props.capabilities,
+      phoneHistory: [],
+      elapsedTime: 0,
+    }
+    this.ipcSend('update-phone-store')()
+  }
+
+  setHistory(enabled: boolean, currentUser: string) {
+    if (enabled) {
+      if (!this._history) {
+        this._history = new History({ currentUser, save: this.storeFor('history') })
+      } else {
+        this._history.user = currentUser || ''
+      }
+    }
   }
 
   canEmit(): boolean {
@@ -109,21 +164,62 @@ export class Phone extends React.Component<PhoneProps, PhoneAppState> {
   }
 
   stateChanged(from: CallState, to: CallState) {
+    if (this.tickRequest) {
+      cancelAnimationFrame(this.tickRequest)
+    }
+
     if (
         !this.canEmit() && to === CALL_OUT_STATE ||
         !this.canReceive() && to === INCOMING_STATE
     ) {
       return
     }
+
+    if (this.callStateMachine.isCallingState(to)) {
+      this.startTick()
+    } else if (this.callStateMachine.isOffHookState(to)) {
+      const status = this._history.statusForState(from)
+      if (status && this._history) {
+        this._history.addToHistory({
+          date: Date.now(),
+          duration: this.state.elapsedTime,
+          number: this.state.callingNumber,
+          status,
+        })
+      }
+
+      this.callingNumberChanged({ value: '' })
+    }
+
     if (([INCOMING_STATE, ANSWERED_STATE].includes(from) || !this.canEmit()) && to === OFF_HOOK_STATE) {
       this.hide()
     }
-    this.setState({ callState: to, callingNumber: this.callStateMachine.callingNumber })
+    this.setState({ callState: to, elapsedTime: 0 })
   }
 
   capabilitiesChanged(e: Event, capabilities: {[key: string]: boolean} | undefined) {
     this._capabilities = capabilities
     this.setState({ capabilities })
+  }
+
+  historyChanged(e: Event, history: boolean) {
+    if (this._history && !history) {
+      console.log('History functionality revoked')
+      delete this._history
+    }
+  }
+
+  currentUserChanged(e: Event, currentUser: string) {
+    if (this._history) {
+      this._history.user = currentUser
+    }
+  }
+
+  storeUpdated(e: Event, storeData: PhoneStore) {
+    if (this._history) {
+      this._history.store = storeData.history
+      this.setState({ phoneHistory: this._history.list })
+    }
   }
 
   listenToCallStateMachine() {
@@ -144,7 +240,7 @@ export class Phone extends React.Component<PhoneProps, PhoneAppState> {
     this.setState({ callState: null })
   }
 
-  call(callNumber: string) {
+  call(callNumber: CallingNumber) {
     if (this.canEmit()) {
       this.callStateMachine.call(callNumber)
     }
@@ -165,6 +261,24 @@ export class Phone extends React.Component<PhoneProps, PhoneAppState> {
     this.ipcSend('phone-hide')()
   }
 
+  sendKey(key: string) {
+    this.callStateMachine.sendKey(key)
+  }
+
+  private startTick() {
+    this.firstTick = Date.now()
+    this.tickRequest = requestAnimationFrame(this.tick.bind(this))
+  }
+
+  private tick() {
+    if (this.firstTick === undefined) {
+      return
+    }
+    const elapsedTime = Date.now() - this.firstTick
+    this.setState({ elapsedTime })
+    this.tickRequest = requestAnimationFrame(this.tick.bind(this))
+  }
+
   render() {
     return (
       <div className={this.props.className}>
@@ -179,13 +293,23 @@ export class Phone extends React.Component<PhoneProps, PhoneAppState> {
             mute={this.ipcSend('phone-mute')}
             callingNumber={this.state.callingNumber}
             capabilities={this.state.capabilities}
+            history={this.state.phoneHistory}
+            sendKey={this.sendKey.bind(this)}
+            elapsedTime={this.state.elapsedTime}
         />
-        <UpperRightIcon onClick={this.hide.bind(this)} icon="times" />
+        <div className="close-btn">
+          <UpperRightIcon onClick={this.hide.bind(this)} icon="times" />
+          <span>{this._translator.translate('Close', this.props.lang)}</span>
+        </div>
       </div>
     )
   }
 
   componentWillUnmount() {
     this.unlistenToCallStateMachine()
+    Object.entries(this._ipcEvents).forEach(entry => this._ipc.removeListener(entry[0], entry[1]))
+    if (this.tickRequest) {
+      cancelAnimationFrame(this.tickRequest)
+    }
   }
 }

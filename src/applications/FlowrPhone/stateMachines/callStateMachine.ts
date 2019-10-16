@@ -2,6 +2,7 @@ import { fsm } from 'typescript-state-machine'
 import StateMachineImpl = fsm.StateMachineImpl
 import State = fsm.State
 import { Dispatcher } from './dispatcher'
+import { CallingNumber } from '../views/phone'
 
 enum CallStatesNames {
   IDLE = 'IDLE',
@@ -57,17 +58,14 @@ export class CallStateMachine extends StateMachineImpl<CallState> {
   private _dispatcher: Dispatcher
   private _initTimeout: number | undefined
   private _outGoingCallTimeout: number | null = null
-  _callingNumber: string = ''
-
-  get callingNumber() {
-    return this._callingNumber
-  }
+  callingNumberChanged: (callingNumber: CallingNumber) => void
 
   set callingNumber(caller: string) {
+    const callerName = caller.replace(/.*'([a-zA-Z\s]+)'.+/, '$1')
     const splitCaller = caller.replace(/[><]/g, '').split(':')
     const numberAndServer = splitCaller[1]
     const callingNumber = numberAndServer ? numberAndServer.split('@')[0] : splitCaller[0] || ''
-    this._callingNumber = callingNumber
+    this.callingNumberChanged(callerName !== caller ? { name: callerName, value: callingNumber } : { value: callingNumber })
   }
 
   static getStateFromStatus(status: string) {
@@ -90,9 +88,10 @@ export class CallStateMachine extends StateMachineImpl<CallState> {
     this._dispatcher.send('init')
   }
 
-  constructor(dispatcher: Dispatcher) {
+  constructor(dispatcher: Dispatcher, callingNumberChanged: (callingNumber: CallingNumber) => void) {
     super(CALL_STATES, transitions, IDLE_STATE)
     this._dispatcher = dispatcher
+    this.callingNumberChanged = callingNumberChanged
 
     this.onEnterState(CLIENT_NOT_RUNNING_STATE, this.attemptToInit.bind(this))
     this.onLeaveState(CLIENT_NOT_RUNNING_STATE, this.clearInitAttemps.bind(this))
@@ -135,15 +134,26 @@ export class CallStateMachine extends StateMachineImpl<CallState> {
     }
   }
 
-  call(callNumber: string) {
-    this._dispatcher.send('call', { number: callNumber })
-    this._callingNumber = callNumber
+  call(callNumber: CallingNumber) {
+    this._dispatcher.send('call', { number: callNumber.value })
+    this.callingNumberChanged(callNumber)
     this.setState(OUTGOING_STATE)
     this._outGoingCallTimeout = setTimeout(this.terminate.bind(this), 60000)
   }
 
   answer() {
-    this._callingNumber = '' // no information about caller (for now ?)
     this._dispatcher.send('answer')
+  }
+
+  sendKey(key: string) {
+    this._dispatcher.send('dtmf', { number: key })
+  }
+
+  isCallingState(state: CallState) {
+    return [ANSWERED_STATE, CALL_OUT_STATE].includes(state)
+  }
+
+  isOffHookState(state: CallState) {
+    return [OFF_HOOK_STATE, IDLE_STATE, CLIENT_NOT_RUNNING_STATE].includes(state)
   }
 }

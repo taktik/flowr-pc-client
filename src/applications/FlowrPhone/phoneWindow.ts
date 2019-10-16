@@ -8,6 +8,9 @@ interface PhoneAppProps {
   registerProps?: RegisterProps
   lang?: string
   capabilities?: {[key: string]: boolean}
+  history: boolean
+  favorites: boolean
+  currentUser: string
 }
 
 function buildPositionFromParents(parentRectangle: Rectangle) {
@@ -18,11 +21,14 @@ function buildPositionFromParents(parentRectangle: Rectangle) {
     y: Math.round(parentRectangle.y),
   }
 }
+
 export class PhoneWindow extends BrowserWindow {
   _mode: WindowModes | undefined
   _registerProps: RegisterProps | undefined
   private _capabilities: {[key: string]: boolean} | undefined
   private _lang: string | undefined
+  private _currentUser: string | undefined
+  private _history: boolean | undefined
   private readonly _ipcEvents: {[key: string]: (...args: any[]) => void}
 
   get _widgetPosition(): Rectangle {
@@ -67,13 +73,33 @@ export class PhoneWindow extends BrowserWindow {
     this._capabilities = capabilities
   }
 
-  constructor(parent: BrowserWindow, private store: Store, preload: string, index: string, props: PhoneAppProps) {
+  get currentUser() {
+    return this._currentUser
+  }
+  set currentUser(currentUser: string) {
+    if (currentUser !== this.currentUser) {
+      this.webContents.send('current-user-changed', currentUser)
+      this._currentUser = currentUser
+    }
+  }
+
+  get history() {
+    return this._history
+  }
+  set history(history: boolean) {
+    if (history !== this.history) {
+      this.webContents.send('history-changed', history)
+      this._history = history
+    }
+  }
+
+  constructor(parent: BrowserWindow, preload: string | undefined, index: string, props: PhoneAppProps, private store?: Store | undefined) {
     super(Object.assign({
       frame: false,
       transparent: true,
       show: false,
       parent,
-      backgroundColor: '#8C777777',
+      backgroundColor: '#00000000',
       webPreferences: {
         plugins: true,
         nodeIntegration: false,
@@ -97,11 +123,26 @@ export class PhoneWindow extends BrowserWindow {
       pageUrl.searchParams.append('lang', props.lang)
     }
 
+    if (props.history) {
+      this._history = props.history
+      pageUrl.searchParams.append('history', '') // boolean
+    }
+
+    if (props.favorites) {
+      pageUrl.searchParams.append('favorites', '') // boolean
+    }
+
+    if (props.currentUser) {
+      this._currentUser = props.currentUser
+      pageUrl.searchParams.append('currentUser', props.currentUser)
+    }
+
     if (props.capabilities) {
       pageUrl.searchParams.append('capabilities', encodeURIComponent(JSON.stringify(props.capabilities)))
     }
 
     this.loadURL(pageUrl.href)
+
     this.mode = WindowModes.WIDGET
     this._ipcEvents = {
       'phone-maximize': () => this.mode = WindowModes.FULLSCREEN,
@@ -139,8 +180,14 @@ export class PhoneWindow extends BrowserWindow {
     this.webContents.send('mute-changed', this.webContents.isAudioMuted())
   }
 
-  updateStore(e: Event, data: {[key: string]: any}) {
-    this.store.bulkSet(data)
-    this.webContents.send('store-updated', this.store.data)
+  updateStore(e: Event, data: {[key: string]: any} = {}) {
+    if (this.store) {
+      if (Object.keys(data).length) {
+        this.store.bulkSet(data)
+      }
+      this.webContents.send('store-updated', this.store.data)
+    } else {
+      console.warn('No available store to save data')
+    }
   }
 }
