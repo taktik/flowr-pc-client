@@ -18,7 +18,6 @@ interface OffHookProps {
   lang?: string
   callNumber?: CallingNumber
   goToHistory: () => void
-  callVoiceMail: CallFunction
 }
 
 interface OffHookState {
@@ -55,7 +54,7 @@ export class OffHook extends React.Component<OffHookProps, OffHookState> {
   }
 
   private callVoiceMail(value: string) {
-    this.setState(state => ({ callNumber: { value: '43201' } }))
+    this.setState({ callNumber: { name: this.props.translator.translate('Voice Mail', this.props.lang), value: '43201' } })
   }
 
   private removeNumber() {
