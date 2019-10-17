@@ -6,3 +6,5 @@ export function formatCallingNumber(callingNumber: CallingNumber | string) {
   }
   return `${callingNumber.name ? `${callingNumber.name}  :` : ''} ${callingNumber.value}`
 }
+
+export const numberValidationRegExp = /^\+?[0-9]*$/

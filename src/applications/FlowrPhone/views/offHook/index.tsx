@@ -9,6 +9,7 @@ import { ClickableIcon } from '../clickableIcon'
 import './OffHook.css'
 import { RemoteCodes } from '../../remote'
 import { CallingNumber } from '../phone'
+import { numberValidationRegExp } from '../../helper/format'
 
 type CallFunction = (callNumber: CallingNumber) => void
 
@@ -18,13 +19,12 @@ interface OffHookProps {
   lang?: string
   callNumber?: CallingNumber
   goToHistory: () => void
+  goToFavorites: () => void
 }
 
 interface OffHookState {
   callNumber: CallingNumber
 }
-
-const numberValidationRegExp = /^\+?[0-9]*$/
 
 const StyledIcon = styled(ClickableIcon)`
   width: 36px;
@@ -97,8 +97,12 @@ export class OffHook extends React.Component<OffHookProps, OffHookState> {
         </div>
         <div className="extra-btn-container">
           <div onClick={this.props.goToHistory}>
-            <StyledIcon className="extra-btn-icon" icon="history" onClick={this.removeNumber.bind(this)} />
+            <StyledIcon className="extra-btn-icon" icon="history" onClick={this.props.goToHistory} />
             {this.props.translator.translate('History', this.props.lang)}
+          </div>
+          <div onClick={this.props.goToFavorites}>
+            <StyledIcon className="extra-btn-icon" icon="address-book" onClick={this.props.goToFavorites} />
+            {this.props.translator.translate('Favorites', this.props.lang)}
           </div>
           <div onClick={this.callVoiceMail.bind(this)}>
             <StyledIcon className="extra-btn-icon" icon="voicemail" onClick={this.callVoiceMail.bind(this)} />

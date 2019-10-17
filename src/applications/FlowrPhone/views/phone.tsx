@@ -12,7 +12,9 @@ import styled from 'styled-components'
 import { ClickableIcon } from './clickableIcon'
 import { Translator } from '../../../translator/translator'
 import { fr } from '../translations/fr'
-import { History, HistoryStore, PhoneHistory } from './history'
+import { History, PhoneHistory } from '../features/history'
+import { UserStore } from '../features'
+import { Favorites } from '../features/favorites'
 
 declare global {
   interface Window {
@@ -40,6 +42,7 @@ type PhoneAppState = {
   callingNumber: CallingNumber,
   capabilities: {[key: string]: boolean} | undefined,
   phoneHistory: PhoneHistory[],
+  favorites: CallingNumber[],
   elapsedTime: number,
 }
 
@@ -63,8 +66,8 @@ export enum PhoneCapabilities {
 }
 
 interface PhoneStore {
-  history?: HistoryStore
-  favorites?: HistoryStore
+  history?: UserStore<PhoneHistory>
+  favorites?: UserStore<CallingNumber>
 }
 
 export class Phone extends React.Component<PhoneProps, PhoneAppState> {
@@ -75,6 +78,7 @@ export class Phone extends React.Component<PhoneProps, PhoneAppState> {
   private _translator: Translator = new Translator()
   private _capabilities: {[key: string]: boolean} | undefined
   private _history: History | undefined = undefined
+  private _favorites: Favorites | undefined = undefined
 
   private tickRequest: number | null = null
   private firstTick: number | undefined = undefined
@@ -96,7 +100,6 @@ export class Phone extends React.Component<PhoneProps, PhoneAppState> {
 
   private storeFor(namespace: string) {
     return (data: {[key: string]: any}) => {
-      console.log('PHONE store', { [namespace]: data })
       this.ipcSend('update-phone-store', { [namespace]: data })()
     }
   }
@@ -117,7 +120,6 @@ export class Phone extends React.Component<PhoneProps, PhoneAppState> {
     this.registerStateMachine.onLeaveState(REGISTERED_STATE, this.unlistenToCallStateMachine.bind(this))
 
     this._translator.addKeys('fr', fr)
-    this.setHistory(props.history, props.currentUser)
 
     this.state = {
       callState: null,
@@ -127,6 +129,7 @@ export class Phone extends React.Component<PhoneProps, PhoneAppState> {
       callingNumber: { value: '' },
       capabilities: props.capabilities,
       phoneHistory: [],
+      favorites: [],
       elapsedTime: 0,
     }
     this.ipcSend('update-phone-store')()
@@ -139,6 +142,28 @@ export class Phone extends React.Component<PhoneProps, PhoneAppState> {
       } else {
         this._history.user = currentUser || ''
       }
+    }
+  }
+
+  setFavorites(enabled: boolean, currentUser: string) {
+    if (enabled) {
+      if (!this._favorites) {
+        this._favorites = new Favorites({ currentUser, save: this.storeFor('favorites') })
+      } else {
+        this._favorites.user = currentUser || ''
+      }
+    }
+  }
+
+  saveFavorite(favorite: CallingNumber) {
+    if (this._favorites) {
+      this._favorites.add(favorite)
+    }
+  }
+
+  removeFavorite(favorite: CallingNumber) {
+    if (this._favorites) {
+      this._favorites.remove(favorite)
     }
   }
 
@@ -178,14 +203,8 @@ export class Phone extends React.Component<PhoneProps, PhoneAppState> {
     if (this.callStateMachine.isCallingState(to)) {
       this.startTick()
     } else if (this.callStateMachine.isOffHookState(to)) {
-      const status = this._history.statusForState(from)
-      if (status && this._history) {
-        this._history.addToHistory({
-          date: Date.now(),
-          duration: this.state.elapsedTime,
-          number: this.state.callingNumber,
-          status,
-        })
+      if (this._history) {
+        this._history.callEnded(from, this.state.elapsedTime, this.state.callingNumber)
       }
 
       this.callingNumberChanged({ value: '' })
@@ -220,6 +239,11 @@ export class Phone extends React.Component<PhoneProps, PhoneAppState> {
       this._history.store = storeData.history
       this.setState({ phoneHistory: this._history.list })
     }
+
+    if (this._favorites) {
+      this._favorites.store = storeData.favorites
+      this.setState({ favorites: this._favorites.list })
+    }
   }
 
   listenToCallStateMachine() {
@@ -242,7 +266,8 @@ export class Phone extends React.Component<PhoneProps, PhoneAppState> {
 
   call(callNumber: CallingNumber) {
     if (this.canEmit()) {
-      this.callStateMachine.call(callNumber)
+      const favorite = this.state.favorites.find(favorite => favorite.value === callNumber.value)
+      this.callStateMachine.call(favorite || callNumber)
     }
   }
 
@@ -296,6 +321,11 @@ export class Phone extends React.Component<PhoneProps, PhoneAppState> {
             history={this.state.phoneHistory}
             sendKey={this.sendKey.bind(this)}
             elapsedTime={this.state.elapsedTime}
+            favorites={this.state.favorites}
+            saveFavorite={this.saveFavorite.bind(this)}
+            removeFavorite={this.removeFavorite.bind(this)}
+            openKeyboard={this.ipcSend('open-keyboard')}
+            closeKeyboard={this.ipcSend('close-keyboard')}
         />
         <div className="close-btn">
           <UpperRightIcon onClick={this.hide.bind(this)} icon="times" />
@@ -303,6 +333,11 @@ export class Phone extends React.Component<PhoneProps, PhoneAppState> {
         </div>
       </div>
     )
+  }
+
+  componentWillMount() {
+    this.setHistory(this.props.history, this.props.currentUser)
+    this.setFavorites(this.props.history, this.props.currentUser)
   }
 
   componentWillUnmount() {
