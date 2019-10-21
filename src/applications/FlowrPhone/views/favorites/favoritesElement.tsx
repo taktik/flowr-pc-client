@@ -36,10 +36,10 @@ export class FavoritesElement extends React.Component<FavoritesElementProps> {
   render() {
     return (
       <div onClick={this.select.bind(this)} className="favorites-element">
-        <StyledIcon icon="trash" onClick={this.remove.bind(this)}></StyledIcon>
+        <StyledIcon className="statusIcon" icon="trash" onClick={this.remove.bind(this)}></StyledIcon>
         <div className="title">{this.props.favorite.name}</div>
         <div className="number">{this.props.favorite.value}</div>
-        <StyledIcon icon="pen" onClick={this.edit.bind(this)}></StyledIcon>
+        <StyledIcon className="statusIcon" icon="pen" onClick={this.edit.bind(this)}></StyledIcon>
       </div>
     )
   }

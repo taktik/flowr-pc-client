@@ -23,7 +23,7 @@ interface AddFavoriteState {
 }
 
 const StyledIcon = styled(ClickableIcon)`
-  color: green;
+  color: #56DE6F;
   width: 56px;
 `
 
@@ -74,7 +74,6 @@ export class AddFavorite extends React.Component<AddFavoriteProps, AddFavoriteSt
   render() {
     return (
       <div className="add-favorite">
-        <div>
           <label className="label">{this.props.translator.translate('Name', this.props.lang)}</label>
           <div className="input-container">
             <input id="name" className="number" type="text" ref={this.nameElement} value={this.state.name} onChange={this.handleNameChange.bind(this)} autoFocus/>
@@ -83,8 +82,9 @@ export class AddFavorite extends React.Component<AddFavoriteProps, AddFavoriteSt
           <div className="input-container">
             <input id="value" className="number" type="text" ref={this.valueElement} value={this.state.value} onChange={this.handleNumberChange.bind(this)}/>
           </div>
-        </div>
-        <StyledIcon icon="check-circle" onClick={this.save.bind(this)}></StyledIcon>
+          <div className="btnContainer">
+            <StyledIcon icon="check-circle" onClick={this.save.bind(this)}></StyledIcon>
+          </div>
       </div>
     )
   }

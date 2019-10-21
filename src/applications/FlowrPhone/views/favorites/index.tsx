@@ -59,7 +59,7 @@ export class FavoritesView extends React.Component<FavoritesProps, FavoritesStat
   }
 
   listPage(): JSX.Element {
-    const sortedFavorites = [...this.props.favorites].sort((a, b) => b.name.localeCompare(a.name))
+    const sortedFavorites = [...this.props.favorites].sort((a, b) => a.name.localeCompare(b.name))
     return (
       <div className="favorites-container">
         <div className="favorites-btn-container">

@@ -2,7 +2,7 @@
   width: calc(100% - 80px);
   height: 100%;
   display: flex;
-  flex-flow: column-reverse nowrap;
+  flex-flow: column nowrap;
   align-items: flex-start;
   padding: 8px 24px 8px 24px;
   position: relative;
@@ -14,9 +14,23 @@
 
 .favorites-container .add-favorite {
   display: flex;
+  flex-flow: column nowrap;
   width: 100%;
-  align-items: center;
-  justify-content: space-between;
+  height: 100%;
+  align-items: stretch;
+  justify-content: flex-start;
+  padding: 24px;
+  box-sizing: border-box;
+}
+
+.favorites-container .add-favorite .input-container{
+  margin-bottom: 24px;
+}
+
+.favorites-container .add-favorite .btnContainer {
+  display: inline-flex;
+  justify-content: center;
+  flex-grow: 1;
 }
 
 .favorites-btn-container {
@@ -56,7 +70,7 @@
   display: flex;
   flex-flow: row nowrap;
   justify-content: space-around;
-  align-items: center;
+  align-items: baseline;
   color: white;
   font-family: 'Roboto', Arial, Helvetica, sans-serif;
   border-bottom: 1px solid rgba(255,255,255,0.42);
@@ -67,50 +81,30 @@
   border-bottom: none;
 }
 
-.favorites-element .header {
-  flex-grow: 1;
+.favorites-element .title, .favorites-element .number {
+  font-size: 1.6em;
   text-align: left;
-  padding-left: 24px;
-}
-
-.favorites-element .header .title.number{
-  width: 100%;
-  text-align: left;
-}
-
-.favorites-element .date {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 20%;
-}
-
-.favorites-element .date > span{
-  display: block;
-  background: rgba(255,255,255, 0.1);
-  border-radius: 10px;
-  height: 20px;
-  width: auto;
-  text-align: center;
+  white-space: nowrap;
   padding: 0 8px;
+  text-overflow: ellipsis;
+  overflow:hidden;
+  box-sizing: border-box;
 }
 
-.favorites-element .elapsed-time{
-  text-align: right;
-  width: 20%;
+.favorites-element .title {
+  width: calc(60% - 36px);
+}
+
+.favorites-element .number {
+  width: calc(40% - 36px);
+  color: rgba(255,255,255,0.8);
 }
 
 .favorites-element .statusIcon{
   flex-grow: 0;
-  width: 36px;
-}
-
-.emitted{
-  color: #3498db;
-}
-
-.received{
-  color: #9b59b6;
+  width: 24px;
+  padding: 8px;
+  align-self: center;
 }
 
 input[invalid] {
