@@ -5,7 +5,7 @@ import { initConfigData, Store } from './src/store'
 import { FlowrWindow } from './flowr-window'
 import { extend } from 'lodash'
 import { URL } from 'url'
-const network = require('network')
+import { networkEverywhere } from 'network-everywhere'
 const deepExtend = require('deep-extend')
 import defaultBrowserWindowOptions from './defaultBrowserWindowOptions'
 const FlowrDataDir = resolve(homedir(), '.flowr')
@@ -15,12 +15,6 @@ export const DEFAULT_FRONTEND_STORE = {
   windowBounds: { width: 1280, height: 720 },
   channelData: {},
   isMaximized: false,
-}
-type NetworkInteface = {
-  name: string,
-  type:string,
-  ip_address: string,
-  mac_address: string,
 }
 export function initFlowrConfig(data: object) {
   initConfigData(join(FlowrDataDir, `${FRONTEND_CONFIG_NAME}.json`), data)
@@ -38,7 +32,7 @@ export function buildBrowserWindowConfig(flowrStore: Store, options: BrowserWind
 }
 
 export async function createFlowrWindow(flowrStore: Store): Promise<FlowrWindow> {
-  const mac = await getMacAddress()
+  const mac = await getActiveMacAddress()
 
   const defaultUrl = buildFileUrl('config.html')
   const kiosk = flowrStore.get('isKiosk') || false
@@ -160,9 +154,19 @@ export async function createFlowrWindow(flowrStore: Store): Promise<FlowrWindow>
 
       evt.sender.send('receiveConfig', config)
     },
-    getMacAddress: async (evt: any) => {
-      const usedMacAddress = await getMacAddress()
-      evt.sender.send('receiveMacAddress', usedMacAddress)
+    getActiveMacAddress: async (evt: any) => {
+      const activeMacAddress = await getActiveMacAddress()
+      evt.sender.send('receiveActiveMacAddress', activeMacAddress)
+    },
+    getAllMacAddresses: async (evt: any) => {
+      const allMacAddresses = await getAllMacAddresses()
+      evt.sender.send('receiveAllMacAddresses', allMacAddresses)
+    },
+    getIpAddress: async (evt: any) => {
+      const ipAddress = await getIpAddress()
+      console.log('DENIS')
+      console.log(ipAddress)
+      evt.sender.send('receiveIpAddress', ipAddress)
     },
     updateAppConfig: (evt: any, data: any) => {
       const currentConfig = flowrStore.get('flowrConfig')
@@ -217,26 +221,17 @@ export async function createFlowrWindow(flowrStore: Store): Promise<FlowrWindow>
     return result
   }
 
-  function getMacAddress(): Promise<string> {
-    return new Promise(((resolve, reject) => {
-      network.get_active_interface((err: Error, obj: any) => {
-        if (err) {
-          console.warn('No active network interface found')
-          network.get_interfaces_list((interfaces: NetworkInteface[]) => {
-            if (interfaces.length > 0) {
-              resolve(interfaces[0].mac_address)
-            } else {
-              reject('No network interface found')
-            }
-          })
-        }
-        if (obj && obj.mac_address) {
-          resolve(obj.mac_address)
-        } else {
-          reject(Error('no Mac Address Found'))
-        }
-      })
-    }))
+  async function getActiveMacAddress(): Promise<string> {
+    const activeMac = (await networkEverywhere.getActiveInterface()).mac
+    return activeMac !== '00:00:00:00:00:00' ? activeMac : (await networkEverywhere.getAllMacAddresses()).find(mac => mac !== '00:00:00:00:00:00')
+  }
+
+  function getAllMacAddresses(): Promise<string[]> {
+    return networkEverywhere.getAllMacAddresses()
+  }
+
+  function getIpAddress(): Promise<string> {
+    return networkEverywhere.getIpAddress()
   }
 
   function reload() {
