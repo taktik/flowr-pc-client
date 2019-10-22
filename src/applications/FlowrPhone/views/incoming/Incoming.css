@@ -2,9 +2,10 @@
     width: calc(100% - 80px);
     height: 100%;
     margin: 0 0 0 80px;
-    display: grid;
-    grid-template-columns: 1fr;
-    grid-template-rows: 48px 1fr 1fr;
+    display: flex;
+    flex-flow: column nowrap;
+    justify-content: space-around;
+    align-items: stretch;
     background: rgba(0,0,0,0.8);
 }
 
@@ -15,15 +16,26 @@
     color: white;
     text-align: center;
     margin: 12px 0;
-    place-self: center;
+    height: 48px;
+    flex-grow: 0;
 }
 
 .phoneNumber{
     font-family: 'Roboto', Arial, Helvetica, sans-serif;
     font-size: 48px;
     font-weight: normal;
-    place-self: center;
     margin: 0;
+    white-space: normal!important;
+    max-width: 100%;
+    box-sizing: border-box;
+    text-overflow: unset!important;
+    height: auto;
+    flex-grow: 2;
+}
+
+.buttons-container{
+    height: 50%;
+    flex-grow: 2;
 }
 
 .buttonSpan{

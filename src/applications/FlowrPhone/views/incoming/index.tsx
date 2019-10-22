@@ -34,7 +34,7 @@ export class Incoming extends React.Component<IncomingProps> {
       <div className="incoming-call-container">
         <h2 className="title">{this.props.translator.translate('Incoming Call', this.props.lang)}</h2>
         <h1 className="phoneNumber">{formatCallingNumber(this.props.callingNumber) || ''}</h1>
-        <FlexRowSpaceEvenly>
+        <FlexRowSpaceEvenly className="buttons-container">
           <div className="buttonContainer">
             <AnswerPhoneIcon answer={this.props.answer} />
             <span className="buttonSpan">{this.props.translator.translate('Accept', this.props.lang)}</span>

@@ -30,6 +30,7 @@ export class HistoryView extends React.Component<HistoryProps> {
   }
 
   render() {
+    const sortedPhoneCalls = [...this.props.phoneCalls].sort((a, b) => b.date - a.date)
     return (
       <div className="history-container">
         <div className="backbtn" onClick={this.back.bind(this)}>
@@ -37,7 +38,7 @@ export class HistoryView extends React.Component<HistoryProps> {
           <span>{this.props.translator.translate('Back', this.props.lang)}</span>
         </div>
         {
-          this.props.phoneCalls.map(call => (<HistoryElement favorite={this.findFavoriteForNumber(call.number)} select={this.props.select} {...call} key={`${call.number}-${call.date}`}></HistoryElement>))
+          sortedPhoneCalls.map(call => (<HistoryElement favorite={this.findFavoriteForNumber(call.number)} select={this.props.select} {...call} key={`${call.number}-${call.date}`}></HistoryElement>))
         }
       </div>
     )
