@@ -63,6 +63,8 @@ export class Calling extends React.Component<CallingProps, CallingState> {
       this.props.hangup()
     } else if (/^[0-9*#]$/.test(e.key.toString())) {
       this.props.sendKey(e.key.toString())
+    } else if (e.key === RemoteCodes.HASH) {
+      this.props.sendKey('#')
     }
   }
 

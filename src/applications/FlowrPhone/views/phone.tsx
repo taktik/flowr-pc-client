@@ -19,6 +19,8 @@ import { Favorites } from '../features/favorites'
 declare global {
   interface Window {
     ipcRenderer: IpcRenderer
+    openKeyboard: () => Promise<void>
+    closeKeyboard: () => Promise<void>
   }
 }
 
@@ -232,6 +234,9 @@ export class Phone extends React.Component<PhoneProps, PhoneAppState> {
     if (this._history) {
       this._history.user = currentUser
     }
+    if (this._favorites) {
+      this._favorites.user = currentUser
+    }
   }
 
   storeUpdated(e: Event, storeData: PhoneStore) {
@@ -324,8 +329,8 @@ export class Phone extends React.Component<PhoneProps, PhoneAppState> {
             favorites={this.state.favorites}
             saveFavorite={this.saveFavorite.bind(this)}
             removeFavorite={this.removeFavorite.bind(this)}
-            openKeyboard={this.ipcSend('open-keyboard')}
-            closeKeyboard={this.ipcSend('close-keyboard')}
+            openKeyboard={window.openKeyboard}
+            closeKeyboard={window.closeKeyboard}
         />
         <div className="close-btn">
           <UpperRightIcon onClick={this.hide.bind(this)} icon="times" />
