@@ -17,6 +17,11 @@ import {
   faHistory,
   faVoicemail,
   faArrowLeft,
+  faPen,
+  faUserPlus,
+  faAddressBook,
+  faTrash,
+  faCheckCircle,
 } from '@fortawesome/free-solid-svg-icons'
 
 library.add(
@@ -37,4 +42,9 @@ library.add(
   faHistory,
   faVoicemail,
   faArrowLeft,
+  faPen,
+  faUserPlus,
+  faAddressBook,
+  faTrash,
+  faCheckCircle,
 )

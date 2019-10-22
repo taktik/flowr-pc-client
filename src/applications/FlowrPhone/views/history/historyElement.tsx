@@ -1,6 +1,5 @@
 import * as React from 'react'
-import { PhoneHistory, PhoneCallStatus } from '.'
-import { PhoneFavorite } from '../favorites'
+import { PhoneHistory, PhoneCallStatus } from '../../features/history'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { formatElapsedTime, formatDate } from '../../helper/time'
 import styled from 'styled-components'
@@ -8,7 +7,7 @@ import { CallingNumber } from '../phone'
 import { formatCallingNumber } from '../../helper/format'
 
 interface HistoryElementProps extends PhoneHistory {
-  favorite?: PhoneFavorite
+  favorite?: CallingNumber
   select: (phoneNumber: CallingNumber) => void
 }
 
@@ -19,7 +18,7 @@ const StyledIcon = styled(FontAwesomeIcon)`
 export class HistoryElement extends React.Component<HistoryElementProps> {
   select() {
     if (this.props.favorite) {
-      this.props.select({ name: this.props.favorite.name, value: this.props.favorite.number })
+      this.props.select({ name: this.props.favorite.name, value: this.props.favorite.value })
     } else if (typeof this.props.number === 'string') {
       this.props.select({ value: this.props.number })
     } else {
@@ -28,13 +27,8 @@ export class HistoryElement extends React.Component<HistoryElementProps> {
   }
 
   header(): JSX.Element {
-    if (this.props.favorite) {
-      return (<div className="header">
-        <div className="title">{this.props.favorite.name}</div>
-        <div className="number">{this.props.favorite.number}</div>
-      </div>)
-    }
-    return (<div className="header"><div className="title number">{formatCallingNumber(this.props.number)}</div></div>)
+    const callingNumber = this.props.favorite || this.props.number
+    return (<div className="header"><div className="title number">{formatCallingNumber(callingNumber)}</div></div>)
   }
 
   phoneStatusIcon(): JSX.Element {

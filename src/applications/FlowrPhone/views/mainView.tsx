@@ -8,8 +8,9 @@ import styled from 'styled-components'
 import { robotoRegular } from '.'
 import { Translator } from '../../../translator/translator'
 import { PhoneCapabilities, CallingNumber } from './phone'
-import { HistoryView } from './history/view'
-import { PhoneHistory } from './history'
+import { HistoryView } from './history'
+import { PhoneHistory } from '../features/history'
+import { FavoritesView } from './favorites'
 
 enum PhoneRoute {
   MAIN,
@@ -19,18 +20,23 @@ enum PhoneRoute {
 
 interface MainViewProps {
   callState: CallState | null
-  call: (callNumber: CallingNumber) => void
-  sendKey: (key: string) => void
-  answer: () => void
-  hangup: () => void
-  mute: () => void
   waiting: boolean
   translator: Translator
   lang?: string
   callingNumber: CallingNumber
   capabilities: {[key: string]: boolean} | undefined
   history: PhoneHistory[] | undefined
+  favorites: CallingNumber[] | undefined
   elapsedTime: number
+  call: (callNumber: CallingNumber) => void
+  sendKey: (key: string) => void
+  answer: () => void
+  hangup: () => void
+  mute: () => void
+  removeFavorite: (phoneNumber: CallingNumber) => void
+  saveFavorite: (favorite: CallingNumber) => void
+  openKeyboard?: () => void
+  closeKeyboard?: () => void
 }
 
 interface MainViewState {
@@ -51,12 +57,8 @@ export class MainView extends React.Component<MainViewProps, MainViewState> {
     this.state = { route: PhoneRoute.MAIN, callNumber: { value: '' } }
   }
 
-  goToMain(callNumber: CallingNumber) {
-    this.setState({ route: PhoneRoute.MAIN, callNumber })
-  }
-
-  goToHistory() {
-    this.setState({ route: PhoneRoute.HISTORY })
+  goToPage(route: PhoneRoute) {
+    return (callNumber?: CallingNumber): void => this.setState({ route, callNumber })
   }
 
   call(callNumber: CallingNumber) {
@@ -68,12 +70,31 @@ export class MainView extends React.Component<MainViewProps, MainViewState> {
     switch (this.state.route) {
       case PhoneRoute.HISTORY:
         if (this.props.history) {
-          return (<HistoryView phoneCalls={this.props.history} favorites={[]} select={this.goToMain.bind(this)} translator={this.props.translator} lang={this.props.lang}/>)
+          return (<HistoryView phoneCalls={this.props.history} favorites={this.props.favorites} select={this.goToPage(PhoneRoute.MAIN)} translator={this.props.translator} lang={this.props.lang}/>)
         }
       case PhoneRoute.FAVORITES:
+        if (this.props.favorites) {
+          return (<FavoritesView
+            favorites={this.props.favorites}
+            select={this.goToPage(PhoneRoute.MAIN)}
+            translator={this.props.translator}
+            lang={this.props.lang}
+            openKeyboard={this.props.openKeyboard}
+            closeKeyboard={this.props.closeKeyboard}
+            remove={this.props.removeFavorite}
+            save={this.props.saveFavorite}
+          />)
+        }
       case PhoneRoute.MAIN:
       default:
-        return (<OffHook translator={this.props.translator} lang={this.props.lang} call={this.call.bind(this)} callNumber={this.state.callNumber} goToHistory={this.goToHistory.bind(this)}/>)
+        return (<OffHook
+          translator={this.props.translator}
+          lang={this.props.lang}
+          call={this.call.bind(this)}
+          callNumber={this.state.callNumber}
+          goToHistory={this.goToPage(PhoneRoute.HISTORY)}
+          goToFavorites={this.goToPage(PhoneRoute.FAVORITES)}
+        />)
     }
   }
 

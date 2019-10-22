@@ -2,6 +2,7 @@ import { BrowserWindow, Rectangle, ipcMain } from 'electron'
 import { WindowModes } from './WindowModes'
 import { RegisterProps } from './views/phone'
 import { Store } from '../../frontend/src/store'
+import { barcoKeyBoardController } from '../../barcoKeyboard/barcoKeyBoardController'
 
 interface PhoneAppProps {
   phoneServer?: string
@@ -159,6 +160,8 @@ export class PhoneWindow extends BrowserWindow {
         }
       },
       'update-phone-store': this.updateStore.bind(this),
+      'open-keyboard': barcoKeyBoardController.open,
+      'close-keyboard': barcoKeyBoardController.close,
     }
 
     Object.entries(this._ipcEvents).forEach(event => ipcMain.on(...event))
