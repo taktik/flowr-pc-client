@@ -129,7 +129,7 @@ export class ApplicationManager {
     ipcMain.on('can-open-application', this.canOpenApplication)
   }
 
-  initLocalApps(): Promise<void[]> {
+  initLocalApps(clearStore: boolean = false): Promise<void[]> {
     return new Promise((resolve, reject) => {
       fs.readdir(join(app.getAppPath(), 'build', 'applications'), (err, files) => {
         if (err) {
@@ -140,7 +140,7 @@ export class ApplicationManager {
           // Exclude preloads folder
           .filter(name => name !== 'preloads')
           // Register applications
-          .map(this.registerApp.bind(this))
+          .map(name => this.registerApp(name, clearStore))
 
         Promise.all(registeringPromises)
           .then(resolve)
@@ -153,7 +153,7 @@ export class ApplicationManager {
     return !!this.applications[applicationTitle]
   }
 
-  async registerApp(name: string): Promise<void> {
+  async registerApp(name: string, clearStore: boolean = false): Promise<void> {
     try {
       console.log('Registering app', name)
       // Can't easily rename fusebox output, so we'll leave the ${name}/${name} folder/file structure for now
@@ -163,6 +163,11 @@ export class ApplicationManager {
       const preload = buildPreloadPath(name)
       const index = buildFileUrl(name)
       const store = storeManager.createStore(name)
+
+      if (clearStore) {
+        // Clear application storage on client start
+        store.clear()
+      }
 
       if (!packageJSON || !packageJSON.title) {
         throw Error('Invalid app: no title defined in app\'s package')

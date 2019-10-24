@@ -15,6 +15,7 @@ export const DEFAULT_FRONTEND_STORE = {
   windowBounds: { width: 1280, height: 720 },
   channelData: {},
   isMaximized: false,
+  clearAppDataOnStart: false,
 }
 type NetworkInteface = {
   name: string,
@@ -157,6 +158,7 @@ export async function createFlowrWindow(flowrStore: Store): Promise<FlowrWindow>
 
       config.extUrl = flowrStore.get('extUrl')
       config.isKiosk = flowrStore.get('isKiosk')
+      config.clearAppDataOnStart = flowrStore.get('clearAppDataOnStart')
 
       evt.sender.send('receiveConfig', config)
     },
@@ -182,6 +184,9 @@ export async function createFlowrWindow(flowrStore: Store): Promise<FlowrWindow>
     },
     setDeinterlacingMode: (evt: any, deinterlacingMode: any) => {
       flowrStore.set('deinterlacing', deinterlacingMode)
+    },
+    setClearAppDataOnStart: (evt: any, clearAppDataOnStart: any) => {
+      flowrStore.set('clearAppDataOnStart', clearAppDataOnStart)
     },
     setKioskMode: (evt: any, isKiosk: boolean) => {
       flowrStore.set('isKiosk', isKiosk)

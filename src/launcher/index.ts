@@ -112,13 +112,14 @@ app.on('window-all-closed', () => {
 
 async function initFlowr() {
   try {
-    await applicationManager.initLocalApps()
-  } catch (e) {
-    console.error('Failed to initialize apps', e)
-  }
-
-  try {
     flowrStore = flowrStore || initFlowrStore()
+
+    try {
+      await applicationManager.initLocalApps(!!flowrStore.get('clearAppDataOnStart'))
+    } catch (e) {
+      console.error('Failed to initialize apps', e)
+    }
+
     flowrWindow = await createFlowrWindow(flowrStore)
     applicationManager.flowrWindow = flowrWindow
     flowrWindow.on('close', () => {

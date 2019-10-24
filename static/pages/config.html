@@ -42,7 +42,10 @@
 
 <hr>
 <h3>Deinterlacing</h3>
- <label>Activate Deinterlacing</label> <input type="checkbox" id="activateDeinterlacing"  onclick='toggleDeinterlacingCheckbox()'>
+<label>Activate Deinterlacing</label> <input type="checkbox" id="activateDeinterlacing"  onclick='toggleDeinterlacingCheckbox()'>
+
+<h3>Applications</h3>
+<label>Clear app data on start</label> <input type="checkbox" id="clearAppDataOnStart"  onclick='toggleClearAppDataCheckbox()'>
 
 <hr>
 <h3>Debug</h3>
@@ -54,9 +57,10 @@
 	let isDebugMode = false
 	let config = undefined
 	let isDeinterlacingActivated = false
-	let externalUrl = ""
+	let externalUrl = ''
 	let isKiosk = false
 	let isLaunchedUrlCorrect = true
+	let clearAppDataOnStart = false
 
 	ipc.removeAllListeners('receiveConfig')
 	ipc.send('FlowrIsInitializing')
@@ -64,62 +68,68 @@
 		config = data.appConfig
 		isDebugMode = data.debugMode
 		isDeinterlacingActivated = data.deinterlacing
-		externalUrl = data.extUrl || ""
+		clearAppDataOnStart = data.clearAppDataOnStart
+		externalUrl = data.extUrl || ''
 		isKiosk = data.isKiosk
-		isLaunchedUrlCorrect = data.isLaunchedUrlCorrect 
-		console.log("data: ", data)
+		isLaunchedUrlCorrect = data.isLaunchedUrlCorrect
+		console.log('data: ', data)
 		init()
 	})
-	ipc.send("getAppConfig")
-	
+	ipc.send('getAppConfig')
+
 
 	function validate(){
-		config.ozoneApi.hostProxy = document.getElementById("ozoneApi").value 
-		config.flowrApi.hostProxy = document.getElementById("flowrApi").value 
-		config.socketApi.host = document.getElementById("socketApi").value 
-		config.pushVodSocketApi.host = document.getElementById("pushVodSocketApi").value 
-		config.aneviaVodSocketApi.host = document.getElementById("aneviaVodSocketApi").value
-		ipc.send("updateAppConfig",config)
+		config.ozoneApi.hostProxy = document.getElementById('ozoneApi').value
+		config.flowrApi.hostProxy = document.getElementById('flowrApi').value
+		config.socketApi.host = document.getElementById('socketApi').value
+		config.pushVodSocketApi.host = document.getElementById('pushVodSocketApi').value
+		config.aneviaVodSocketApi.host = document.getElementById('aneviaVodSocketApi').value
+		ipc.send('updateAppConfig',config)
 	}
 
 	function init(){
-		document.getElementById("userAgent").innerHTML = navigator.userAgent
+		document.getElementById('userAgent').innerHTML = navigator.userAgent
 		if (config) {
-			document.getElementById("ozoneApi").value = config.ozoneApi.hostProxy
-			document.getElementById("flowrApi").value = config.flowrApi.hostProxy
-			document.getElementById("socketApi").value = config.socketApi.host
-			document.getElementById("pushVodSocketApi").value = config.pushVodSocketApi.host
-			document.getElementById("aneviaVodSocketApi").value = config.aneviaVodSocketApi.host
+			document.getElementById('ozoneApi').value = config.ozoneApi.hostProxy
+			document.getElementById('flowrApi').value = config.flowrApi.hostProxy
+			document.getElementById('socketApi').value = config.socketApi.host
+			document.getElementById('pushVodSocketApi').value = config.pushVodSocketApi.host
+			document.getElementById('aneviaVodSocketApi').value = config.aneviaVodSocketApi.host
 		} else {
-			document.getElementById("app-configuration").style.display="none"
+			document.getElementById('app-configuration').style.display='none'
 		}
 
-		document.getElementById("extUrl").value = externalUrl
-		document.getElementById("activateKioskMode").checked = isKiosk
-		document.getElementById("activateDeinterlacing").checked = isDeinterlacingActivated
-		document.getElementById("activateDebug").checked = isDebugMode
+		document.getElementById('extUrl').value = externalUrl
+		document.getElementById('activateKioskMode').checked = isKiosk
+		document.getElementById('activateDeinterlacing').checked = isDeinterlacingActivated
+		document.getElementById('activateDebug').checked = isDebugMode
+		document.getElementById('clearAppDataOnStart').checked = clearAppDataOnStart
 
 		if (isLaunchedUrlCorrect) {
-			document.getElementById("wrongurl").style.display = "none"
+			document.getElementById('wrongurl').style.display = 'none'
 		}
 	}
 
 	function validateExtUrl(){
-		externalUrl = document.getElementById("extUrl").value
-		ipc.send("setExtUrl",externalUrl)
+		externalUrl = document.getElementById('extUrl').value
+		ipc.send('setExtUrl',externalUrl)
 	}
 
 	function toggleKioskCheckbox(){
-		console.log("toggleKioskCheckbox : "+ document.getElementById("activateKioskMode").checked)//activateKioskMode	
-		ipc.send("setKioskMode",document.getElementById("activateKioskMode").checked)
+		console.log('toggleKioskCheckbox : '+ document.getElementById('activateKioskMode').checked)//activateKioskMode
+		ipc.send('setKioskMode',document.getElementById('activateKioskMode').checked)
 	}
 
 	function toggleDebugCheckbox(){
-		ipc.send("setDebugMode", document.getElementById("activateDebug").checked)
+		ipc.send('setDebugMode', document.getElementById('activateDebug').checked)
 	}
 
 	function toggleDeinterlacingCheckbox(){
-		ipc.send("setDeinterlacingMode", document.getElementById("activateDeinterlacing").checked)
+		ipc.send('setDeinterlacingMode', document.getElementById('activateDeinterlacing').checked)
+  }
+
+	function toggleClearAppDataCheckbox(){
+		ipc.send('setClearAppDataOnStart', document.getElementById('clearAppDataOnStart').checked)
 	}
 </script>
 </body>
