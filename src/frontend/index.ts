@@ -154,6 +154,10 @@ export async function createFlowrWindow(flowrStore: Store): Promise<FlowrWindow>
 
       evt.sender.send('receiveConfig', config)
     },
+    getMacAddress: async (evt: any) => {
+      const activeMacAddress = await getActiveMacAddress()
+      evt.sender.send('receiveMacAddress', activeMacAddress)
+    },
     getActiveMacAddress: async (evt: any) => {
       const activeMacAddress = await getActiveMacAddress()
       evt.sender.send('receiveActiveMacAddress', activeMacAddress)
@@ -164,8 +168,6 @@ export async function createFlowrWindow(flowrStore: Store): Promise<FlowrWindow>
     },
     getIpAddress: async (evt: any) => {
       const ipAddress = await getIpAddress()
-      console.log('DENIS')
-      console.log(ipAddress)
       evt.sender.send('receiveIpAddress', ipAddress)
     },
     updateAppConfig: (evt: any, data: any) => {
