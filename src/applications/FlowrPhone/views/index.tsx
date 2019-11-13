@@ -8,9 +8,12 @@ const url = new URL(window.location.href)
 const server = url.searchParams.get('server')
 const username = url.searchParams.get('username')
 const host = url.searchParams.get('host')
-const lang = url.searchParams.get('lang')
+const lang = url.searchParams.get('lang') || undefined
 const registerProps = username && host ? { username, host } : null
 const encodedCapabilities = url.searchParams.get('capabilities')
+const history = url.searchParams.has('history')
+const favorites = url.searchParams.has('favorites')
+const currentUser = url.searchParams.get('currentUser') || ''
 
 let capabilities
 
@@ -70,4 +73,12 @@ export const robotoMedium = () => `
 
 document.head.appendChild(styleElement)
 
-ReactDOM.render(<StyledPhone phoneServer={server} registerProps={registerProps} lang={lang} capabilities={capabilities} />, document.getElementById('phone'))
+ReactDOM.render(<StyledPhone
+  phoneServer={server}
+  registerProps={registerProps}
+  lang={lang}
+  capabilities={capabilities}
+  history={history}
+  favorites={favorites}
+  currentUser={currentUser}
+/>, document.getElementById('phone'))

@@ -47,11 +47,11 @@ interface ApplicationInitResults {
 
 interface ApplicationInitError {
   application: FlowrApplication
-  reason: Error
+  reason: string
 }
 
 interface FlowrApplicationInitializer {
-  create: (...args: any[]) => FlowrApplicationWindow
+  create: (options: ApplicationOptions) => FlowrApplicationWindow
   canOpen: (capabilities?: {[key: string]: boolean}, props?: any) => boolean
   index: string
   package: ApplicationConfig
@@ -62,11 +62,13 @@ interface FlowrApplicationInitializer {
 }
 
 export interface ApplicationOptions {
-  props: {[key: string]: any},
-  preload: string,
+  config: {[key: string]: any},
+  preload?: string,
   index: string,
-  store: Store,
+  store?: Store,
   capabilities?: {[key: string]: boolean},
+  flowrWindow?: FlowrWindow | null,
+  wexondWindow?: BrowserWindow | null,
 }
 
 /**
@@ -127,7 +129,7 @@ export class ApplicationManager {
     ipcMain.on('can-open-application', this.canOpenApplication)
   }
 
-  initLocalApps(): Promise<void[]> {
+  initLocalApps(clearStore: boolean = false): Promise<void[]> {
     return new Promise((resolve, reject) => {
       fs.readdir(join(app.getAppPath(), 'build', 'applications'), (err, files) => {
         if (err) {
@@ -138,7 +140,7 @@ export class ApplicationManager {
           // Exclude preloads folder
           .filter(name => name !== 'preloads')
           // Register applications
-          .map(this.registerApp.bind(this))
+          .map(name => this.registerApp(name, clearStore))
 
         Promise.all(registeringPromises)
           .then(resolve)
@@ -151,7 +153,7 @@ export class ApplicationManager {
     return !!this.applications[applicationTitle]
   }
 
-  async registerApp(name: string): Promise<void> {
+  async registerApp(name: string, clearStore: boolean = false): Promise<void> {
     try {
       console.log('Registering app', name)
       // Can't easily rename fusebox output, so we'll leave the ${name}/${name} folder/file structure for now
@@ -161,6 +163,11 @@ export class ApplicationManager {
       const preload = buildPreloadPath(name)
       const index = buildFileUrl(name)
       const store = storeManager.createStore(name)
+
+      if (clearStore) {
+        // Clear application storage on client start
+        store.clear()
+      }
 
       if (!packageJSON || !packageJSON.title) {
         throw Error('Invalid app: no title defined in app\'s package')
@@ -189,6 +196,7 @@ export class ApplicationManager {
   }
 
   processApplicationsConfigs(e: IpcMainEvent, applicationConfigs: ApplicationInitConfig[]): void {
+    const applicationInitDefault: ApplicationInitResults = { initialized: [], errors: [] }
     const applicationsInit: ApplicationInitResults = applicationConfigs.reduce((statuses, applicationConfig) => {
       const applicationName = applicationConfig.application.name
       const errors = [...statuses.errors]
@@ -202,25 +210,25 @@ export class ApplicationManager {
         errors.push({ application: applicationConfig.application, reason })
       }
       return { initialized, errors }
-    }, { initialized: [], errors: [] })
+    }, applicationInitDefault)
     e.returnValue = applicationsInit
   }
 
-  openApplication(e: IpcMainEvent, openConfig: ApplicationOpenConfig): void {
+  openApplication(e: IpcMainEvent, openAppConfig: ApplicationOpenConfig): void {
     let err: string | null = null
 
     try {
-      const appName = openConfig.application ? openConfig.application.name : ''
+      const appName = openAppConfig.application ? openAppConfig.application.name : ''
 
       if (this.isRegistered(appName)) {
         const application = this.applications[appName]
-        const config = openConfig.config || {}
+        const openConfig = openAppConfig.config || {}
         let applicationWindow = this.activeWindows[appName]
 
         if (!applicationWindow) {
-          const props = Object.assign({}, application.config, config)
+          const config = { ...application.config, ...openConfig }
           applicationWindow = this.activeWindows[appName] = application.create({
-            props,
+            config,
             preload: application.preload,
             index: application.index,
             store: application.store,
@@ -231,9 +239,9 @@ export class ApplicationManager {
           applicationWindow.on('close', () => delete this.activeWindows[appName])
         } else {
           this.setProperty(applicationWindow, 'capabilities', application.capabilities)
-          this.setProperties(applicationWindow, config)
+          this.setProperties(applicationWindow, openConfig)
         }
-        if (config.show) {
+        if (openConfig.show) {
           applicationWindow.show()
         }
       } else {

@@ -1,4 +1,5 @@
 import { IpcRenderer } from 'electron'
+import { barcoKeyBoardController } from '../../barcoKeyboard/barcoKeyBoardController'
 
 declare global {
   namespace NodeJS {
@@ -6,6 +7,8 @@ declare global {
       require: any
       ipcRenderer: IpcRenderer
       process: Process
+      openKeyboard: () => Promise<void>
+      closeKeyboard: () => Promise<void>
     }
   }
 
@@ -23,6 +26,7 @@ const packagesToExport = [
   '@fortawesome/fontawesome-svg-core',
   '@fortawesome/free-solid-svg-icons',
   'styled-components',
+  'moment',
 ]
 const nodeRequire: {[key: string]: any} = packagesToExport.reduce((exported, pack) => Object.assign(exported, { [pack]: require(pack) }), {})
 const ipcRenderer = require('electron').ipcRenderer
@@ -44,6 +48,8 @@ process.once('loaded', () => {
   if (!production) {
     global.process = process
   }
+  global.openKeyboard = barcoKeyBoardController.open
+  global.closeKeyboard = barcoKeyBoardController.close
 })
 
 export {}

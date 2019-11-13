@@ -1,4 +1,9 @@
 import { barcoKeyBoardController } from '../../barcoKeyboard/barcoKeyBoardController'
+import { debounce } from 'lodash'
+
+const KEYBOARD_CLOSE = 0
+const KEYBOARD_OPEN = 1
+
 declare global {
   namespace NodeJS {
     interface Global {
@@ -43,26 +48,41 @@ function handleHiddenMenuCode(event: KeyboardEvent): any {
   }
 }
 
-function myFocusFunction(event: Event): void {
+function actionKeyboard(type: number) {
+  if (type === KEYBOARD_OPEN) {
+    barcoKeyBoardController.open()
+  } else {
+    barcoKeyBoardController.close()
+  }
+}
+
+const actionKeyboardDebounced = debounce(actionKeyboard, 50)
+
+function shouldActionKeyboard(event: Event) {
   const element = event.target as HTMLElement
   if (element.tagName === 'INPUT') {
     const inputElement = element as HTMLInputElement
-    if (inputElement.type === 'text' || inputElement.type === 'password') {
-      barcoKeyBoardController.open()
+    if (inputElement.type === 'text' || inputElement.type === 'password' || inputElement.type === 'number') {
+      return true
     }
   }
+  return false
 }
-function myBlurFunction(event: Event): void {
-  const element = event.target as HTMLElement
-  if (element.tagName === 'INPUT') {
-    const inputElement = element as HTMLInputElement
-    if (inputElement.type === 'text' || inputElement.type === 'password') {
-      barcoKeyBoardController.close()
-    }
+
+function openKeyboard(event: Event): void {
+  if (shouldActionKeyboard(event)) {
+    actionKeyboardDebounced(KEYBOARD_OPEN)
   }
 }
-window.addEventListener('focus', myFocusFunction, true)
-window.addEventListener('blur', myBlurFunction, true)
+function closeKeyboard(event: Event): void {
+  if (shouldActionKeyboard(event)) {
+    actionKeyboardDebounced(KEYBOARD_CLOSE)
+  }
+}
+
+window.addEventListener('focus', openKeyboard, true)
+window.addEventListener('blur', closeKeyboard, true)
+window.addEventListener('click', openKeyboard)
 
 window.addEventListener('keydown', handleHiddenMenuCode, true)
 process.once('loaded', () => {

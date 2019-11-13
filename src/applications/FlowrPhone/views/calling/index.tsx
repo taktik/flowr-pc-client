@@ -3,58 +3,36 @@ import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { CALL_OUT_STATE, ANSWERED_STATE, CallState, OUTGOING_STATE } from '../../stateMachines/callStateMachine'
 import styled from 'styled-components'
 import { HangupPhoneIcon } from '../phoneButtons'
-import { FlexRowCenter, FlexColumnCenter } from '../flex'
+import { FlexRowCenter } from '../flex'
 import { Translator } from '../../../../translator/translator'
+import { formatElapsedTime } from '../../helper/time'
 
 import './Calling.css'
 import { robotoMedium } from '..'
 import { RemoteCodes } from '../../remote'
+import { Keyboard } from '../keyboard'
+import { KeyPadIcon } from '../otherButtons'
+import { CallingNumber } from '../phone'
+import { formatCallingNumber } from '../../helper/format'
 
 interface CallingProps {
   mode: CallState
   hangup: () => void
   mute: () => void
+  sendKey?: (value: string) => void
   className?: string
   translator: Translator
   lang?: string
-  number?: string
-  callingNumber: string
+  callingNumber: CallingNumber
+  elapsedTime: number
 }
 
 interface CallingState {
-  elapsedTime: string
   displayKeyPad: boolean
-}
-
-function formatElapsedTime(elapsedTime: number) {
-  const elapsedTimeInSeconds = elapsedTime / 1000
-  const seconds = Math.floor(elapsedTimeInSeconds % 60)
-  const elapsedTimeInMinutes = (elapsedTimeInSeconds - seconds) / 60
-  const minutes = Math.floor(elapsedTimeInMinutes % 60)
-  const hours = Math.floor(elapsedTimeInSeconds / 3600)
-
-  function pad(num: number) {
-    let padded = `${num}`
-
-    while (padded.length < 2) {
-      padded = `0${padded}`
-    }
-
-    return padded
-  }
-
-  let formatted = `${pad(minutes)}:${pad(seconds)}`
-
-  if (hours > 0) {
-    formatted = `${pad(hours)}:${formatted}`
-  }
-
-  return formatted
 }
 
 const ElapsedTime = styled(FlexRowCenter)`
   color: white;
-  flex-grow: 2;
   font-size: 24px;
   font-family: 'Roboto', Arial, Helvetica, sans-serif;
   font-weight: regular;
@@ -63,7 +41,7 @@ const ElapsedTime = styled(FlexRowCenter)`
 `
 
 const Rotating = styled(FontAwesomeIcon)`
-  width: 50px;
+  width: 40px;
   color: white;
   animation: rotate 2s linear infinite;
   @keyframes rotate {
@@ -76,35 +54,29 @@ const Rotating = styled(FontAwesomeIcon)`
 const PhoneNumber = styled.h1`
   color: white;
   ${robotoMedium}
+  margin: 0;
 `
 
 export class Calling extends React.Component<CallingProps, CallingState> {
-  private tickRequest: number | null = null
-  private firstTick: number
-
   private onKeyDown(e: KeyboardEvent) {
     if (e.code === RemoteCodes.HANGUP_GESTURE || e.code === RemoteCodes.HANGUP_KEY) {
       this.props.hangup()
+    } else if (/^[0-9*#]$/.test(e.key.toString())) {
+      this.props.sendKey(e.key.toString())
+    } else if (e.key === RemoteCodes.HASH) {
+      this.props.sendKey('#')
     }
   }
 
   constructor(props: CallingProps) {
     super(props)
-    this.state = { elapsedTime: formatElapsedTime(0), displayKeyPad: false }
+    this.state = { displayKeyPad: false }
 
     this.onKeyDown = this.onKeyDown.bind(this)
   }
 
-  startTick() {
-    this.firstTick = Date.now()
-    this.tickRequest = requestAnimationFrame(this.tick.bind(this))
-  }
-
-  tick() {
-    const rawElapsedTime = Date.now() - this.firstTick
-    const elapsedTime = formatElapsedTime(rawElapsedTime)
-    this.setState({ elapsedTime })
-    this.tickRequest = requestAnimationFrame(this.tick.bind(this))
+  toggleKeyboard() {
+    this.setState(state => ({ displayKeyPad: !state.displayKeyPad }))
   }
 
   render() {
@@ -112,10 +84,7 @@ export class Calling extends React.Component<CallingProps, CallingState> {
     let elapsedTime
 
     if ([ANSWERED_STATE, CALL_OUT_STATE].includes(this.props.mode)) {
-      elapsedTime = (<ElapsedTime><span>{this.state.elapsedTime}</span></ElapsedTime>)
-      if (!this.firstTick) {
-        this.startTick()
-      }
+      elapsedTime = (<ElapsedTime><span>{formatElapsedTime(this.props.elapsedTime)}</span></ElapsedTime>)
     } else {
       elapsedTime = (<Rotating icon="circle-notch" spin />)
     }
@@ -131,32 +100,49 @@ export class Calling extends React.Component<CallingProps, CallingState> {
     } else {
       title = (<h2 className="title"></h2>)
     }
+
+    let keyboard
+
+    if (this.props.sendKey && this.state.displayKeyPad) {
+      keyboard = (<div className="extra-keyboard"><Keyboard keyPressed={this.props.sendKey.bind(this)}/></div>)
+    } else {
+      keyboard = (<div></div>)
+    }
+
     return (
       <div className="calling-container">
-          {title}
-          <FlexColumnCenter>
-            <PhoneNumber>{this.props.callingNumber}</PhoneNumber>
-            { elapsedTime }
-          </FlexColumnCenter>
-          <FlexRowCenter className={this.props.className}>
-            {/*<div>
-              <MuteMicIcon mute={this.props.mute}/>
-              <span className="buttonSpan">Mute</span>
+        {title}
+        <PhoneNumber className="phoneNumber">{formatCallingNumber(this.props.callingNumber)}</PhoneNumber>
+        { elapsedTime }
+        <div className="flex-container">
+          <div className="flex-column">
+            {/* <FlexRowCenter className={this.props.className}>
+              {<div>
+                <MuteMicIcon mute={this.props.mute}/>
+                <span className="buttonSpan">Mute</span>
+              </div>
+              <div>
+                <KeyPadIcon displayKeyPad={this.toggleKeyboard.bind(this)}/>
+                <span className="buttonSpan">Keypad</span>
+              </div>
+              <div>
+                <SpeakerIcon speaker={this.props.speaker}/>
+                <span className="buttonSpan disabled">Speaker</span>
+              </div>}
+            </FlexRowCenter> */}
+
+            <div className="buttonContainer">
+              <KeyPadIcon displayKeyPad={this.toggleKeyboard.bind(this)}/>
+              <span className="buttonSpan">{this.props.translator.translate('Keypad', this.props.lang)}</span>
             </div>
-             <div>
-              <KeyPadIcon displayKeyPad={this.props.displayKeyPad}/>
-              <span className="buttonSpan">Keypad</span>
+            <div className="buttonContainer">
+              <HangupPhoneIcon hangup={this.props.hangup} />
+              <span className="buttonSpan">{this.props.translator.translate('Hang Up', this.props.lang)}</span>
             </div>
-            <div>
-              <SpeakerIcon speaker={this.props.speaker}/>
-              <span className="buttonSpan disabled">Speaker</span>
-            </div> */}
-          </FlexRowCenter>
-          <div className="buttonContainer">
-            <HangupPhoneIcon hangup={this.props.hangup} />
-            <span className="buttonSpan">{this.props.translator.translate('Hang Up', this.props.lang)}</span>
           </div>
+          {keyboard}
         </div>
+      </div>
     )
   }
 
@@ -166,8 +152,5 @@ export class Calling extends React.Component<CallingProps, CallingState> {
 
   componentWillUnmount() {
     document.removeEventListener('keydown', this.onKeyDown)
-    if (this.tickRequest) {
-      cancelAnimationFrame(this.tickRequest)
-    }
   }
 }

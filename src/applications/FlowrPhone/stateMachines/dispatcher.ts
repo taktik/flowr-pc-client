@@ -2,12 +2,12 @@ import { fsm } from 'typescript-state-machine'
 import StateMachineImpl = fsm.StateMachineImpl
 import State = fsm.State
 import CheckStateIs = fsm.CheckStateIs
-import { CallStateMachine, CallState, OFF_HOOK_STATE, IDLE_STATE as CALL_IDLE_STATE, CLIENT_NOT_RUNNING_STATE } from './callStateMachine'
+import { CallStateMachine, CallState, OFF_HOOK_STATE, IDLE_STATE as CALL_IDLE_STATE, CLIENT_NOT_RUNNING_STATE, INCOMING_STATE } from './callStateMachine'
 import { RegisterStateMachine, RegisterState, REGISTERED_STATE, UNREGISTERED_STATE, IDLE_STATE as REGISTER_IDLE_STATE } from './registerStateMachine'
 
 enum ServerReference {
-  SM01 = 'SM-01',
-  SM02 = 'SM-02',
+  SM01 = 'SM-01', // connected status
+  SM02 = 'SM-02', // off hook status
   SM03 = 'SM-03',
   SM04 = 'SM-04',
   SM05 = 'SM-05',
@@ -21,11 +21,12 @@ enum ServerReference {
   SM13 = 'SM-13',
   SM14 = 'SM-14', // init sent
   SM15 = 'SM-15', // unregister sent
-  SM16 = 'SM-16',
+  SM16 = 'SM-16', // call
   SM17 = 'SM-17', // status change
   SM18 = 'SM-18', // incoming call
   SM19 = 'SM-19',
   SM20 = 'SM-20', // unknown
+  SM21 = 'SM-21', // dtmf
 }
 
 interface ServerMessage {
@@ -175,6 +176,7 @@ export class Dispatcher extends StateMachineImpl<ConnectionState> {
         this.updateRegisterStatus()
         break
       case ServerReference.SM16:
+      case ServerReference.SM18:
         if (message.caller) {
           this.callingNumber = message.caller
         }
@@ -251,6 +253,7 @@ export class Dispatcher extends StateMachineImpl<ConnectionState> {
     this._callStateMachine = callStateMachine
     this._registerStateMachine.onLeaveState(REGISTERED_STATE, this._callStateMachine.terminate.bind(this._callStateMachine))
     this._callStateMachine.onEnterState(OFF_HOOK_STATE, this.updateRegisterStatus.bind(this))
+    this._callStateMachine.onEnterState(INCOMING_STATE, this.updateStatus.bind(this))
     this.connect()
   }
 

@@ -1,7 +1,7 @@
 // Toolbar
-export const TOOLBAR_HEIGHT = 60;
-export const TOOLBAR_ICON_HEIGHT = 30;
-export const TOOLBAR_BUTTON_WIDTH = 40;
+export const TOOLBAR_HEIGHT = 65;
+export const TOOLBAR_ICON_HEIGHT = 40;
+export const TOOLBAR_BUTTON_WIDTH = 70;
 
 // Widths
 export const WINDOWS_BUTTON_WIDTH = 45;

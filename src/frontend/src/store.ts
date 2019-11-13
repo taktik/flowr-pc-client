@@ -18,6 +18,7 @@ export interface Store {
   get(key: string): any
   set(key: string, val: any): void
   bulkSet(data: {[key: string]: any}): void
+  clear(): void
 }
 
 /**
@@ -33,6 +34,18 @@ const StoreImpl: StoreConstructor = class StoreImpl implements Store {
   path: string
   data: {[key: string]: any}
 
+  private persist() {
+    // Wait, I thought using the node.js' synchronous APIs was bad form?
+    // We're not writing a server so there's not nearly the same IO demand on the process
+    // Also if we used an async API and our app was quit before the asynchronous write had a chance to complete,
+    // we might lose that data.
+    try {
+      writeFileSync(this.path, JSON.stringify(this.data))
+    } catch (e) {
+      console.error('Error persisting store', e)
+    }
+  }
+
   constructor(storeDir: string, public opts: any) {
     this.path = path.join(storeDir, `${this.opts.configName}`)
     this.data = parseDataFile(this.path, opts.defaults)
@@ -47,16 +60,17 @@ const StoreImpl: StoreConstructor = class StoreImpl implements Store {
   // ...and this will set it
   set(key: string, val: any) {
     this.data[key] = val
-    // Wait, I thought using the node.js' synchronous APIs was bad form?
-    // We're not writing a server so there's not nearly the same IO demand on the process
-    // Also if we used an async API and our app was quit before the asynchronous write had a chance to complete,
-    // we might lose that data. Note that in a real app, we would try/catch this.
-    writeFileSync(this.path, JSON.stringify(this.data))
+    this.persist()
   }
 
   bulkSet(data: {[key: string]: any}) {
     this.data = { ...this.data, ...data }
-    writeFileSync(this.path, JSON.stringify(this.data))
+    this.persist()
+  }
+
+  clear() {
+    this.data = {}
+    this.persist()
   }
 }
 

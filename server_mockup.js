@@ -25,31 +25,94 @@ const wss = new WebSocket.Server({
 
 const STATUS = {
   OFFHOOK: 'offhook',
-  CALLOUT: 'callout'
+  CALLOUT: 'callout',
+  INCOMING: 'incomming_call',
+  ANSWERED: 'answered',
 }
 
 wss.on('connection', ws => {
+  let callEndingTimeout
+  let callingTimeout
+  let status
+
+  function messageFromStatus() {
+    let message
+    switch (status) {
+      case STATUS.OFFHOOK:
+        message = { "status" : STATUS.OFFHOOK , "reference" : "SM-02" }
+        break
+      case STATUS.ANSWERED:
+      case STATUS.CALLOUT:
+        message = { "action" : "call" , "response" : "call started by daemon" , "caller" : "'DEPANNAGE TV' <sip:30039@node000000.tsp.local>" , "call_number" : "%s" , "reference" : "SM-16" }
+        break
+      case STATUS.INCOMING:
+        message = { "status" : "incomming_call" , "caller" : "'DEPANNAGE TV' <sip:30039@node000000.tsp.local>" , "reference" : "SM-18" }
+        break
+    }
+    return message
+  }
+
+  function statusChangedMessage(from, to) {
+    return { "callback" : "statuschange" , from, to, "reference" : "SM-17" }
+  }
+
+  function sendStatusChangedMessage(to) {
+    const nextStatus = to
+    send(statusChangedMessage(status , nextStatus))
+    status = nextStatus
+  }
+
   function send(mess) {
     console.log('sending', mess)
     ws.send(JSON.stringify(mess))
   }
+
+  function setStatus(state) {
+    clearTimeout(callingTimeout)
+    clearTimeout(callEndingTimeout)
+    status = state
+  }
+
   ws.on('message', function incoming(message) {
     const m = JSON.parse(message)
     console.log('received', m)
     switch (m.action) {
       case 'status':
-        send({ "status" : STATUS.OFFHOOK , "reference" : "SM-02" })
+        const message = messageFromStatus()
+        send(message)
         break
       case 'status_register':
         send({ "status" : "registered" , "identity" : "%s" , "duration" : "%s" , "refrence" : "SM-04" })
         break
       case 'call':
-        setTimeout(() => send({ "callback" : "statuschange" , "from" : STATUS.OFFHOOK , "to" : STATUS.CALLOUT , "reference" : "SM-17" }), 4000)
+        callingTimeout = setTimeout(() => {
+          sendStatusChangedMessage(STATUS.CALLOUT)
+          clearTimeout(callEndingTimeout)
+          callEndingTimeout = setTimeout(() => {
+            setStatus(STATUS.OFFHOOK)
+            send(messageFromStatus())
+          }, m.number)
+        }, 4000)
         break
       case 'terminate':
-        send({ "status" : STATUS.OFFHOOK , "reference" : "SM-02" })
+        setStatus(STATUS.OFFHOOK)
+        send(messageFromStatus())
         break
-      }
+      case 'answer':
+        if (status === STATUS.INCOMING) {
+          sendStatusChangedMessage(STATUS.ANSWERED)
+          send({ "action" : "answer" , "response" : "Call answered", "call_number" : "%s" , "caller" : "me", "reference" : "SM-06"})
+        } else {
+          send({ "action" : "answer" , "response" : "There are no calls to answer." , "reference" : "SM-05" })
+        }
+        break
+      case 'callme':
+        sendStatusChangedMessage(STATUS.INCOMING)
+        break
+
+    }
   })
+
+  setStatus(STATUS.OFFHOOK)
   ws.send(JSON.stringify({ "message" : "Your are connected!" , "reference" : "SM-01" }))
 })

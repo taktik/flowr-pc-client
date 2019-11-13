@@ -6,23 +6,34 @@
     flex-flow: column nowrap;
     justify-content: space-between;
     align-items: stretch;
-    padding: 12px 12px 12px 48px;
+    padding: 0;
     box-sizing: border-box;
+    
+}
+
+.offHook-container .top-container { 
+    background: rgba(0,0,0,0.8);
+    padding: 12px;
+    width: calc(100% - 80px);
+    box-sizing: border-box;
+    margin-left: 80px;
 }
 
 .container-flex {
+    background: rgba(0,0,0,0.8);
     display: flex;
     flex-flow: row nowrap;
     align-items: center;
     justify-content: space-around;
-    margin: 0;
+    margin: 0 0 0 80px;
     padding: 0;
     flex-grow: 1;
+    width: calc(100% - 80px);
 }
 
 .right, .left {
     height: 100%;
-    padding-top: 36px;
+    padding-top: 12px;
     box-sizing:border-box;
     height: 100%;
 }
@@ -50,14 +61,13 @@
     flex-flow: column nowrap;
     justify-content: space-between;
     align-items: center;
-    width: 50%;
+    width: 40%;
     padding-bottom: 4px;
-    padding-top: 48px;
     margin-right: 12px;
 }
 
 .right {
-    width: 50%;
+    width: 60%;
     display: flex;
     flex-flow: column nowrap;
     align-items: center;
@@ -114,3 +124,36 @@
     display: block;
     margin-top: 12px;
 }
+ 
+.extra-btn-container{
+    position: absolute;
+    left: 0;
+    bottom: 0;
+    color: white;
+    display:flex;
+    flex-flow: column wrap;
+    align-items: flex-start;
+    justify-content: flex-start;
+}
+
+.extra-btn-container > div {
+    background: rgba(0,0,0,0.8);
+    border-radius: 4px 0 0 4px;
+    height: 80px;
+    width: 80px;
+    display: flex;
+    flex-flow: column nowrap;
+    align-items: center;
+    justify-content: center;
+    padding: 8px;
+    box-sizing: border-box;
+    margin: 4px 0;
+    font-size: 14px;
+    font-family: 'Roboto', sans-serif;
+    text-align: center;
+}
+
+.extra-btn-container > div:last-child{
+    margin: 4px 0 0;
+}
+
