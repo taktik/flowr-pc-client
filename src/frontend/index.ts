@@ -263,7 +263,7 @@ export async function createFlowrWindow(flowrStore: Store): Promise<FlowrWindow>
   async function getAllMacAddresses(): Promise<string[]> {
     const allMac = await networkEverywhere.getAllMacAddresses()
     if (platform() === 'win32') {
-      return allMac.concat(...allMac.map(mac => mac.toLocaleUpperCase()))
+      return allMac.concat(allMac.map(mac => mac.toLocaleUpperCase()))
     }
     return allMac
   }
