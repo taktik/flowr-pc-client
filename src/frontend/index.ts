@@ -1,5 +1,5 @@
 import { resolve, join } from 'path'
-import { homedir } from 'os'
+import { homedir, platform } from 'os'
 import { ipcMain, Menu, app, BrowserWindowConstructorOptions } from 'electron'
 import { initConfigData, Store } from './src/store'
 import { FlowrWindow } from './flowr-window'
@@ -64,7 +64,7 @@ export async function createFlowrWindow(flowrStore: Store): Promise<FlowrWindow>
   mainWindow.setMenuBarVisibility(false)
   // mainWindow.setAlwaysOnTop(true, 'floating', 0)
 
-  url.searchParams.set('mac', mac)
+  url.searchParams.set('mac', mac.toLocaleUpperCase())
   mainWindow.loadURL(url.href)
   reloadTimeout = setInterval(reload, RELOAD_INTERVAL)
 
@@ -158,7 +158,7 @@ export async function createFlowrWindow(flowrStore: Store): Promise<FlowrWindow>
     },
     getMacAddress: async (evt: any) => {
       const activeMacAddress = await getActiveMacAddress()
-      evt.sender.send('receiveMacAddress', activeMacAddress)
+      evt.sender.send('receiveMacAddress', activeMacAddress.toLocaleUpperCase())
     },
     getActiveMacAddress: async (evt: any) => {
       const activeMacAddress = await getActiveMacAddress()
@@ -259,8 +259,13 @@ export async function createFlowrWindow(flowrStore: Store): Promise<FlowrWindow>
     return await getFirstValidMacAddress()
   }
 
-  function getAllMacAddresses(): Promise<string[]> {
-    return networkEverywhere.getAllMacAddresses()
+  async function getAllMacAddresses(): Promise<string[]> {
+    const allMac = await networkEverywhere.getAllMacAddresses()
+    if (platform() === 'win32') {
+      const mac = (await networkEverywhere.getActiveInterface()).mac
+      allMac.push(mac.toLocaleUpperCase())
+    }
+    return allMac
   }
 
   function getIpAddress(): Promise<string> {
