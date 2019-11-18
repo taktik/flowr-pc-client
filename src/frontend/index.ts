@@ -1,5 +1,5 @@
 import { resolve, join } from 'path'
-import { homedir } from 'os'
+import { homedir, platform } from 'os'
 import { ipcMain, Menu, app, BrowserWindowConstructorOptions } from 'electron'
 import { initConfigData, Store } from './src/store'
 import { FlowrWindow } from './flowr-window'
@@ -64,7 +64,8 @@ export async function createFlowrWindow(flowrStore: Store): Promise<FlowrWindow>
   mainWindow.setMenuBarVisibility(false)
   // mainWindow.setAlwaysOnTop(true, 'floating', 0)
 
-  url.searchParams.set('mac', mac)
+  // set mac address in the URL te ensure backward compatibility with Flowr 5.1
+  url.searchParams.set('mac', mac.toLocaleUpperCase())
   mainWindow.loadURL(url.href)
   reloadTimeout = setInterval(reload, RELOAD_INTERVAL)
 
@@ -158,19 +159,27 @@ export async function createFlowrWindow(flowrStore: Store): Promise<FlowrWindow>
     },
     getMacAddress: async (evt: any) => {
       const activeMacAddress = await getActiveMacAddress()
-      evt.sender.send('receiveMacAddress', activeMacAddress)
+      evt.sender.send('receiveMacAddress', activeMacAddress.toLocaleUpperCase())
     },
     getActiveMacAddress: async (evt: any) => {
       const activeMacAddress = await getActiveMacAddress()
       evt.sender.send('receiveActiveMacAddress', activeMacAddress)
     },
     getAllMacAddresses: async (evt: any) => {
-      const allMacAddresses = await getAllMacAddresses()
-      evt.sender.send('receiveAllMacAddresses', allMacAddresses)
+      try {
+        const allMacAddresses = await getAllMacAddresses()
+        evt.sender.send('receiveAllMacAddresses', allMacAddresses)
+      } catch (e) {
+        evt.sender.send('receiveAllMacAddresses', [])
+      }
     },
     getIpAddress: async (evt: any) => {
-      const ipAddress = await getIpAddress()
-      evt.sender.send('receiveIpAddress', ipAddress)
+      try {
+        const ipAddress = await getIpAddress()
+        evt.sender.send('receiveIpAddress', ipAddress)
+      } catch (e) {
+        evt.sender.send('receiveIpAddress', '127.0.0.1')
+      }
     },
     updateAppConfig: (evt: any, data: any) => {
       const currentConfig = flowrStore.get('flowrConfig')
@@ -228,13 +237,35 @@ export async function createFlowrWindow(flowrStore: Store): Promise<FlowrWindow>
     return result
   }
 
-  async function getActiveMacAddress(): Promise<string> {
-    const activeMac = (await networkEverywhere.getActiveInterface()).mac
-    return activeMac !== '00:00:00:00:00:00' ? activeMac : (await networkEverywhere.getAllMacAddresses()).find(mac => mac !== '00:00:00:00:00:00')
+  async function getFirstValidMacAddress(): Promise<string | undefined> {
+    const allMacAddresses = await networkEverywhere.getAllMacAddresses()
+    const firstValid = allMacAddresses.find(mac => mac !== '00:00:00:00:00:00')
+    if (firstValid) {
+      return firstValid
+    }
+    throw new Error('Could not find any valid mac')
   }
 
-  function getAllMacAddresses(): Promise<string[]> {
-    return networkEverywhere.getAllMacAddresses()
+  async function getActiveMacAddress(): Promise<string> {
+    let activeInterface
+    try {
+      activeInterface = await networkEverywhere.getActiveInterface()
+    } catch (e) {
+      return await getFirstValidMacAddress()
+    }
+    const activeMac = activeInterface.mac
+    if (activeMac && activeMac !== '00:00:00:00:00:00') {
+      return activeMac
+    }
+    return await getFirstValidMacAddress()
+  }
+
+  async function getAllMacAddresses(): Promise<string[]> {
+    const allMac = await networkEverywhere.getAllMacAddresses()
+    if (platform() === 'win32') {
+      return allMac.concat(allMac.map(mac => mac.toLocaleUpperCase()))
+    }
+    return allMac
   }
 
   function getIpAddress(): Promise<string> {
