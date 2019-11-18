@@ -165,12 +165,20 @@ export async function createFlowrWindow(flowrStore: Store): Promise<FlowrWindow>
       evt.sender.send('receiveActiveMacAddress', activeMacAddress)
     },
     getAllMacAddresses: async (evt: any) => {
-      const allMacAddresses = await getAllMacAddresses()
-      evt.sender.send('receiveAllMacAddresses', allMacAddresses)
+      try {
+        const allMacAddresses = await getAllMacAddresses()
+        evt.sender.send('receiveAllMacAddresses', allMacAddresses)
+      } catch (e) {
+        evt.sender.send('receiveAllMacAddresses', [])
+      }
     },
     getIpAddress: async (evt: any) => {
-      const ipAddress = await getIpAddress()
-      evt.sender.send('receiveIpAddress', ipAddress)
+      try {
+        const ipAddress = await getIpAddress()
+        evt.sender.send('receiveIpAddress', ipAddress)
+      } catch (e) {
+        evt.sender.send('receiveIpAddress', '127.0.0.1')
+      }
     },
     updateAppConfig: (evt: any, data: any) => {
       const currentConfig = flowrStore.get('flowrConfig')
@@ -228,9 +236,27 @@ export async function createFlowrWindow(flowrStore: Store): Promise<FlowrWindow>
     return result
   }
 
+  async function getFirstValidMacAddress(): Promise<string | undefined> {
+    const allMacAddresses = await networkEverywhere.getAllMacAddresses()
+    const firstValid = allMacAddresses.find(mac => mac !== '00:00:00:00:00:00')
+    if (firstValid) {
+      return firstValid
+    }
+    throw new Error('Could not find any valid mac')
+  }
+
   async function getActiveMacAddress(): Promise<string> {
-    const activeMac = (await networkEverywhere.getActiveInterface()).mac
-    return activeMac !== '00:00:00:00:00:00' ? activeMac : (await networkEverywhere.getAllMacAddresses()).find(mac => mac !== '00:00:00:00:00:00')
+    let activeInterface
+    try {
+      activeInterface = await networkEverywhere.getActiveInterface()
+    } catch (e) {
+      return await getFirstValidMacAddress()
+    }
+    const activeMac = activeInterface.mac
+    if (activeMac && activeMac !== '00:00:00:00:00:00') {
+      return activeMac
+    }
+    return await getFirstValidMacAddress()
   }
 
   function getAllMacAddresses(): Promise<string[]> {
