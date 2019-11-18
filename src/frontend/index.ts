@@ -64,6 +64,7 @@ export async function createFlowrWindow(flowrStore: Store): Promise<FlowrWindow>
   mainWindow.setMenuBarVisibility(false)
   // mainWindow.setAlwaysOnTop(true, 'floating', 0)
 
+  // set mac address in the URL te ensure backward compatibility with Flowr 5.1
   url.searchParams.set('mac', mac.toLocaleUpperCase())
   mainWindow.loadURL(url.href)
   reloadTimeout = setInterval(reload, RELOAD_INTERVAL)
@@ -262,8 +263,7 @@ export async function createFlowrWindow(flowrStore: Store): Promise<FlowrWindow>
   async function getAllMacAddresses(): Promise<string[]> {
     const allMac = await networkEverywhere.getAllMacAddresses()
     if (platform() === 'win32') {
-      const mac = (await networkEverywhere.getActiveInterface()).mac
-      allMac.push(mac.toLocaleUpperCase())
+      allMac.concat(...allMac.map(mac => mac.toLocaleUpperCase()))
     }
     return allMac
   }
