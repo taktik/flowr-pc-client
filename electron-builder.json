@@ -14,13 +14,15 @@
   "files": ["build/**/*", "package.json"],
   "linux": {
     "category": "Network",
-    "depends": ["ffmpeg"],
     "target": [
       {
         "target": "deb",
         "arch": ["x64"]
       }
     ]
+  },
+  "deb": {
+    "depends": ["ffmpeg"]
   },
   "win": {
     "target": ["zip", "nsis"]
