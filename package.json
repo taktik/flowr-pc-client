@@ -91,7 +91,7 @@
     "moment": "^2.24.0",
     "mouse-hooks": "0.3.1",
     "nedb": "1.8.0",
-    "network-everywhere": "^1.0.1",
+    "network-everywhere": "1.0.3",
     "node-vibrant": "3.2.0-alpha",
     "node-window-manager": "1.1.0",
     "pretty-bytes": "5.2.0",
