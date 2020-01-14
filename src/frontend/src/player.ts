@@ -1,20 +1,48 @@
 import { Store } from './store'
 import { ipcMain } from 'electron'
-const { Writable } = require('stream')
-const ff = require('./ffmpeg')
-const ffprobe  = require('ffprobe')
-const ffprobeStatic  = require('ffprobe-static')
-const ffprobeTimeout = 5000000
-
-// TODO move this code in ffprobe-static
-let ffprobePath = ffprobeStatic.path
-ffprobePath = ffprobePath.replace('app.asar', 'app.asar.unpacked')
+import { IpcMainEvent, IpcStreamer } from './ipcStreamer'
+import { ChunkStream, ITsDecryptorConfig, TsDecryptor, IChunkStreamConfig } from '@taktik/ts-decryptor'
+import { IUdpStreamerConfig, UdpStreamer } from '@taktik/udp-streamer'
+import { IChannelData } from './interfaces/channelData'
+import { ICurrentStreams } from './interfaces/currentStreams'
+import { IStreamTrack } from './interfaces/streamTrack'
+import { FfmpegCommand } from 'fluent-ffmpeg'
+import { PlayerError, PlayerErrors } from './playerError'
+import { getVideoMpegtsPipeline, getAudioMpegtsPipeline } from './ffmpeg'
+import { Readable } from 'stream'
+import { IDecryption } from './interfaces/storedDecryption'
+import Ffmpeg = require('fluent-ffmpeg')
+import { IPlayerStreams } from './interfaces/playerPipeline'
+import { IPlayerStore } from './interfaces/playerStore'
+import { DEFAULT_PLAYER_STORE } from './playerStore'
 
 export class Player {
-  private currentPipeline?: any
-  private segmentInterval: number
-  private currentStreams?: any
+  private streams?: IPlayerStreams
+  private currentStreams?: ICurrentStreams
   private readonly _ipcEvents: {[key: string]: (...args: any[]) => void}
+  private udpStreamer: UdpStreamer | null = null
+  private decryptor: TsDecryptor | null = null
+
+  get playerStore(): IPlayerStore {
+    const stored = this.store.get('player') || {}
+    return { ...DEFAULT_PLAYER_STORE, ...stored }
+  }
+
+  get chunker(): IChunkStreamConfig {
+    return this.playerStore.chunker
+  }
+
+  get decryption(): IDecryption {
+    return this.playerStore.decryption
+  }
+
+  get tsDecryptorConfig(): ITsDecryptorConfig {
+    return this.playerStore.tsDecryptor
+  }
+
+  get udpStreamerConfig(): IUdpStreamerConfig {
+    return this.playerStore.udpStreamer
+  }
 
   constructor(private store: Store) {
     this._ipcEvents = {
@@ -31,248 +59,288 @@ export class Player {
     Object.entries(this._ipcEvents).forEach(event => ipcMain.on(event[0], event[1]))
   }
 
-  updateChannelData (stream: any) {
-    const channelData = this.store.get('channelData')
-    channelData[stream.url] = stream
+  updateChannelData(streams: ICurrentStreams) {
+    const channelData = this.store.get('channelData') as IChannelData
+    channelData[streams.url] = streams
     this.store.set('channelData', channelData)
   }
 
-  closestream(evt: any) {
-    this.currentPipeline ? this.currentPipeline.kill() : void
+  closestream(evt: IpcMainEvent) {
+    this.stop()
     evt.sender.send('streamclosed')
-    clearInterval(this.segmentInterval)
   }
 
-  pausestream(evt: any) {
-    this.currentPipeline ? this.currentPipeline.kill('SIGSTOP') : void
+  pausestream(evt: IpcMainEvent) {
+    this.streams?.ffmpeg.kill('SIGSTOP')
     evt.sender.send('streampaused')
   }
 
-  resumestream(evt: any) {
-    this.currentPipeline ? this.currentPipeline.kill('SIGCONT') : void
+  resumestream(evt: IpcMainEvent) {
+    this.streams?.ffmpeg.kill('SIGCONT')
     evt.sender.send('streamresumed')
   }
 
-  getaudiostream(evt: any) {
+  getaudiostream(evt: IpcMainEvent) {
     const audio = (this.currentStreams) ? this.currentStreams.audio : {}
     evt.sender.send('audiostreams', audio)
   }
 
-  getSubtitleStreams(evt: any) {
+  getSubtitleStreams(evt: IpcMainEvent) {
     const subtitles = (this.currentStreams) ? this.currentStreams.subtitles : {}
     evt.sender.send('subtitleStreams', subtitles)
   }
 
-  setaudiostream(evt: any, selectedAudioStream: any) {
-    // retrieve proper
-    this.currentStreams.audio.currentStream = selectedAudioStream
-    this.playUrl(this.currentStreams.url, this.currentStreams, evt)
-    this.updateChannelData(this.currentStreams)
-  }
-
-  setsubtitlestream(evt: any, selectedSubtitleStream: any) {
-    // retrieve proper
-    if (selectedSubtitleStream !== this.currentStreams.subtitles.currentStream) {
-      this.currentStreams.subtitles.currentStream = selectedSubtitleStream
-      this.playUrl(this.currentStreams.url, this.currentStreams, evt)
+  async setaudiostream(evt: IpcMainEvent, selectedAudioStream: number) {
+    if (this.currentStreams) {
+      // retrieve proper
+      this.currentStreams.audio.currentStream = selectedAudioStream
+      await this.playUrl(this.currentStreams.url, this.currentStreams, evt)
       this.updateChannelData(this.currentStreams)
     }
   }
 
-  typeofstream(evt: any, url: string) {
-    const sendTypeOfStream = (stream: any) => {
-      if (stream.video && stream.video.tracks && stream.video.tracks.length > 0) {
+  async setsubtitlestream(evt: IpcMainEvent, selectedSubtitleStream: number) {
+    if (this.currentStreams) {
+      // retrieve proper
+      if (selectedSubtitleStream !== this.currentStreams.subtitles.currentStream) {
+        this.currentStreams.subtitles.currentStream = selectedSubtitleStream
+        await this.playUrl(this.currentStreams.url, this.currentStreams, evt)
+        this.updateChannelData(this.currentStreams)
+      }
+    }
+  }
+
+  async typeofstream(evt: IpcMainEvent, url: string) {
+    const sendTypeOfStream = (stream: ICurrentStreams) => {
+      if (stream.video?.tracks?.length > 0) {
         // is video
         evt.sender.send('typeofstream', 'video')
-      } else if (stream.audio && stream.audio.tracks && stream.audio.tracks.length > 0) {
+      } else if (stream.audio?.tracks?.length > 0) {
         // is audio
         evt.sender.send('typeofstream', 'audio')
       }
     }
-    const channelData = this.store.get('channelData')
+    const channelData = this.store.get('channelData') as IChannelData
     const stream = channelData[url]
     if (stream) {
       sendTypeOfStream(stream)
     } else {
-      ffprobe(`${url}?timeout=${ffprobeTimeout}`, { path: ffprobePath }, (err: Error, metadata: any) => {
-        if (metadata) {
-          this.currentStreams = this.processStreams(metadata.streams, url)
-          this.updateChannelData(this.currentStreams)
-          sendTypeOfStream(this.currentStreams)
-        } else {
-          console.log('ffprobe failure')
-        }
-      })
+      try {
+        const metadata: Ffmpeg.FfprobeData = await this.retrieveMetadata(url)
+        this.currentStreams = this.processStreams(metadata.streams, url)
+        this.updateChannelData(this.currentStreams)
+        sendTypeOfStream(this.currentStreams)
+      } catch (e) {
+        console.log('ffprobe failure:', e)
+      }
     }
   }
 
-  openUrl(evt: any, url: string) {
-    const channelData = this.store.get('channelData')
+  async openUrl(evt: IpcMainEvent, url: string): Promise<void> {
+    try {
+      const channelData = (this.store.get('channelData') || {}) as IChannelData
+      const localCurrentStream: ICurrentStreams | undefined = channelData[url]
 
-    if (channelData[url]) {
-      let localCurrentStream: any
-      this.currentStreams = localCurrentStream = channelData[url]
-      this.playUrl(url, this.currentStreams, evt)
+      // If we already have info for this url, play it immediately
+      if (localCurrentStream) {
+        this.currentStreams = localCurrentStream
+        await this.playUrl(url, localCurrentStream, evt)
+      }
+      const metadata: Ffmpeg.FfprobeData = await this.retrieveMetadata(url)
+      const newStreamData: ICurrentStreams = this.processStreams(metadata.streams, url)
+      const shouldPlay = this.hasStreamChanged(newStreamData, localCurrentStream)
 
-      ffprobe(`${url}?timeout=${ffprobeTimeout}`, { path: ffprobePath }, (err: Error, metadata?: any) => {
-        if (metadata) {
-          const newStreamData = this.processStreams(metadata.streams, url)
-          // callback might be received when the streams has already change, do not pay attention.
+      if (this.currentStreams && this.currentStreams.url === localCurrentStream?.url) {
+        // We are playing the same content, reuse the audio and subtitles
+        newStreamData.subtitles.currentStream = this.currentStreams.subtitles.currentStream
+        newStreamData.audio.currentStream = this.currentStreams.audio.currentStream
+      }
 
-          if (this.currentStreams.video && this.currentStreams.video.tracks && this.currentStreams.video.tracks.length > 0) {
-            if (this.currentStreams.video.tracks[0].codec_name !== newStreamData.video.tracks[0].codec_name && localCurrentStream.url === this.currentStreams.url) {
-              console.log('probe play url:', url)
-              this.playUrl(newStreamData.url, newStreamData, evt)
+      this.currentStreams = newStreamData
+      this.updateChannelData(newStreamData)
 
-            } else {
-              console.log('-----------do not play old data')
-            }
+      if (shouldPlay) {
+        await this.playUrl(newStreamData.url, newStreamData, evt)
+      }
+    } catch (e) {
+      console.error('Failed to open url:', e)
+    }
+  }
 
-            if (localCurrentStream.url === this.currentStreams.url) {
-              // we keep current subtilte and audio
-              newStreamData.subtitles.currentStream = this.currentStreams.subtitles.currentStream
-              newStreamData.audio.currentStream = this.currentStreams.audio.currentStream
-              this.currentStreams = newStreamData
-            }
-          } else if (this.currentStreams.audio && this.currentStreams.audio.tracks) {
-            this.currentStreams = newStreamData
-          }
-          this.updateChannelData(this.currentStreams)
-        }
-      })
+  async stop() {
+    if (this.udpStreamer) {
+      await this.udpStreamer.close()
+    }
+    if (this.streams) {
+      this.streams.pipeline.destroy()
+      this.streams.ffmpeg.kill('SIGKILL')
+      this.streams = null
+    }
+  }
+
+  async retrieveMetadata(url: string): Promise<Ffmpeg.FfprobeData> {
+    let input: string | Readable
+
+    if (this.decryption.use) {
+      input = await this.getDecryptionPipeline(url)
     } else {
-      ffprobe(`${url}?timeout=${ffprobeTimeout}`, { path: ffprobePath }, (err: Error, metadata: any) => {
-        if (metadata) {
-          this.currentStreams = this.processStreams(metadata.streams, url)
-          this.updateChannelData(this.currentStreams)
-          this.playUrl(this.currentStreams.url, this.currentStreams, evt)
+      input = url
+    }
 
+    return new Promise((resolve, reject) => {
+      Ffmpeg(input, { timeout: 30 }).ffprobe((err, data: Ffmpeg.FfprobeData) => {
+        if (err) {
+          reject(err)
         } else {
-          console.log('ffprobe failure')
+          resolve(data)
         }
       })
+    })
+  }
+
+  hasStreamChanged(newStreamData: ICurrentStreams, localCurrentStream: ICurrentStreams | undefined): boolean {
+    // If current and new streams first video track's codec name is different
+    // or if no local current stream
+    const isSameUrlButDifferentCodec: boolean = !!this.currentStreams &&
+        this.currentStreams.url === localCurrentStream?.url &&
+        this.currentStreams.video.tracks[0].codecName !== newStreamData.video.tracks[0].codecName
+    return !localCurrentStream || isSameUrlButDifferentCodec
+  }
+
+  async handleConversionError(evt: IpcMainEvent) {
+    if (this.currentStreams) {
+      // if conversion error, keep trying
+      // playUrl will kill previous process
+      await this.playUrl(this.currentStreams.url, this.currentStreams, evt)
     }
   }
 
-  handleConversionError (evt: any) {
-        // if conversion error, keep trying this.playUrl will kill previous process
-    this.playUrl(this.currentStreams.url, this.currentStreams, evt)
+  async handleErroneousStreamError(evt: IpcMainEvent) {
+    if (this.currentStreams) {
+      // reset to default audio and subtitles and try again
+      this.currentStreams.audio.currentStream = (this.currentStreams.audio.tracks.length > 0) ? this.currentStreams.audio.tracks[0].pid : -1
+      this.currentStreams.subtitles.currentStream = -1
+      await this.playUrl(this.currentStreams.url, this.currentStreams, evt)
+    }
   }
 
-  handleErroneousStreamError(evt: any) {
-    this.currentStreams.audio.currentStream = (this.currentStreams.audio.tracks.length > 0) ? this.currentStreams.audio.tracks[0].pid :-1
-    this.currentStreams.subtitles.currentStream = -1
-    this.playUrl(this.currentStreams.url, this.currentStreams, evt)
-
+  getErrorHandler(evt: IpcMainEvent) {
+    return (error: PlayerError) => {
+      switch (error.code) {
+        case PlayerErrors.CONVERSION:
+          this.handleConversionError(evt)
+          break
+        case PlayerErrors.ERRONEOUS_STREAM:
+          this.handleErroneousStreamError(evt)
+          break
+        case PlayerErrors.TERMINATED:
+          // silence this, most probably we terminated the process on purpose
+          break
+        default:
+          console.error('Player error', error)
+      }
+    }
   }
 
-  playUrl(url: string, streamToPlay: any, evt: any) {
-    console.log('----------- playUrl', url)
+  async getDecryptionPipeline(url: string): Promise<Readable> {
+    // lazy instantiate if necessary
+    const udpStreamer = this.udpStreamer || (this.udpStreamer = new UdpStreamer(this.udpStreamerConfig))
+    // lazy instantiate if necessary
+    const decryptor = this.decryptor || (this.decryptor = new TsDecryptor())
+    const cleanUrl = url
+        .replace(/\s/g, '') // remove whitespaces
+        .replace(/(udp|rtp):\/\/@?(.+)/, '$2') // retrieve ip:port
+    const ip = cleanUrl.split(':')[0]
+    const port = parseInt(cleanUrl.split(':')[1], 10)
+    const stream = await udpStreamer.connect(ip, port)
 
-    const conversionErrorHandler = () => {
-      this.handleConversionError(evt)
-    }
-    const erroneousStreamErrorHandler = () => {
-      this.handleErroneousStreamError(evt)
-    }
+    return decryptor.injest(stream, this.tsDecryptorConfig)
+  }
 
-    if (this.currentPipeline) {
-      this.currentPipeline.kill()
-    }
-
+  getFfmpegStream(evt: IpcMainEvent, input: string | Readable, streamToPlay: ICurrentStreams): FfmpegCommand {
     if (streamToPlay.video.tracks.length > 0) {
-      const currentVideoCodec = streamToPlay.video.tracks[0].codec_name
+      const currentVideoCodec = streamToPlay.video.tracks[0].codecName
       const videoStreamChannel = streamToPlay.video.tracks[0].pid
       const subtitleStreamChannel = streamToPlay.subtitles.currentStream
       const audiostreamChannel = streamToPlay.audio.currentStream
       const isDeinterlacingEnabled = this.store.get('deinterlacing')
-      this.currentPipeline = ff.getVideoMpegtsPipeline(url, audiostreamChannel, videoStreamChannel, currentVideoCodec, subtitleStreamChannel, isDeinterlacingEnabled, () => { this.handleConversionError(evt) }, () => { this.handleErroneousStreamError(evt) })
-
-    } else if (streamToPlay.audio.tracks.length > 0) {
-      this.currentPipeline = ff.getAudioMpegtsPipeline(url, conversionErrorHandler, erroneousStreamErrorHandler)
-    } else {
-      // TODO: handle this case
+      return getVideoMpegtsPipeline(input, videoStreamChannel, audiostreamChannel, subtitleStreamChannel, currentVideoCodec, isDeinterlacingEnabled, this.getErrorHandler(evt))
     }
-
-    let ready = false
-    let firstChunk = true
-    let buf = Buffer.alloc(0)
-
-    const mpxSegmentBufferer = new Writable({
-      write(chunk: any, encoding: any, callback: any) {
-        ready = true
-        buf = Buffer.concat([buf, chunk])
-        callback()
-      },
-    })
-    this.currentPipeline.pipe(mpxSegmentBufferer)
-    clearInterval(this.segmentInterval)
-    this.segmentInterval = setInterval(() => {
-      if (!ready) return
-      evt.sender.send('segment', { buffer: buf, isFirst: firstChunk })
-      firstChunk = false
-      buf = Buffer.alloc(0)
-    }, 300)
+    if (streamToPlay.audio.tracks.length > 0) {
+      return getAudioMpegtsPipeline(input, this.getErrorHandler(evt))
+    }
+    throw new PlayerError('No stream', PlayerErrors.NO_STREAM)
   }
 
-  processStreams (streams: any, url: string): any {
-    const tempCurrentStreams: any = {
+  async playUrl(url: string, streamToPlay: ICurrentStreams, evt: IpcMainEvent) {
+    console.log('----------- playUrl', url)
+
+    await this.stop()
+
+    let input: string | Readable
+
+    if (this.decryption.use) {
+      input = await this.getDecryptionPipeline(url)
+    } else {
+      input = url
+    }
+
+    const ffmpeg = this.getFfmpegStream(evt, input, streamToPlay)
+    const chunker = new ChunkStream(this.chunker)
+    const streamer = new IpcStreamer(evt)
+    const pipeline = ffmpeg
+      .pipe(chunker)
+      .pipe(streamer)
+
+    this.streams = { ffmpeg, pipeline }
+  }
+
+  processStreams (streams: Ffmpeg.FfprobeStream[], url: string): ICurrentStreams {
+    const audioTracks: IStreamTrack[] = streams
+        .filter((stream: Ffmpeg.FfprobeStream) => stream.codec_type === 'audio')
+        .map((stream: Ffmpeg.FfprobeStream, index: number) => ({
+          index,
+          code: (stream.tags?.language === '???') ? 'zzz' : stream.tags?.language,
+          pid: stream.index,
+          codecName: stream.codec_name,
+        }),
+      )
+
+    const subtitleTracks: IStreamTrack[] = streams
+        .filter((stream: Ffmpeg.FfprobeStream) => stream.codec_type === 'subtitle')
+        .map((stream: Ffmpeg.FfprobeStream, index: number) => ({
+          index,
+          code: (stream.tags?.language === '???') ? 'zzz' : stream.tags?.language,
+          pid: stream.index,
+          codecName: stream.codec_name,
+        }),
+      )
+
+    const videoTracks: IStreamTrack[] = streams
+        .filter((stream: Ffmpeg.FfprobeStream)  => stream.codec_type === 'video')
+        .map((stream: Ffmpeg.FfprobeStream, index: number) => ({
+          index,
+          pid: stream.index,
+          codecName: stream.codec_name,
+        }),
+      )
+
+    return {
       url,
-      audio : {
-        tracks: [],
-      },
-      video : {
-        tracks:[],
+      video: { tracks: videoTracks },
+      audio: {
+        tracks: audioTracks,
+        currentStream: (audioTracks.length > 0) ? audioTracks[0].pid : -1,
       },
       subtitles: {
-        tracks: [],
+        tracks: subtitleTracks,
+        currentStream: -1,
       },
     }
-    streams.filter((streamData: any)  => streamData.codec_type === 'audio')
-      .forEach(
-        (stream: any, index: number) => tempCurrentStreams.audio.tracks
-          .push({
-            index ,
-            code: (stream.tags && stream.tags.language !== '???') ? stream.tags.language : 'zzz',
-            pid: stream.index, codec_name: stream.codec_name,
-          }),
-      )
-    streams
-      .filter((streamData: any)  => streamData.codec_type === 'subtitle')
-      .forEach((stream: any, index: number) => {
-        if (stream.codec_name && stream.codec_name !== 'dvb_teletext') {
-          tempCurrentStreams.subtitles.tracks
-            .push({
-              index ,
-              code: (stream.tags.language === '???') ? 'zzz' :stream.tags.language,
-              pid: stream.index, codec_name: stream.codec_name,
-            })
-        }
-      })
-    streams
-      .filter((streamData: any)  => streamData.codec_type === 'video')
-      .forEach((stream: any, index: number) => tempCurrentStreams.video.tracks
-        .push({ index ,  pid: stream.index, codec_name: stream.codec_name }))
-
-    tempCurrentStreams.audio.currentStream = (tempCurrentStreams.audio.tracks.length > 0) ? tempCurrentStreams.audio.tracks[0].pid :-1
-    tempCurrentStreams.subtitles.currentStream = -1 // initiallty, there is none
-
-    return tempCurrentStreams
-
-  }
-
-  playStream(metadata: any, url: string, evt: any) {
-    const currentStreams = this.processStreams(metadata.streams, url)
-    console.log('currentStreams', currentStreams)
-    console.log('audio', currentStreams.audio.tracks)
-    this.playUrl(currentStreams.url, currentStreams, evt)
   }
 
   close() {
-    if (this.currentPipeline) {
-      this.currentPipeline.kill()
-    }
-    clearInterval(this.segmentInterval)
+    this.stop()
     Object.entries(this._ipcEvents).forEach(event => ipcMain.removeListener(event[0], event[1]))
   }
 }

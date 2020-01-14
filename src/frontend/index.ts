@@ -6,9 +6,12 @@ import { FlowrWindow } from './flowr-window'
 import { extend } from 'lodash'
 import { URL } from 'url'
 import { networkEverywhere } from 'network-everywhere'
-const deepExtend = require('deep-extend')
+import { DEFAULT_PLAYER_STORE } from './src/playerStore'
 import defaultBrowserWindowOptions from './defaultBrowserWindowOptions'
+
+const deepExtend = require('deep-extend')
 const FlowrDataDir = resolve(homedir(), '.flowr')
+
 export const FRONTEND_CONFIG_NAME = 'user-preferences'
 export const DEFAULT_FRONTEND_STORE = {
   // 800x600 is the default size of our window
@@ -16,6 +19,7 @@ export const DEFAULT_FRONTEND_STORE = {
   channelData: {},
   isMaximized: false,
   clearAppDataOnStart: false,
+  player: DEFAULT_PLAYER_STORE,
 }
 export function initFlowrConfig(data: object) {
   initConfigData(join(FlowrDataDir, `${FRONTEND_CONFIG_NAME}.json`), data)
