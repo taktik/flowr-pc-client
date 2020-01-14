@@ -31,7 +31,7 @@
     "lint": "tslint \"src/**/*.ts*\" --exclude \"src/wexond/**/*.ts*\" --project tsconfig.json",
     "lint-fix": "prettier --write \"src/**/*.ts*\" && tslint \"src/**/*.ts*\" --fix",
     "install-app-deps": "electron-builder install-app-deps",
-    "install-widevine": "npm install castlabs/electron-releases#v5.0.3-wvvmp --no-save",
+    "install-widevine": "npm install castlabs/electron-releases#v7.1.2-wvvmp --no-save",
     "copy-header": "cp -r $HOME/.electron-gyp/7.1.2 $HOME/.electron-gyp/7.1.2-wvvmp",
     "copy-header-win": "cp -r %HOME%/.electron-gyp/7.1.2 %HOME%/.electron-gyp/7.1.2-wvvmp"
   },
