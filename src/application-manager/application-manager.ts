@@ -1,5 +1,5 @@
 import { ApplicationConfig, FlowrApplication } from '@taktik/flowr-common-js'
-import { ipcMain, WebContents, BrowserWindow, app } from 'electron'
+import { ipcMain, BrowserWindow, app, IpcMainEvent } from 'electron'
 import { resolve, join } from 'path'
 import { storeManager } from '../launcher'
 import { Store } from '../frontend/src/store'
@@ -26,18 +26,6 @@ interface ApplicationOpenConfig {
 export interface FlowrApplicationWindow extends BrowserWindow {
   capabilities?: {[key: string]: boolean}
   props?: {[key: string]: any}
-}
-
-/**
- * Custom definition for now, from:
- * https://github.com/electron/electron/blob/master/docs/api/structures/ipc-main-event.md
- * Will be introduced in electron@6.0.0
- */
-interface IpcMainEvent {
-  frameId: number
-  returnValue: any
-  sender: WebContents
-  reply: (...args: any[]) => void
 }
 
 interface ApplicationInitResults {

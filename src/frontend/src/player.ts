@@ -1,6 +1,6 @@
 import { Store } from './store'
-import { ipcMain } from 'electron'
-import { IpcMainEvent, IpcStreamer } from './ipcStreamer'
+import { ipcMain, IpcMainEvent } from 'electron'
+import { IpcStreamer } from './ipcStreamer'
 import { ChunkStream, ITsDecryptorConfig, TsDecryptor, IChunkStreamConfig } from '@taktik/ts-decryptor'
 import { IUdpStreamerConfig, UdpStreamer } from '@taktik/udp-streamer'
 import { IChannelData } from './interfaces/channelData'

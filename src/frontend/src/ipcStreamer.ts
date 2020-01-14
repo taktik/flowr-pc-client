@@ -1,13 +1,5 @@
 import { Writable } from 'stream'
-import { WebContents } from 'electron'
-
-// This definition will be integrated in electron starting from v6
-export interface IpcMainEvent extends Event {
-  frameId: number
-  returnValue: any
-  sender: WebContents
-  reply: (...args: any[]) => any
-}
+import { WebContents, IpcMainEvent } from 'electron'
 
 export class IpcStreamer extends Writable {
   private readonly sender: WebContents

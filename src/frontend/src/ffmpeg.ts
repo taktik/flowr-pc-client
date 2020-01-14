@@ -58,7 +58,6 @@ export function getVideoMpegtsPipeline(
 
   const ffmpegCmd = Ffmpeg(input)
     .inputOptions('-probesize 700k')
-    // .audioCodec('aac') // TODO
     .outputOptions('-preset ultrafast')
     .outputOptions('-g 30')
     .outputOptions('-tune zerolatency')
