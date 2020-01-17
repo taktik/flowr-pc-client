@@ -12,7 +12,7 @@ export const DEFAULT_PLAYER_STORE: IPlayerStore = {
   tsDecryptor: {
     alignMemoryAllocation: {
       capacity: 10e3, // must be superior or equal to UdpStreamer's writeableHighWatermark
-      pool: 20e6, // increase this if there are alignment errors
+      pool: 50e6, // increase this if there are alignment errors
     },
     formatterMemoryAllocation: {
       leftovers: 5e6, // increase this if there are artefacts
@@ -20,7 +20,7 @@ export const DEFAULT_PLAYER_STORE: IPlayerStore = {
     },
   },
   udpStreamer: {
-    outputMemoryAllocation: 50e6, // per stream output, to increase on alignment errors
+    outputMemoryAllocation: 200e6, // per stream output, to increase on alignment errors
     writeableHighWatermark: 5e3, // streaming "speed"
   },
 }
