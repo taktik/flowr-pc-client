@@ -8,7 +8,7 @@ import { ICurrentStreams } from './interfaces/currentStreams'
 import { IStreamTrack } from './interfaces/streamTrack'
 import { FfmpegCommand } from 'fluent-ffmpeg'
 import { PlayerError, PlayerErrors } from './playerError'
-import { getVideoMpegtsPipeline, getAudioMpegtsPipeline } from './ffmpeg'
+import { getVideoMpegtsPipeline, getAudioMpegtsPipeline, ffprobe } from './ffmpeg'
 import { Readable } from 'stream'
 import { IDecryption } from './interfaces/storedDecryption'
 import Ffmpeg = require('fluent-ffmpeg')
@@ -55,6 +55,7 @@ export class Player {
       setsubtitlestream: this.setsubtitlestream.bind(this),
       typeofstream: this.typeofstream.bind(this),
       openurl: this.openUrl.bind(this),
+      FlowrIsInitializing: this.stop.bind(this),
     }
     Object.entries(this._ipcEvents).forEach(event => ipcMain.on(event[0], event[1]))
   }
@@ -168,13 +169,17 @@ export class Player {
   }
 
   async stop() {
+    clearTimeout(this.replayOnErrorTimeout)
+    if (this.streams) {
+      if (this.streams.input instanceof Readable) {
+        this.streams.input.destroy()
+      }
+      this.streams.ffmpeg.kill('SIGKILL')
+      this.streams.pipeline.destroy()
+      this.streams = null
+    }
     if (this.udpStreamer) {
       await this.udpStreamer.close()
-    }
-    if (this.streams) {
-      this.streams.pipeline.destroy()
-      this.streams.ffmpeg.kill('SIGKILL')
-      this.streams = null
     }
   }
 
@@ -187,15 +192,14 @@ export class Player {
       input = url
     }
 
-    return new Promise((resolve, reject) => {
-      Ffmpeg(input, { timeout: 30 }).ffprobe((err, data: Ffmpeg.FfprobeData) => {
-        if (err) {
-          reject(err)
-        } else {
-          resolve(data)
-        }
-      })
-    })
+    try {
+      const metadata = await ffprobe(input, { timeout: 30 })
+      return metadata
+    } finally {
+      if (input instanceof Readable) {
+        input.destroy()
+      }
+    }
   }
 
   hasStreamChanged(newStreamData: ICurrentStreams, localCurrentStream: ICurrentStreams | undefined): boolean {
@@ -253,8 +257,15 @@ export class Player {
     const ip = cleanUrl.split(':')[0]
     const port = parseInt(cleanUrl.split(':')[1], 10)
     const stream = await udpStreamer.connect(ip, port)
-
-    return decryptor.injest(stream, this.tsDecryptorConfig)
+    const pipeline = decryptor.injest(stream, this.tsDecryptorConfig)
+    pipeline.on('close', () => {
+      try {
+        stream.destroy()
+      } catch (e) {
+        console.log('Could not destroy udp stream', e)
+      }
+    })
+    return pipeline
   }
 
   getFfmpegStream(evt: IpcMainEvent, input: string | Readable, streamToPlay: ICurrentStreams): FfmpegCommand {
@@ -272,15 +283,23 @@ export class Player {
     throw new PlayerError('No stream', PlayerErrors.NO_STREAM)
   }
 
+  replayOnErrorTimeout: number | null = null
+
   async playUrl(url: string, streamToPlay: ICurrentStreams, evt: IpcMainEvent) {
     console.log('----------- playUrl', url)
-
+    clearTimeout(this.replayOnErrorTimeout)
     await this.stop()
 
     let input: string | Readable
 
     if (this.decryption.use) {
       input = await this.getDecryptionPipeline(url)
+      input.on('error', async (error: Error) => {
+        console.error('------------- Error in play pipeline -------------')
+        console.error(error)
+        console.error('------------- ---------------------- -------------')
+        this.replayOnErrorTimeout = setTimeout(async () => await this.playUrl(url, streamToPlay, evt), 200)
+      })
     } else {
       input = url
     }
@@ -292,7 +311,7 @@ export class Player {
       .pipe(chunker)
       .pipe(streamer)
 
-    this.streams = { ffmpeg, pipeline }
+    this.streams = { input, ffmpeg, pipeline }
   }
 
   processStreams (streams: Ffmpeg.FfprobeStream[], url: string): ICurrentStreams {

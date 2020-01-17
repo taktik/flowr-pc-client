@@ -1,7 +1,8 @@
 import { FfmpegCommand } from 'fluent-ffmpeg'
-import { IpcStreamer } from '../ipcStreamer'
+import { Writable, Readable } from 'stream'
 
 export interface IPlayerStreams {
+  input: string | Readable
   ffmpeg: FfmpegCommand
-  pipeline: IpcStreamer
+  pipeline: Writable
 }
