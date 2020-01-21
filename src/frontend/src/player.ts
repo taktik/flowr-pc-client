@@ -1,7 +1,7 @@
 import { Store } from './store'
 import { ipcMain, IpcMainEvent } from 'electron'
 import { IpcStreamer } from './ipcStreamer'
-import { ChunkStream, ITsDecryptorConfig, TsDecryptor, IChunkStreamConfig } from '@taktik/ts-decryptor'
+import { ITsDecryptorConfig, TsDecryptor } from '@taktik/ts-decryptor'
 import { IUdpStreamerConfig, UdpStreamer } from '@taktik/udp-streamer'
 import { IChannelData } from './interfaces/channelData'
 import { ICurrentStreams } from './interfaces/currentStreams'
@@ -15,6 +15,7 @@ import Ffmpeg = require('fluent-ffmpeg')
 import { IPlayerStreams } from './interfaces/playerPipeline'
 import { IPlayerStore } from './interfaces/playerStore'
 import { DEFAULT_PLAYER_STORE } from './playerStore'
+import { IIpcStreamerConfig } from './interfaces/ipcStreamerConfig'
 
 export class Player {
   private streams?: IPlayerStreams
@@ -28,8 +29,8 @@ export class Player {
     return { ...DEFAULT_PLAYER_STORE, ...stored }
   }
 
-  get chunker(): IChunkStreamConfig {
-    return this.playerStore.chunker
+  get ipcStreamerConfig(): IIpcStreamerConfig {
+    return this.playerStore.streamer
   }
 
   get decryption(): IDecryption {
@@ -171,16 +172,30 @@ export class Player {
   async stop() {
     clearTimeout(this.replayOnErrorTimeout)
     if (this.streams) {
-      if (this.streams.input instanceof Readable) {
-        this.streams.input.destroy()
-      }
-      this.streams.ffmpeg.kill('SIGKILL')
-      this.streams.pipeline.destroy()
+      await this.terminateStream(this.streams)
       this.streams = null
     }
     if (this.udpStreamer) {
       await this.udpStreamer.close()
     }
+  }
+
+  async terminateStream(streams: IPlayerStreams) {
+    if (streams.input instanceof Readable) {
+      streams.input.destroy()
+    }
+    await this.killAndWait(streams.ffmpeg)
+    streams.pipeline.destroy()
+    streams = null
+  }
+
+  // We need to wait a bit for the process to terminate
+  // this prevents ffmpeg to catch output stream "close" event and throw an error
+  killAndWait(process: FfmpegCommand) {
+    process.kill('SIGKILL')
+    return new Promise((resolve) => {
+      setTimeout(resolve, 50)
+    })
   }
 
   async retrieveMetadata(url: string): Promise<Ffmpeg.FfprobeData> {
@@ -305,11 +320,8 @@ export class Player {
     }
 
     const ffmpeg = this.getFfmpegStream(evt, input, streamToPlay)
-    const chunker = new ChunkStream(this.chunker)
-    const streamer = new IpcStreamer(evt)
-    const pipeline = ffmpeg
-      .pipe(chunker)
-      .pipe(streamer)
+    const streamer = new IpcStreamer(evt, this.ipcStreamerConfig)
+    const pipeline = ffmpeg.pipe(streamer)
 
     this.streams = { input, ffmpeg, pipeline }
   }

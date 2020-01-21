@@ -1,10 +1,11 @@
-import { IChunkStreamConfig, ITsDecryptorConfig } from '@taktik/ts-decryptor'
+import { ITsDecryptorConfig } from '@taktik/ts-decryptor'
 import { IUdpStreamerConfig } from '@taktik/udp-streamer'
 import { IDecryption } from './storedDecryption'
+import { IIpcStreamerConfig } from './ipcStreamerConfig'
 
 export interface IPlayerStore {
-  chunker: IChunkStreamConfig,
-  decryption: IDecryption,
-  tsDecryptor: ITsDecryptorConfig,
-  udpStreamer: IUdpStreamerConfig,
+  streamer: IIpcStreamerConfig
+  decryption: IDecryption
+  tsDecryptor: ITsDecryptorConfig
+  udpStreamer: IUdpStreamerConfig
 }

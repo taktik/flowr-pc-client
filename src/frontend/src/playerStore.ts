@@ -3,10 +3,9 @@ import { IPlayerStore } from './interfaces/playerStore'
 const CHUNK_SIZE = 188000
 
 export const DEFAULT_PLAYER_STORE: IPlayerStore = {
-  chunker: {
-    chunkSize: CHUNK_SIZE, // size of the packets sent to the webpage, increase on buffer errors
-    leftoversMemory: 10e6,
-    poolMemory: 10 * CHUNK_SIZE,
+  streamer: {
+    chunkSize: CHUNK_SIZE,
+    poolConfig: { poolSize: 10 },
   },
   decryption: { use: false }, // whether to use ts-decryptor
   tsDecryptor: {
