@@ -9,7 +9,7 @@ import { IStreamTrack } from './interfaces/streamTrack'
 import { FfmpegCommand } from 'fluent-ffmpeg'
 import { PlayerError, PlayerErrors } from './playerError'
 import { getVideoMpegtsPipeline, getAudioMpegtsPipeline, ffprobe } from './ffmpeg'
-import { Readable } from 'stream'
+import { Readable, Writable } from 'stream'
 import { IDecryption } from './interfaces/storedDecryption'
 import Ffmpeg = require('fluent-ffmpeg')
 import { IPlayerStreams } from './interfaces/playerPipeline'
@@ -23,6 +23,8 @@ export class Player {
   private readonly _ipcEvents: {[key: string]: (...args: any[]) => void}
   private udpStreamer: UdpStreamer | null = null
   private decryptor: TsDecryptor | null = null
+  private replayOnErrorTimeout: number | null = null
+  private stopping: Promise<void> = Promise.resolve()
 
   get playerStore(): IPlayerStore {
     const stored = this.store.get('player') || {}
@@ -96,7 +98,7 @@ export class Player {
     if (this.currentStreams) {
       // retrieve proper
       this.currentStreams.audio.currentStream = selectedAudioStream
-      await this.playUrl(this.currentStreams.url, this.currentStreams, evt)
+      await this.replay(this.currentStreams.url, this.currentStreams, evt)
       this.updateChannelData(this.currentStreams)
     }
   }
@@ -106,7 +108,7 @@ export class Player {
       // retrieve proper
       if (selectedSubtitleStream !== this.currentStreams.subtitles.currentStream) {
         this.currentStreams.subtitles.currentStream = selectedSubtitleStream
-        await this.playUrl(this.currentStreams.url, this.currentStreams, evt)
+        await this.replay(this.currentStreams.url, this.currentStreams, evt)
         this.updateChannelData(this.currentStreams)
       }
     }
@@ -140,6 +142,7 @@ export class Player {
 
   async openUrl(evt: IpcMainEvent, url: string): Promise<void> {
     try {
+      await this.stopping
       const channelData = (this.store.get('channelData') || {}) as IChannelData
       const localCurrentStream: ICurrentStreams | undefined = channelData[url]
 
@@ -162,39 +165,55 @@ export class Player {
       this.updateChannelData(newStreamData)
 
       if (shouldPlay) {
-        await this.playUrl(newStreamData.url, newStreamData, evt)
+        await this.replay(newStreamData.url, newStreamData, evt)
       }
     } catch (e) {
       console.error('Failed to open url:', e)
     }
   }
 
-  async stop() {
-    clearTimeout(this.replayOnErrorTimeout)
-    if (this.streams) {
-      await this.terminateStream(this.streams)
-      this.streams = null
-    }
-    if (this.udpStreamer) {
-      await this.udpStreamer.close()
-    }
+  async stop(): Promise<void> {
+    await this.stopping
+    this.stopping = new Promise(async (resolve) => {
+      try {
+        clearTimeout(this.replayOnErrorTimeout)
+        if (this.streams) {
+          await this.terminateStreams(this.streams)
+          this.streams = null
+        }
+        if (this.udpStreamer) {
+          await this.udpStreamer.close()
+        }
+      } catch (e) {
+        console.error('An error occurred while stopping:', e)
+      } finally {
+        resolve()
+      }
+    })
+    return this.stopping
   }
 
-  async terminateStream(streams: IPlayerStreams) {
+  async terminateStreams(streams: IPlayerStreams): Promise<void> {
     if (streams.input instanceof Readable) {
-      streams.input.destroy()
+      await this.destroyStream(streams.input)
     }
-    await this.killAndWait(streams.ffmpeg)
-    streams.pipeline.destroy()
-    streams = null
+    await this.killFfmpeg(streams.ffmpeg)
+    await this.destroyStream(streams.pipeline)
   }
 
   // We need to wait a bit for the process to terminate
   // this prevents ffmpeg to catch output stream "close" event and throw an error
-  killAndWait(process: FfmpegCommand) {
-    process.kill('SIGKILL')
+  killFfmpeg(process: FfmpegCommand): Promise<void> {
     return new Promise((resolve) => {
-      setTimeout(resolve, 50)
+      process.on('error', resolve)
+      process.kill('SIGKILL')
+    })
+  }
+
+  destroyStream(stream: Readable | Writable): Promise<void> {
+    return new Promise((resolve) => {
+      stream.on('close', resolve)
+      stream.destroy()
     })
   }
 
@@ -229,8 +248,8 @@ export class Player {
   async handleConversionError(evt: IpcMainEvent) {
     if (this.currentStreams) {
       // if conversion error, keep trying
-      // playUrl will kill previous process
-      await this.playUrl(this.currentStreams.url, this.currentStreams, evt)
+      // replay will kill previous process
+      await this.replay(this.currentStreams.url, this.currentStreams, evt)
     }
   }
 
@@ -239,7 +258,7 @@ export class Player {
       // reset to default audio and subtitles and try again
       this.currentStreams.audio.currentStream = (this.currentStreams.audio.tracks.length > 0) ? this.currentStreams.audio.tracks[0].pid : -1
       this.currentStreams.subtitles.currentStream = -1
-      await this.playUrl(this.currentStreams.url, this.currentStreams, evt)
+      await this.replay(this.currentStreams.url, this.currentStreams, evt)
     }
   }
 
@@ -298,12 +317,9 @@ export class Player {
     throw new PlayerError('No stream', PlayerErrors.NO_STREAM)
   }
 
-  replayOnErrorTimeout: number | null = null
-
   async playUrl(url: string, streamToPlay: ICurrentStreams, evt: IpcMainEvent) {
     console.log('----------- playUrl', url)
     clearTimeout(this.replayOnErrorTimeout)
-    await this.stop()
 
     let input: string | Readable
 
@@ -313,7 +329,7 @@ export class Player {
         console.error('------------- Error in play pipeline -------------')
         console.error(error)
         console.error('------------- ---------------------- -------------')
-        this.replayOnErrorTimeout = setTimeout(async () => await this.playUrl(url, streamToPlay, evt), 200)
+        this.replayOnErrorTimeout = setTimeout(async () => this.replay(url, streamToPlay, evt), 200)
       })
     } else {
       input = url
@@ -324,6 +340,11 @@ export class Player {
     const pipeline = ffmpeg.pipe(streamer)
 
     this.streams = { input, ffmpeg, pipeline }
+  }
+
+  async replay(url: string, streamToPlay: ICurrentStreams, evt: IpcMainEvent) {
+    await this.stop()
+    await this.playUrl(url, streamToPlay, evt)
   }
 
   processStreams (streams: Ffmpeg.FfprobeStream[], url: string): ICurrentStreams {
