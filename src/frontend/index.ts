@@ -2,6 +2,7 @@ import { resolve, join } from 'path'
 import { homedir } from 'os'
 import { ipcMain, Menu, app, BrowserWindowConstructorOptions } from 'electron'
 import { initConfigData, Store } from './src/store'
+import { DeviceDetailHelper } from './src/deviceDetail'
 import { FlowrWindow } from './flowr-window'
 import { extend } from 'lodash'
 import { URL } from 'url'
@@ -20,6 +21,8 @@ export const DEFAULT_FRONTEND_STORE = {
 export function initFlowrConfig(data: object) {
   initConfigData(join(FlowrDataDir, `${FRONTEND_CONFIG_NAME}.json`), data)
 }
+const DEVICE_DETAIL_PATH = join(FlowrDataDir, 'device.json')
+const devicesDetailsHelper = new DeviceDetailHelper(DEVICE_DETAIL_PATH)
 
 const RELOAD_INTERVAL = 120000 // 2min
 
@@ -237,31 +240,14 @@ export async function createFlowrWindow(flowrStore: Store): Promise<FlowrWindow>
     return result
   }
 
-  async function getFirstValidMacAddress(): Promise<string | undefined> {
-    const allMacAddresses = await networkEverywhere.getAllMacAddresses()
-    const firstValid = allMacAddresses.find(mac => mac !== '00:00:00:00:00:00')
-    if (firstValid) {
-      return firstValid
-    }
-    throw new Error('Could not find any valid mac')
-  }
-
   async function getActiveMacAddress(): Promise<string> {
-    let activeInterface
-    try {
-      activeInterface = await networkEverywhere.getActiveInterface()
-    } catch (e) {
-      return await getFirstValidMacAddress()
-    }
-    const activeMac = activeInterface.mac
-    if (activeMac && activeMac !== '00:00:00:00:00:00') {
-      return activeMac
-    }
-    return await getFirstValidMacAddress()
+    return (await devicesDetailsHelper.getDeviceDetails()).uuid
   }
 
-  function getAllMacAddresses(): Promise<string[]> {
-    return networkEverywhere.getAllMacAddresses()
+  async function getAllMacAddresses(): Promise<string[]> {
+    const activeMac = await getActiveMacAddress()
+    const allMac = await networkEverywhere.getAllMacAddresses()
+    return [activeMac, ...allMac]
   }
 
   function getIpAddress(): Promise<string> {
