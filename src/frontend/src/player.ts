@@ -153,18 +153,24 @@ export class Player {
       }
       const metadata: Ffmpeg.FfprobeData = await this.retrieveMetadata(url)
       const newStreamData: ICurrentStreams = this.processStreams(metadata.streams, url)
-      const shouldPlay = this.hasStreamChanged(newStreamData, localCurrentStream)
+      const shouldReplay = this.hasStreamChanged(newStreamData, localCurrentStream)
 
       if (this.currentStreams && this.currentStreams.url === localCurrentStream?.url) {
         // We are playing the same content, reuse the audio and subtitles
-        newStreamData.subtitles.currentStream = this.currentStreams.subtitles.currentStream
-        newStreamData.audio.currentStream = this.currentStreams.audio.currentStream
+        const currentAudioStream = this.currentStreams.audio.currentStream
+        if (newStreamData.audio.tracks.some(track => track.pid === currentAudioStream)) {
+          newStreamData.audio.currentStream = currentAudioStream
+        }
+        const currentSubtitleStream = this.currentStreams.subtitles.currentStream
+        if (newStreamData.subtitles.tracks.some(track => track.pid === currentSubtitleStream)) {
+          newStreamData.subtitles.currentStream = currentSubtitleStream
+        }
       }
 
       this.currentStreams = newStreamData
       this.updateChannelData(newStreamData)
 
-      if (shouldPlay) {
+      if (shouldReplay) {
         await this.replay(newStreamData.url, newStreamData, evt)
       }
     } catch (e) {
@@ -239,10 +245,14 @@ export class Player {
   hasStreamChanged(newStreamData: ICurrentStreams, localCurrentStream: ICurrentStreams | undefined): boolean {
     // If current and new streams first video track's codec name is different
     // or if no local current stream
+    // or if audio/subtitle stream does exists anymore
     const isSameUrlButDifferentCodec: boolean = !!this.currentStreams &&
         this.currentStreams.url === localCurrentStream?.url &&
         this.currentStreams.video.tracks[0].codecName !== newStreamData.video.tracks[0].codecName
-    return !localCurrentStream || isSameUrlButDifferentCodec
+    const audioStreamExists = newStreamData.audio.tracks.some(track => track.pid === this.currentStreams.audio.currentStream)
+    const subtitlesStreamExists = newStreamData.subtitles.tracks.some(track => track.pid === this.currentStreams.subtitles.currentStream)
+
+    return !localCurrentStream || isSameUrlButDifferentCodec || !audioStreamExists || !subtitlesStreamExists
   }
 
   async handleConversionError(evt: IpcMainEvent) {
