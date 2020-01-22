@@ -38,16 +38,12 @@ function handleError(
 ): (err: Error, stdout: string, stderr: string | undefined) => void {
   return (err, stdout, stderr) => {
     const message = `_________err ${new Date()}: ${err}, ${stdout} ${stderr}`
-
     let playerError: PlayerErrors
     if (message.includes('Conversion failed')) {
       playerError = PlayerErrors.CONVERSION
     } else if (message.includes('Stream specifier')) {
       playerError = PlayerErrors.ERRONEOUS_STREAM
-    } else if (
-      message.includes('ffmpeg was killed with signal') ||
-      message.includes('ffmpeg exited with code')
-    ) {
+    } else if (message.includes('SIGKILL')) {
       playerError = PlayerErrors.TERMINATED
     } else {
       playerError = PlayerErrors.UNKNOWN

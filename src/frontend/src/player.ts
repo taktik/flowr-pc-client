@@ -1,8 +1,8 @@
 import { Store } from './store'
 import { ipcMain, IpcMainEvent } from 'electron'
 import { IpcStreamer } from './ipcStreamer'
-import { ITsDecryptorConfig, TsDecryptor } from '@taktik/ts-decryptor'
-import { IUdpStreamerConfig, UdpStreamer } from '@taktik/udp-streamer'
+import { ITsDecryptorConfig, TsDecryptor, ChunkStream, IChunkStreamConfig } from '@taktik/ts-decryptor'
+import { UdpStreamer } from '@taktik/udp-streamer'
 import { IChannelData } from './interfaces/channelData'
 import { ICurrentStreams } from './interfaces/currentStreams'
 import { IStreamTrack } from './interfaces/streamTrack'
@@ -16,6 +16,7 @@ import { IPlayerStreams } from './interfaces/playerPipeline'
 import { IPlayerStore } from './interfaces/playerStore'
 import { DEFAULT_PLAYER_STORE } from './playerStore'
 import { IIpcStreamerConfig } from './interfaces/ipcStreamerConfig'
+import { ICircularBufferConfig } from '@taktik/buffers'
 
 export class Player {
   private streams?: IPlayerStreams
@@ -43,8 +44,12 @@ export class Player {
     return this.playerStore.tsDecryptor
   }
 
-  get udpStreamerConfig(): IUdpStreamerConfig {
+  get udpStreamerConfig(): ICircularBufferConfig {
     return this.playerStore.udpStreamer
+  }
+
+  get ffmpegChunkerConfig(): IChunkStreamConfig {
+    return this.playerStore.ffmpegChunker
   }
 
   constructor(private store: Store) {
@@ -169,7 +174,6 @@ export class Player {
 
       this.currentStreams = newStreamData
       this.updateChannelData(newStreamData)
-
       if (shouldReplay) {
         await this.replay(newStreamData.url, newStreamData, evt)
       }
@@ -249,9 +253,10 @@ export class Player {
     const isSameUrlButDifferentCodec: boolean = !!this.currentStreams &&
         this.currentStreams.url === localCurrentStream?.url &&
         this.currentStreams.video.tracks[0].codecName !== newStreamData.video.tracks[0].codecName
-    const audioStreamExists = newStreamData.audio.tracks.some(track => track.pid === this.currentStreams.audio.currentStream)
-    const subtitlesStreamExists = newStreamData.subtitles.tracks.some(track => track.pid === this.currentStreams.subtitles.currentStream)
-
+    const audioStreamExists = this.currentStreams.audio.currentStream === -1 ||
+        newStreamData.audio.tracks.some(track => track.pid === this.currentStreams.audio.currentStream)
+    const subtitlesStreamExists = this.currentStreams.subtitles.currentStream === -1 ||
+        newStreamData.subtitles.tracks.some(track => track.pid === this.currentStreams.subtitles.currentStream)
     return !localCurrentStream || isSameUrlButDifferentCodec || !audioStreamExists || !subtitlesStreamExists
   }
 
@@ -301,7 +306,9 @@ export class Player {
     const ip = cleanUrl.split(':')[0]
     const port = parseInt(cleanUrl.split(':')[1], 10)
     const stream = await udpStreamer.connect(ip, port)
-    const pipeline = decryptor.injest(stream, this.tsDecryptorConfig)
+    const pipeline = decryptor
+      .injest(stream, this.tsDecryptorConfig)
+      .pipe(new ChunkStream(this.ffmpegChunkerConfig))
     pipeline.on('close', () => {
       try {
         stream.destroy()
