@@ -306,10 +306,15 @@ export class Player {
     const ip = cleanUrl.split(':')[0]
     const port = parseInt(cleanUrl.split(':')[1], 10)
     const stream = await udpStreamer.connect(ip, port)
-    const pipeline = decryptor
-      .injest(stream, this.tsDecryptorConfig)
-      .pipe(new ChunkStream(this.ffmpegChunkerConfig))
+    const decryptorPipeline = decryptor.injest(stream, this.tsDecryptorConfig)
+    const pipeline = decryptorPipeline.pipe(new ChunkStream(this.ffmpegChunkerConfig))
+
     pipeline.on('close', () => {
+      try {
+        decryptorPipeline.destroy()
+      } catch (e) {
+        console.log('Could not destroy decryptorPipeline', e)
+      }
       try {
         stream.destroy()
       } catch (e) {
@@ -338,6 +343,11 @@ export class Player {
     console.log('----------- playUrl', url)
     clearTimeout(this.replayOnErrorTimeout)
 
+    const input = await this.getStreamInput(url, streamToPlay, evt)
+    this.buildPlayPipeline(input, streamToPlay, evt)
+  }
+
+  async getStreamInput(url: string, streamToPlay: ICurrentStreams, evt: IpcMainEvent): Promise<string | Readable> {
     let input: string | Readable
 
     if (this.decryption.use) {
@@ -352,14 +362,19 @@ export class Player {
       input = url
     }
 
-    const ffmpeg = this.getFfmpegStream(evt, input, streamToPlay)
+    return input
+  }
+
+  buildPlayPipeline(input: string | Readable, streamToPlay: ICurrentStreams, evt: IpcMainEvent) {
     const streamer = new IpcStreamer(evt, this.ipcStreamerConfig)
+    const ffmpeg = this.getFfmpegStream(evt, input, streamToPlay)
     const pipeline = ffmpeg.pipe(streamer)
 
-    this.streams = { input, ffmpeg, pipeline }
+    this.streams = { input, ffmpeg, pipeline, streamer }
   }
 
   async replay(url: string, streamToPlay: ICurrentStreams, evt: IpcMainEvent) {
+    this.streams?.streamer.flush()
     await this.stop()
     await this.playUrl(url, streamToPlay, evt)
   }
