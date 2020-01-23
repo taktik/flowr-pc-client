@@ -72,6 +72,7 @@
     "@fortawesome/react-fontawesome": "0.1.4",
     "@taktik/flowr-common-js": "1.0.5",
     "axios": "0.18.0",
+    "crypto-random-string": "^3.1.0",
     "deep-extend": "^0.6.0",
     "electron-log": "3.0.5",
     "electron-updater": "4.0.6",
