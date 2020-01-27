@@ -6,8 +6,9 @@ export const DEFAULT_PLAYER_STORE: IPlayerStore = {
     leftoversConfig: { allocatedMemory: 10e6 },
     poolConfig: { allocatedMemory: 10e6 },
   },
+  ffmpegBlockSize: '800k', // must be superior or equal to ffmpegChunker's chunkSize
   streamer: {
-    chunkSize: 300000,
+    chunkSize: 300000, // to increase on "BUFFER ERROR" in flowr
     poolConfig: { poolSize: 5 },
   },
   decryption: { use: false }, // whether to use ts-decryptor

@@ -52,8 +52,8 @@ function handleError(
   }
 }
 
-class FlowrFfmpeg {
-  constructor() {
+export class FlowrFfmpeg {
+  constructor(readonly blocksize: string) {
     Ffmpeg.setFfmpegPath(ffmpegPath.replace('app.asar', 'app.asar.unpacked'))
     Ffmpeg.setFfprobePath(ffprobePath.replace('app.asar', 'app.asar.unpacked'))
   }
@@ -90,7 +90,7 @@ class FlowrFfmpeg {
     const ffmpegCmd = Ffmpeg(input)
 
     if (input instanceof Readable) {
-      ffmpegCmd.inputOption('-blocksize 200k')
+      ffmpegCmd.inputOption(`-blocksize ${this.blocksize}`)
     }
 
     ffmpegCmd
@@ -154,9 +154,3 @@ class FlowrFfmpeg {
       .on('error', handleError(errorHandler))
   }
 }
-
-export const {
-  ffprobe,
-  getVideoMpegtsPipeline,
-  getAudioMpegtsPipeline,
-} = new FlowrFfmpeg()

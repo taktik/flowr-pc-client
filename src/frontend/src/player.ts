@@ -8,7 +8,7 @@ import { ICurrentStreams } from './interfaces/currentStreams'
 import { IStreamTrack } from './interfaces/streamTrack'
 import { FfmpegCommand } from 'fluent-ffmpeg'
 import { PlayerError, PlayerErrors } from './playerError'
-import { getVideoMpegtsPipeline, getAudioMpegtsPipeline, ffprobe } from './ffmpeg'
+import { FlowrFfmpeg } from './ffmpeg'
 import { Readable, Writable } from 'stream'
 import { IDecryption } from './interfaces/storedDecryption'
 import Ffmpeg = require('fluent-ffmpeg')
@@ -26,6 +26,7 @@ export class Player {
   private decryptor: TsDecryptor | null = null
   private replayOnErrorTimeout: number | null = null
   private stopping: Promise<void> = Promise.resolve()
+  private flowrFfmpeg: FlowrFfmpeg
 
   get playerStore(): IPlayerStore {
     const stored = this.store.get('player') || {}
@@ -66,6 +67,7 @@ export class Player {
       FlowrIsInitializing: this.stop.bind(this),
     }
     Object.entries(this._ipcEvents).forEach(event => ipcMain.on(event[0], event[1]))
+    this.flowrFfmpeg = new FlowrFfmpeg(this.playerStore.ffmpegBlockSize)
   }
 
   updateChannelData(streams: ICurrentStreams) {
@@ -240,7 +242,7 @@ export class Player {
     }
 
     try {
-      const metadata = await ffprobe(input, { timeout: 30 })
+      const metadata = await this.flowrFfmpeg.ffprobe(input, { timeout: 30 })
       return metadata
     } finally {
       if (input instanceof Readable) {
@@ -250,9 +252,6 @@ export class Player {
   }
 
   hasStreamChanged(newStreamData: ICurrentStreams, localCurrentStream: ICurrentStreams | undefined): boolean {
-    // If current and new streams first video track's codec name is different
-    // or if no local current stream
-    // or if audio/subtitle stream does exists anymore
     const isSameUrlButDifferentCodec: boolean = !!this.currentStreams &&
         this.currentStreams.url === localCurrentStream?.url &&
         this.currentStreams.video.tracks[0].codecName !== newStreamData.video.tracks[0].codecName
@@ -260,7 +259,12 @@ export class Player {
         newStreamData.audio.tracks.some(track => track.pid === this.currentStreams.audio.currentStream)
     const subtitlesStreamExists = this.currentStreams.subtitles.currentStream === -1 ||
         newStreamData.subtitles.tracks.some(track => track.pid === this.currentStreams.subtitles.currentStream)
-    return !localCurrentStream || isSameUrlButDifferentCodec || !audioStreamExists || !subtitlesStreamExists
+    // If nothing is playing
+    return !localCurrentStream ||
+        // or if currently playing stream video track's codec name is different than the newly fetched one
+        isSameUrlButDifferentCodec ||
+        // or if current audio/subtitle streams do not exist anymore
+        !audioStreamExists || !subtitlesStreamExists
   }
 
   async handleConversionError(evt: IpcMainEvent) {
@@ -334,10 +338,10 @@ export class Player {
       const subtitleStreamChannel = streamToPlay.subtitles.currentStream
       const audiostreamChannel = streamToPlay.audio.currentStream
       const isDeinterlacingEnabled = this.store.get('deinterlacing')
-      return getVideoMpegtsPipeline(input, videoStreamChannel, audiostreamChannel, subtitleStreamChannel, currentVideoCodec, isDeinterlacingEnabled, this.getErrorHandler(evt))
+      return this.flowrFfmpeg.getVideoMpegtsPipeline(input, videoStreamChannel, audiostreamChannel, subtitleStreamChannel, currentVideoCodec, isDeinterlacingEnabled, this.getErrorHandler(evt))
     }
     if (streamToPlay.audio.tracks.length > 0) {
-      return getAudioMpegtsPipeline(input, this.getErrorHandler(evt))
+      return this.flowrFfmpeg.getAudioMpegtsPipeline(input, this.getErrorHandler(evt))
     }
     throw new PlayerError('No stream', PlayerErrors.NO_STREAM)
   }
