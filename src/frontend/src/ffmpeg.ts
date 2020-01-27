@@ -88,9 +88,16 @@ class FlowrFfmpeg {
     }
 
     const ffmpegCmd = Ffmpeg(input)
+
+    if (input instanceof Readable) {
+      ffmpegCmd.inputOption('-blocksize 200k')
+    }
+
+    ffmpegCmd
       .inputOptions('-probesize 700k')
       .outputOptions('-preset ultrafast')
       .outputOptions('-g 30')
+      .outputOptions('-r 30')
       .outputOptions('-tune zerolatency')
 
     if (subtitleStream && subtitleStream > -1) {

@@ -182,13 +182,13 @@ export class Player {
     }
   }
 
-  async stop(): Promise<void> {
+  async stop(shouldFlush: boolean = false): Promise<void> {
     await this.stopping
     this.stopping = new Promise(async (resolve) => {
       try {
         clearTimeout(this.replayOnErrorTimeout)
         if (this.streams) {
-          await this.terminateStreams(this.streams)
+          await this.terminateStreams(this.streams, shouldFlush)
           this.streams = null
         }
         if (this.udpStreamer) {
@@ -203,11 +203,14 @@ export class Player {
     return this.stopping
   }
 
-  async terminateStreams(streams: IPlayerStreams): Promise<void> {
+  async terminateStreams(streams: IPlayerStreams, shouldFlush: boolean = false): Promise<void> {
     if (streams.input instanceof Readable) {
       await this.destroyStream(streams.input)
     }
     await this.killFfmpeg(streams.ffmpeg)
+    if (shouldFlush) {
+      streams.streamer.flush()
+    }
     await this.destroyStream(streams.pipeline)
   }
 
@@ -374,8 +377,7 @@ export class Player {
   }
 
   async replay(url: string, streamToPlay: ICurrentStreams, evt: IpcMainEvent) {
-    this.streams?.streamer.flush()
-    await this.stop()
+    await this.stop(true)
     await this.playUrl(url, streamToPlay, evt)
   }
 
