@@ -186,7 +186,7 @@ export class Player {
 
   async stop(shouldFlush: boolean = false): Promise<void> {
     await this.stopping
-    this.stopping = new Promise(async (resolve) => {
+    this.stopping = new Promise(async resolve => {
       try {
         clearTimeout(this.replayOnErrorTimeout)
         if (this.streams) {
