@@ -1,6 +1,8 @@
 import { IBufferPoolConfig } from '@taktik/buffers/dist/interfaces/bufferPoolConfig'
 
 export interface IIpcStreamerConfig {
-  chunkSize: number
+  capacity: number
+  maxCapacity: number
   poolConfig: Partial<IBufferPoolConfig>
+  sendInterval: number
 }

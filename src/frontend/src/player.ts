@@ -67,7 +67,7 @@ export class Player {
       FlowrIsInitializing: this.stop.bind(this),
     }
     Object.entries(this._ipcEvents).forEach(event => ipcMain.on(event[0], event[1]))
-    this.flowrFfmpeg = new FlowrFfmpeg(this.playerStore.ffmpegBlockSize)
+    this.flowrFfmpeg = new FlowrFfmpeg()
   }
 
   updateChannelData(streams: ICurrentStreams) {
@@ -160,7 +160,7 @@ export class Player {
       }
       const metadata: Ffmpeg.FfprobeData = await this.retrieveMetadata(url)
       const newStreamData: ICurrentStreams = this.processStreams(metadata.streams, url)
-      const shouldReplay = this.hasStreamChanged(newStreamData, localCurrentStream)
+      const shouldReplay: boolean = this.hasStreamChanged(newStreamData, localCurrentStream)
 
       if (this.currentStreams && this.currentStreams.url === localCurrentStream?.url) {
         // We are playing the same content, reuse the audio and subtitles
@@ -333,12 +333,11 @@ export class Player {
 
   getFfmpegStream(evt: IpcMainEvent, input: string | Readable, streamToPlay: ICurrentStreams): FfmpegCommand {
     if (streamToPlay.video.tracks.length > 0) {
-      const currentVideoCodec = streamToPlay.video.tracks[0].codecName
       const videoStreamChannel = streamToPlay.video.tracks[0].pid
-      const subtitleStreamChannel = streamToPlay.subtitles.currentStream
       const audiostreamChannel = streamToPlay.audio.currentStream
+      const subtitleStreamChannel = streamToPlay.subtitles.currentStream
       const isDeinterlacingEnabled = this.store.get('deinterlacing')
-      return this.flowrFfmpeg.getVideoMpegtsPipeline(input, videoStreamChannel, audiostreamChannel, subtitleStreamChannel, currentVideoCodec, isDeinterlacingEnabled, this.getErrorHandler(evt))
+      return this.flowrFfmpeg.getVideoMpegtsPipeline(input, videoStreamChannel, audiostreamChannel, subtitleStreamChannel, isDeinterlacingEnabled, this.getErrorHandler(evt))
     }
     if (streamToPlay.audio.tracks.length > 0) {
       return this.flowrFfmpeg.getAudioMpegtsPipeline(input, this.getErrorHandler(evt))

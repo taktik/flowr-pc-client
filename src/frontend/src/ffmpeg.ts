@@ -7,14 +7,9 @@ import { PlayerError, PlayerErrors } from './playerError'
 function appendCmdWithoutSubtitle(
   ffmpegCmd: Ffmpeg.FfmpegCommand,
   videoStream: number,
-  inputVideoCodec: string,
   audioStream: number,
 ): void {
-  if (process.platform === 'darwin') {
-    ffmpegCmd.videoCodec('libx264')
-  } else {
-    ffmpegCmd.videoCodec(inputVideoCodec === 'h264' ? 'copy' : 'libx264')
-  }
+  ffmpegCmd.videoCodec('libx264')
 
   if (audioStream && audioStream > -1) {
     ffmpegCmd.outputOptions([`-map 0:${videoStream}`, `-map 0:${audioStream}?`])
@@ -53,7 +48,7 @@ function handleError(
 }
 
 export class FlowrFfmpeg {
-  constructor(readonly blocksize: string) {
+  constructor() {
     Ffmpeg.setFfmpegPath(ffmpegPath.replace('app.asar', 'app.asar.unpacked'))
     Ffmpeg.setFfprobePath(ffprobePath.replace('app.asar', 'app.asar.unpacked'))
   }
@@ -78,7 +73,6 @@ export class FlowrFfmpeg {
     videoStream: number,
     audioStream: number = -1,
     subtitleStream: number = -1,
-    inputVideoCodec: string,
     isDeinterlacingEnabled: boolean,
     errorHandler: (error: PlayerError) => void,
   ): Ffmpeg.FfmpegCommand {
@@ -88,12 +82,6 @@ export class FlowrFfmpeg {
     }
 
     const ffmpegCmd = Ffmpeg(input)
-
-    if (input instanceof Readable) {
-      ffmpegCmd.inputOption(`-blocksize ${this.blocksize}`)
-    }
-
-    ffmpegCmd
       .inputOptions('-probesize 700k')
       .outputOptions('-preset ultrafast')
       .outputOptions('-g 30')
@@ -108,7 +96,6 @@ export class FlowrFfmpeg {
       appendCmdWithoutSubtitle(
         ffmpegCmd,
         videoStream,
-        inputVideoCodec,
         audioStream,
       )
     }
@@ -132,7 +119,7 @@ export class FlowrFfmpeg {
     return ffmpegCmd
       .format('mp4')
       .outputOptions(
-        '-movflags empty_moov+omit_tfhd_offset+frag_keyframe+default_base_moof',
+        '-movflags empty_moov+omit_tfhd_offset+frag_keyframe+default_base_moof+faststart',
       )
       .on('start', commandLine => {
         console.log('Spawned Ffmpeg with command: ', commandLine)
