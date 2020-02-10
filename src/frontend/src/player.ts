@@ -1,7 +1,7 @@
 import { Store } from './store'
 import { ipcMain, IpcMainEvent } from 'electron'
 import { IpcStreamer } from './ipcStreamer'
-import { ITsDecryptorConfig, TsDecryptor, ChunkStream, IChunkStreamConfig } from '@taktik/ts-decryptor'
+import { ITsDecryptorConfig, TsDecryptor } from '@taktik/ts-decryptor'
 import { UdpStreamer } from '@taktik/udp-streamer'
 import { IChannelData } from './interfaces/channelData'
 import { ICurrentStreams } from './interfaces/currentStreams'
@@ -15,8 +15,9 @@ import Ffmpeg = require('fluent-ffmpeg')
 import { IPlayerStreams } from './interfaces/playerPipeline'
 import { IPlayerStore } from './interfaces/playerStore'
 import { DEFAULT_PLAYER_STORE } from './playerStore'
-import { IIpcStreamerConfig } from './interfaces/ipcStreamerConfig'
+import { IStreamerConfig } from './interfaces/ipcStreamerConfig'
 import { ICircularBufferConfig } from '@taktik/buffers'
+import { FfmpegChunker } from './ffmpegChunker'
 
 export class Player {
   private streams?: IPlayerStreams
@@ -33,7 +34,7 @@ export class Player {
     return { ...DEFAULT_PLAYER_STORE, ...stored }
   }
 
-  get ipcStreamerConfig(): IIpcStreamerConfig {
+  get ipcStreamerConfig(): IStreamerConfig {
     return this.playerStore.streamer
   }
 
@@ -49,7 +50,7 @@ export class Player {
     return this.playerStore.udpStreamer
   }
 
-  get ffmpegChunkerConfig(): IChunkStreamConfig {
+  get ffmpegChunkerConfig(): IStreamerConfig {
     return this.playerStore.ffmpegChunker
   }
 
@@ -137,6 +138,7 @@ export class Player {
       sendTypeOfStream(stream)
     } else {
       try {
+        await this.stopping
         const metadata: Ffmpeg.FfprobeData = await this.retrieveMetadata(url)
         this.currentStreams = this.processStreams(metadata.streams, url)
         this.updateChannelData(this.currentStreams)
@@ -184,25 +186,24 @@ export class Player {
     }
   }
 
-  async stop(shouldFlush: boolean = false): Promise<void> {
-    await this.stopping
-    this.stopping = new Promise(async resolve => {
-      try {
-        clearTimeout(this.replayOnErrorTimeout)
-        if (this.streams) {
-          await this.terminateStreams(this.streams, shouldFlush)
-          this.streams = null
+  stop(shouldFlush: boolean = false): Promise<void> {
+    return this.stopping = this.stopping
+      .then(() => new Promise(async resolve => {
+        try {
+          clearTimeout(this.replayOnErrorTimeout)
+          if (this.streams) {
+            await this.terminateStreams(this.streams, shouldFlush)
+            this.streams = null
+          }
+          if (this.udpStreamer) {
+            await this.udpStreamer.close()
+          }
+        } catch (e) {
+          console.error('An error occurred while stopping:', e)
+        } finally {
+          resolve()
         }
-        if (this.udpStreamer) {
-          await this.udpStreamer.close()
-        }
-      } catch (e) {
-        console.error('An error occurred while stopping:', e)
-      } finally {
-        resolve()
-      }
-    })
-    return this.stopping
+      }))
   }
 
   async terminateStreams(streams: IPlayerStreams, shouldFlush: boolean = false): Promise<void> {
@@ -246,7 +247,7 @@ export class Player {
       return metadata
     } finally {
       if (input instanceof Readable) {
-        input.destroy()
+        await this.destroyStream(input)
       }
     }
   }
@@ -314,7 +315,7 @@ export class Player {
     const port = parseInt(cleanUrl.split(':')[1], 10)
     const stream = await udpStreamer.connect(ip, port)
     const decryptorPipeline = decryptor.injest(stream, this.tsDecryptorConfig)
-    const pipeline = decryptorPipeline.pipe(new ChunkStream(this.ffmpegChunkerConfig))
+    const pipeline = decryptorPipeline.pipe(new FfmpegChunker(this.ffmpegChunkerConfig))
 
     pipeline.on('close', () => {
       try {

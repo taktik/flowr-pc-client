@@ -2,9 +2,10 @@ import { IPlayerStore } from './interfaces/playerStore'
 
 export const DEFAULT_PLAYER_STORE: IPlayerStore = {
   ffmpegChunker: {
-    chunkSize: 700e3, // size of the chunks to send through ffmpeg pipe
-    leftoversConfig: { allocatedMemory: 10e6 },
+    capacity: 700e3, // base capacity, keep small for low definition content
+    maxCapacity: 10e6, // max expansion value for buffer, useful for HD content
     poolConfig: { allocatedMemory: 10e6 },
+    sendInterval: 1000, // frequency to send chunks to ffmpeg/ffprobe
   },
   streamer: {
     capacity: 300000, // base streamer capacity, keep small for low definition content

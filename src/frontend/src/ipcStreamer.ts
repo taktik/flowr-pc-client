@@ -1,7 +1,7 @@
 import { Writable } from 'stream'
 import { WebContents, IpcMainEvent } from 'electron'
 import { CircularBuffer } from '@taktik/buffers'
-import { IIpcStreamerConfig } from './interfaces/ipcStreamerConfig'
+import { IStreamerConfig } from './interfaces/ipcStreamerConfig'
 
 export class IpcStreamer extends Writable {
   private readonly sender: WebContents
@@ -12,7 +12,7 @@ export class IpcStreamer extends Writable {
    */
   private isFirstChunk: boolean = true
 
-  constructor(event: IpcMainEvent, { capacity, maxCapacity, poolConfig, sendInterval }: IIpcStreamerConfig) {
+  constructor(event: IpcMainEvent, { capacity, maxCapacity, poolConfig, sendInterval }: IStreamerConfig) {
     super({ autoDestroy: false })
     this.sender = event.sender
     this.buffer = new CircularBuffer({
