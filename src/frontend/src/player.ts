@@ -18,6 +18,7 @@ import { DEFAULT_PLAYER_STORE } from './playerStore'
 import { IStreamerConfig } from './interfaces/ipcStreamerConfig'
 import { ICircularBufferConfig } from '@taktik/buffers'
 import { FfmpegChunker } from './ffmpegChunker'
+import { Dispatcher } from './dispatcher'
 
 export class Player {
   private streams?: IPlayerStreams
@@ -139,7 +140,8 @@ export class Player {
     } else {
       try {
         await this.stopping
-        const metadata: Ffmpeg.FfprobeData = await this.retrieveMetadata(url)
+        const pipeline = await this.getStreamingPipeline(url)
+        const metadata = await this.retrieveMetadata(pipeline)
         this.currentStreams = this.processStreams(metadata.streams, url)
         this.updateChannelData(this.currentStreams)
         sendTypeOfStream(this.currentStreams)
@@ -151,16 +153,18 @@ export class Player {
 
   async openUrl(evt: IpcMainEvent, url: string): Promise<void> {
     try {
+      console.log('----------- openUrl', url)
       await this.stopping
       const channelData = (this.store.get('channelData') || {}) as IChannelData
       const localCurrentStream: ICurrentStreams | undefined = channelData[url]
+      const pipeline = await this.getStreamingPipeline(url)
 
       // If we already have info for this url, play it immediately
       if (localCurrentStream) {
         this.currentStreams = localCurrentStream
-        await this.playUrl(url, localCurrentStream, evt)
+        await this.playUrl(pipeline, localCurrentStream, evt)
       }
-      const metadata: Ffmpeg.FfprobeData = await this.retrieveMetadata(url)
+      const metadata: Ffmpeg.FfprobeData = await this.retrieveMetadata(pipeline)
       const newStreamData: ICurrentStreams = this.processStreams(metadata.streams, url)
       const shouldReplay: boolean = this.hasStreamChanged(newStreamData, localCurrentStream)
 
@@ -191,12 +195,12 @@ export class Player {
       .then(() => new Promise(async resolve => {
         try {
           clearTimeout(this.replayOnErrorTimeout)
+          if (this.udpStreamer) {
+            await this.udpStreamer.close()
+          }
           if (this.streams) {
             await this.terminateStreams(this.streams, shouldFlush)
             this.streams = null
-          }
-          if (this.udpStreamer) {
-            await this.udpStreamer.close()
           }
         } catch (e) {
           console.error('An error occurred while stopping:', e)
@@ -214,7 +218,7 @@ export class Player {
     if (shouldFlush) {
       streams.streamer.flush()
     }
-    await this.destroyStream(streams.pipeline)
+    await this.destroyStream(streams.streamer)
   }
 
   // We need to wait a bit for the process to terminate
@@ -233,21 +237,15 @@ export class Player {
     })
   }
 
-  async retrieveMetadata(url: string): Promise<Ffmpeg.FfprobeData> {
-    let input: string | Readable
-
-    if (this.decryption.use) {
-      input = await this.getDecryptionPipeline(url)
-    } else {
-      input = url
-    }
+  async retrieveMetadata(input: string | Dispatcher): Promise<Ffmpeg.FfprobeData> {
+    const ffprobeInput = this.getStreamInput(input)
 
     try {
-      const metadata = await this.flowrFfmpeg.ffprobe(input, { timeout: 30 })
+      const metadata = await this.flowrFfmpeg.ffprobe(ffprobeInput, { timeout: 30 })
       return metadata
     } finally {
-      if (input instanceof Readable) {
-        await this.destroyStream(input)
+      if (ffprobeInput instanceof Readable) {
+        await this.destroyStream(ffprobeInput)
       }
     }
   }
@@ -303,7 +301,7 @@ export class Player {
     }
   }
 
-  async getDecryptionPipeline(url: string): Promise<Readable> {
+  async getDecryptionPipeline(url: string): Promise<Dispatcher> {
     // lazy instantiate if necessary
     const udpStreamer = this.udpStreamer || (this.udpStreamer = new UdpStreamer(this.udpStreamerConfig))
     // lazy instantiate if necessary
@@ -315,21 +313,45 @@ export class Player {
     const port = parseInt(cleanUrl.split(':')[1], 10)
     const stream = await udpStreamer.connect(ip, port)
     const decryptorPipeline = decryptor.injest(stream, this.tsDecryptorConfig)
-    const pipeline = decryptorPipeline.pipe(new FfmpegChunker(this.ffmpegChunkerConfig))
+    const pipeline = decryptorPipeline.pipe(new Dispatcher())
 
-    pipeline.on('close', () => {
+    pipeline.on('close', async () => {
       try {
-        decryptorPipeline.destroy()
+        await this.destroyStream(decryptorPipeline)
       } catch (e) {
         console.log('Could not destroy decryptorPipeline', e)
       }
       try {
-        stream.destroy()
+        await this.destroyStream(stream)
       } catch (e) {
         console.log('Could not destroy udp stream', e)
       }
     })
     return pipeline
+  }
+
+  async getStreamingPipeline(url: string): Promise<string | Dispatcher> {
+    let input: string | Dispatcher
+
+    if (this.decryption.use) {
+      input = await this.getDecryptionPipeline(url)
+    } else {
+      input = url
+    }
+
+    return input
+  }
+
+  getStreamInput(input: string | Dispatcher): string | Readable {
+    let playInput: string | Readable
+
+    if (input instanceof Dispatcher) {
+      playInput = input.pipe(new FfmpegChunker(this.ffmpegChunkerConfig))
+    } else {
+      playInput = input
+    }
+
+    return playInput
   }
 
   getFfmpegStream(evt: IpcMainEvent, input: string | Readable, streamToPlay: ICurrentStreams): FfmpegCommand {
@@ -346,43 +368,27 @@ export class Player {
     throw new PlayerError('No stream', PlayerErrors.NO_STREAM)
   }
 
-  async playUrl(url: string, streamToPlay: ICurrentStreams, evt: IpcMainEvent) {
-    console.log('----------- playUrl', url)
+  async playUrl(input: string | Dispatcher, streamToPlay: ICurrentStreams, evt: IpcMainEvent) {
     clearTimeout(this.replayOnErrorTimeout)
+    const streamInput = this.getStreamInput(input)
+    const ffmpeg = this.getFfmpegStream(evt, streamInput, streamToPlay)
+    const streamer = ffmpeg.pipe(new IpcStreamer(evt, this.ipcStreamerConfig)) as IpcStreamer
+    this.streams = { input: streamInput, ffmpeg, streamer }
 
-    const input = await this.getStreamInput(url, streamToPlay, evt)
-    this.buildPlayPipeline(input, streamToPlay, evt)
-  }
-
-  async getStreamInput(url: string, streamToPlay: ICurrentStreams, evt: IpcMainEvent): Promise<string | Readable> {
-    let input: string | Readable
-
-    if (this.decryption.use) {
-      input = await this.getDecryptionPipeline(url)
-      input.on('error', async (error: Error) => {
+    if (streamInput instanceof Readable) {
+      streamInput.on('error', async (error: Error) => {
         console.error('------------- Error in play pipeline -------------')
         console.error(error)
         console.error('------------- ---------------------- -------------')
-        this.replayOnErrorTimeout = setTimeout(async () => this.replay(url, streamToPlay, evt), 200)
+        this.replayOnErrorTimeout = setTimeout(async () => this.replay(streamToPlay.url, streamToPlay, evt), 200)
       })
-    } else {
-      input = url
     }
-
-    return input
-  }
-
-  buildPlayPipeline(input: string | Readable, streamToPlay: ICurrentStreams, evt: IpcMainEvent) {
-    const streamer = new IpcStreamer(evt, this.ipcStreamerConfig)
-    const ffmpeg = this.getFfmpegStream(evt, input, streamToPlay)
-    const pipeline = ffmpeg.pipe(streamer)
-
-    this.streams = { input, ffmpeg, pipeline, streamer }
   }
 
   async replay(url: string, streamToPlay: ICurrentStreams, evt: IpcMainEvent) {
     await this.stop(true)
-    await this.playUrl(url, streamToPlay, evt)
+    const pipeline = await this.getStreamingPipeline(url)
+    await this.playUrl(pipeline, streamToPlay, evt)
   }
 
   processStreams (streams: Ffmpeg.FfprobeStream[], url: string): ICurrentStreams {

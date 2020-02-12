@@ -6,7 +6,8 @@ import { IStreamerConfig } from './interfaces/ipcStreamerConfig'
 export class IpcStreamer extends Writable {
   private readonly sender: WebContents
   private buffer: CircularBuffer
-  private sendInterval: number
+  private sendInterval: number | undefined
+  private sendIntervalValue: number
   /**
    * @deprecated: This property should be handled on Flowr side
    */
@@ -21,7 +22,7 @@ export class IpcStreamer extends Writable {
       maxCapacity,
       poolConfig,
     })
-    this.sendInterval = setInterval(this.attemptSend.bind(this), sendInterval)
+    this.sendIntervalValue = sendInterval
   }
 
   // tslint:disable-next-line: function-name
@@ -42,7 +43,9 @@ export class IpcStreamer extends Writable {
           this.send(chunk)
         }
       }
-
+      if (!this.sendInterval) {
+        this.sendInterval = setInterval(this.attemptSend.bind(this), this.sendIntervalValue)
+      }
       callback(null)
     } catch (e) {
       callback(e)
