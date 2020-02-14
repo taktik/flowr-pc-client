@@ -2,9 +2,10 @@ import { Transform, TransformCallback } from 'stream'
 import { CircularBuffer } from '@taktik/buffers'
 import { IStreamerConfig } from './interfaces/ipcStreamerConfig'
 
+// TODO: Refactor with IpcStreamer to create an "IntervalStream" (with a better name)
 export class FfmpegChunker extends Transform {
   private buffer: CircularBuffer
-  private sendInterval: number
+  private sendInterval: number | undefined
   private sendIntervalValue: number
 
   constructor({ capacity, maxCapacity, poolConfig, sendInterval }: IStreamerConfig) {

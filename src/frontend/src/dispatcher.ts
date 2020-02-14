@@ -41,4 +41,9 @@ export class Dispatcher extends Writable {
     stream.off('error', this.onError)
     this._readers.delete(stream)
   }
+
+  clear() {
+    this._readers.forEach(stream => stream.off('error', this.onError))
+    this._readers.clear()
+  }
 }

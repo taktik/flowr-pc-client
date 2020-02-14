@@ -6,6 +6,6 @@ export interface IStream {
 export interface IStreamTrack {
   index: number
   pid: number
-  codecName: string
+  codecName?: string
   code?: string
 }
