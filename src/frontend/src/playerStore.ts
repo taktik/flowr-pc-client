@@ -7,12 +7,12 @@ export const DEFAULT_PLAYER_STORE: IPlayerStore = {
     poolConfig: { poolSize: 5 },
     sendInterval: 300, // to increase on "BUFFER ERROR" in flowr
   },
-  decryption: { use: false }, // whether to use ts-decryptor
+  decryption: { use: true }, // whether to use ts-decryptor
   tsDecryptor: {
     alignConfig: {
-      capacity: 10e3, // must be superior or equal to UdpStreamer's capacity
-      maxCapacity: 50e6, // must be superior or equal to UdpStreamer's maxCapacity
-      poolConfig: { poolSize: 100 }, // increase this if there are alignment errors
+      capacity: 700e3, // must be superior or equal to UdpStreamer's capacity
+      maxCapacity: 1e6, // must be superior or equal to UdpStreamer's maxCapacity
+      poolConfig: { poolSize: 200 }, // increase this if there are alignment errors
     },
     formatterConfig: {
       leftoversConfig: { allocatedMemory: 5e6 }, // increase this if there are artefacts
@@ -21,8 +21,8 @@ export const DEFAULT_PLAYER_STORE: IPlayerStore = {
   },
   udpStreamer: {
     allowOverwrite: true,
-    capacity: 10e3, // base streaming "speed"
-    maxCapacity: 50e6, // max streaming "speed", to increase on OverflowErrors
-    poolConfig: { poolSize: 500 }, // per stream output, to increase on alignment errors
+    capacity: 700e3, // base streaming "speed"
+    maxCapacity: 1e6, // max streaming "speed", to increase on OverflowErrors
+    poolConfig: { poolSize: 400 }, // per stream output, to increase on alignment errors
   },
 }

@@ -1,10 +1,24 @@
-import { writeFileSync, ensureFileSync, readFileSync, existsSync } from 'fs-extra'
+import { writeFileSync, ensureFileSync, readFileSync, readFile, writeFile } from 'fs-extra'
+import * as deepExtend from 'deep-extend'
+import { DEFAULT_FRONTEND_STORE } from '..'
 const path = require('path')
 
-export function initConfigData(configPath: string, data: object) {
-  if (!existsSync(configPath)) {
-    ensureFileSync(configPath)
-    writeFileSync(configPath, JSON.stringify(data))
+export async function initConfigData(configPath: string, previousData: object): Promise<void> {
+  let storedData = {}
+
+  try {
+    const storedDataString = await readFile(configPath, 'utf8')
+    storedData = JSON.parse(storedDataString)
+  } catch (e) {
+    if (e.code === 'ENOENT') {
+      storedData = previousData
+    }
+  }
+  try {
+    const updatedData = deepExtend({}, DEFAULT_FRONTEND_STORE, storedData)
+    await writeFile(configPath, JSON.stringify(updatedData), { encoding: 'utf8' })
+  } catch (e) {
+    console.error('Failed to initialize store', e)
   }
 }
 

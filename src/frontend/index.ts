@@ -22,8 +22,8 @@ export const DEFAULT_FRONTEND_STORE = {
   clearAppDataOnStart: false,
   player: DEFAULT_PLAYER_STORE,
 }
-export function initFlowrConfig(data: object) {
-  initConfigData(join(FlowrDataDir, `${FRONTEND_CONFIG_NAME}.json`), data)
+export async function initFlowrConfig(data: object) {
+  await initConfigData(join(FlowrDataDir, `${FRONTEND_CONFIG_NAME}.json`), data)
 }
 const DEVICE_DETAIL_PATH = join(FlowrDataDir, 'device.json')
 const devicesDetailsHelper = new DeviceDetailHelper(DEVICE_DETAIL_PATH)
