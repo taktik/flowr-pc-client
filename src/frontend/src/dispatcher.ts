@@ -1,12 +1,12 @@
-import { Readable, Writable } from 'stream'
+import { Writable } from 'stream'
 
 export interface Dispatcher {
   // override of the super type signature (defined in "internal")
-  pipe<T extends Readable>(stream: T): T
+  pipe<T extends Writable>(stream: T): T
 }
 
 export class Dispatcher extends Writable {
-  private _readers: Set<Readable> = new Set()
+  private _outputs: Set<Writable> = new Set()
 
   constructor() {
     super()
@@ -16,7 +16,7 @@ export class Dispatcher extends Writable {
   // tslint:disable-next-line: function-name
   _write(chunk: any, encoding: string, callback: (error?: Error | null) => void) {
     try {
-      this._readers.forEach(reader => reader.push(chunk))
+      this._outputs.forEach(output => output.write(chunk))
       callback(null)
     } catch (e) {
       callback(e)
@@ -27,8 +27,8 @@ export class Dispatcher extends Writable {
     this.emit('error', err)
   }
 
-  pipe<T extends Readable>(stream: T): T {
-    this._readers.add(stream)
+  pipe<T extends Writable>(stream: T): T {
+    this._outputs.add(stream)
     stream.on('error', this.onError)
     stream.on('close', () => {
       this.unpipe(stream)
@@ -37,13 +37,13 @@ export class Dispatcher extends Writable {
     return stream
   }
 
-  unpipe(stream: Readable) {
+  unpipe(stream: Writable) {
     stream.off('error', this.onError)
-    this._readers.delete(stream)
+    this._outputs.delete(stream)
   }
 
   clear() {
-    this._readers.forEach(stream => stream.off('error', this.onError))
-    this._readers.clear()
+    this._outputs.forEach(stream => stream.off('error', this.onError))
+    this._outputs.clear()
   }
 }

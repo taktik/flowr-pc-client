@@ -5,7 +5,6 @@ import { ICircularBufferConfig } from '@taktik/buffers'
 
 export interface IPlayerStore {
   decryption: IDecryption
-  ffmpegChunker: IStreamerConfig
   streamer: IStreamerConfig
   tsDecryptor: ITsDecryptorConfig
   udpStreamer: ICircularBufferConfig

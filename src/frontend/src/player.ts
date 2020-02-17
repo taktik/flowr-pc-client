@@ -9,7 +9,7 @@ import { IStreamTrack } from './interfaces/streamTrack'
 import { FfmpegCommand } from 'fluent-ffmpeg'
 import { PlayerError, PlayerErrors } from './playerError'
 import { FlowrFfmpeg } from './ffmpeg'
-import { Readable, Writable, Stream } from 'stream'
+import { Readable, Writable, Stream, PassThrough } from 'stream'
 import { IDecryption } from './interfaces/storedDecryption'
 import Ffmpeg = require('fluent-ffmpeg')
 import { IPlayerStreams } from './interfaces/playerPipeline'
@@ -17,7 +17,6 @@ import { IPlayerStore } from './interfaces/playerStore'
 import { DEFAULT_PLAYER_STORE } from './playerStore'
 import { IStreamerConfig } from './interfaces/ipcStreamerConfig'
 import { ICircularBufferConfig } from '@taktik/buffers'
-import { FfmpegChunker } from './ffmpegChunker'
 import { Dispatcher } from './dispatcher'
 
 export class Player {
@@ -51,10 +50,6 @@ export class Player {
 
   get udpStreamerConfig(): ICircularBufferConfig {
     return this.playerStore.udpStreamer
-  }
-
-  get ffmpegChunkerConfig(): IStreamerConfig {
-    return this.playerStore.ffmpegChunker
   }
 
   constructor(private store: Store) {
@@ -274,7 +269,7 @@ export class Player {
         !audioStreamExists || !subtitlesStreamExists
   }
 
-  async handleConversionError(evt: IpcMainEvent) {
+  async attemptReplay(evt: IpcMainEvent) {
     if (this.currentStreams) {
       // if conversion error, keep trying
       // replay will kill previous process
@@ -294,17 +289,16 @@ export class Player {
   getErrorHandler(evt: IpcMainEvent) {
     return (error: PlayerError) => {
       switch (error.code) {
-        case PlayerErrors.CONVERSION:
-          this.handleConversionError(evt)
-          break
         case PlayerErrors.ERRONEOUS_STREAM:
           this.handleErroneousStreamError(evt)
           break
         case PlayerErrors.TERMINATED:
           // silence this, most probably we terminated the process on purpose
           break
+        case PlayerErrors.CONVERSION:
         default:
           console.error('Player error', error)
+          this.attemptReplay(evt)
       }
     }
   }
@@ -349,7 +343,7 @@ export class Player {
     let playInput: string | Readable
 
     if (input instanceof Dispatcher) {
-      playInput = input.pipe(new FfmpegChunker(this.ffmpegChunkerConfig))
+      playInput = input.pipe(new PassThrough())
     } else {
       playInput = input
     }
