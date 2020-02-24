@@ -51,7 +51,7 @@ async function main() {
     log.error(error)
   })
 
-  app.on('ready', async () => {
+  async function onReady() {
     clearBrowsingData()
     app.on('activate', async () => {
       if (flowrWindow === null) {
@@ -100,7 +100,13 @@ async function main() {
       }
       // flowrWindow.moveTop()
     })
-  })
+  }
+
+  if (app.isReady()) {
+    onReady()
+  } else {
+    app.on('ready', onReady)
+  }
 
   ipcMain.on('clear-application-data', clearBrowsingData)
 

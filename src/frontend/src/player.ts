@@ -141,6 +141,7 @@ export class Player {
         const metadata = await this.retrieveMetadata(pipeline)
         this.currentStreams = this.processStreams(metadata.streams, url)
         this.updateChannelData(this.currentStreams)
+        await this.stop()
         sendTypeOfStream(this.currentStreams)
       } catch (e) {
         console.log('ffprobe failure:', e)
