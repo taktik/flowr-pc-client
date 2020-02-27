@@ -257,7 +257,7 @@ export class Player {
   hasStreamChanged(newStreamData: ICurrentStreams, localCurrentStream: ICurrentStreams | undefined): boolean {
     const isSameUrlButDifferentCodec: boolean = !!this.currentStreams &&
         this.currentStreams.url === localCurrentStream?.url &&
-        this.currentStreams.video.tracks[0].codecName !== newStreamData.video.tracks[0].codecName
+        this.currentStreams.video.tracks[0]?.codecName !== newStreamData.video.tracks[0]?.codecName
     const audioStreamExists = this.currentStreams?.audio.currentStream === -1 ||
         newStreamData.audio.tracks.some(track => track.pid === this.currentStreams?.audio.currentStream)
     const subtitlesStreamExists = this.currentStreams?.subtitles.currentStream === -1 ||

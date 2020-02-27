@@ -131,8 +131,6 @@ export class FlowrFfmpeg {
     input: string | Readable,
     errorHandler: (error: PlayerError) => void,
   ): Ffmpeg.FfmpegCommand {
-    console.log('run url: ', input)
-
     return Ffmpeg(input)
       .format('mp3')
       .on('start', commandLine => {
