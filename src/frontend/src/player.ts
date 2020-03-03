@@ -2,7 +2,7 @@ import { Store } from './store'
 import { ipcMain, IpcMainEvent } from 'electron'
 import { IpcStreamer } from './ipcStreamer'
 import { ITsDecryptorConfig, TsDecryptor } from '@taktik/ts-decryptor'
-import { UdpStreamer } from '@taktik/udp-streamer'
+import { UdpStreamer, UdpStreamerError, UdpStreamerErrors } from '@taktik/udp-streamer'
 import { IChannelData } from './interfaces/channelData'
 import { ICurrentStreams } from './interfaces/currentStreams'
 import { IStreamTrack } from './interfaces/streamTrack'
@@ -304,7 +304,7 @@ export class Player {
     }
   }
 
-  connectUdpStreamer(url: string): Promise<Readable> {
+  async connectUdpStreamer(url: string): Promise<Readable> {
     // lazy instantiate if necessary
     const udpStreamer = this.udpStreamer || (this.udpStreamer = new UdpStreamer(this.udpStreamerConfig))
     const cleanUrl = url
@@ -312,7 +312,16 @@ export class Player {
         .replace(/(udp|rtp):\/\/@?(.+)/, '$2') // retrieve ip:port
     const ip = cleanUrl.split(':')[0]
     const port = parseInt(cleanUrl.split(':')[1], 10)
-    return udpStreamer.connect(ip, port)
+    try {
+      return udpStreamer.connect(ip, port)
+    } catch (e) {
+      if (e instanceof UdpStreamerError && e.code === UdpStreamerErrors.CONNECTED) {
+        // retry if streamer was already connected
+        await this.stop()
+        return udpStreamer.connect(ip, port)
+      }
+      throw e
+    }
   }
 
   getDecryptionPipeline(stream: Readable): Dispatcher {
