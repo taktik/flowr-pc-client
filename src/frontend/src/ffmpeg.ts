@@ -53,19 +53,11 @@ export class FlowrFfmpeg {
     Ffmpeg.setFfprobePath(ffprobePath.replace('app.asar', 'app.asar.unpacked'))
   }
 
-  ffprobe(
+  async ffprobe(
     input?: string | Readable,
     options?: Ffmpeg.FfmpegCommandOptions,
-  ): Promise<Ffmpeg.FfprobeData> {
-    return new Promise((resolve, reject) => {
-      Ffmpeg(input, options).ffprobe((err, data: Ffmpeg.FfprobeData) => {
-        if (err) {
-          reject(err)
-        } else {
-          resolve(data)
-        }
-      })
-    })
+  ): Promise<Ffmpeg.FfprobeResponse> {
+    return Ffmpeg(input, options).ffprobe()
   }
 
   getVideoMpegtsPipeline(
