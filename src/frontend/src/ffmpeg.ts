@@ -57,7 +57,7 @@ export class FlowrFfmpeg {
     input?: string | Readable,
     options?: Ffmpeg.FfmpegCommandOptions,
   ): Promise<Ffmpeg.FfprobeResponse> {
-    return Ffmpeg(input, options).ffprobe()
+    return Ffmpeg(input, options).ffprobeProcess()
   }
 
   getVideoMpegtsPipeline(
