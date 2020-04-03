@@ -18,6 +18,7 @@ import { DEFAULT_PLAYER_STORE } from './playerStore'
 import { IStreamerConfig } from './interfaces/ipcStreamerConfig'
 import { ICircularBufferConfig } from '@taktik/buffers'
 import { Dispatcher } from './dispatcher'
+import { ChildProcess } from 'child_process'
 
 export class Player {
   private streams?: IPlayerStreams
@@ -30,6 +31,7 @@ export class Player {
   private replayOnErrorTimeout: number | null = null
   private stopping: Promise<void> = Promise.resolve()
   private flowrFfmpeg: FlowrFfmpeg
+  private ffprobeProcess?: ChildProcess
 
   get playerStore(): IPlayerStore {
     const stored = this.store.get('player') || {}
@@ -144,6 +146,10 @@ export class Player {
         await this.stop()
         sendTypeOfStream(this.currentStreams)
       } catch (e) {
+        if (e instanceof PlayerError && e.code === PlayerErrors.TERMINATED) {
+          // silence
+          return
+        }
         console.log('ffprobe failure:', e)
       }
     }
@@ -185,6 +191,10 @@ export class Player {
           }
         }
       } catch (e) {
+        if (e instanceof PlayerError && e.code === PlayerErrors.TERMINATED) {
+          // silence
+          return
+        }
         console.error('Error when updating stream data:', e)
       }
     } catch (e) {
@@ -196,6 +206,7 @@ export class Player {
     return this.stopping = this.stopping
       .then(() => new Promise(async resolve => {
         try {
+          this.ffprobeProcess?.kill('SIGKILL')
           if (this.replayOnErrorTimeout) {
             clearTimeout(this.replayOnErrorTimeout)
           }
@@ -245,9 +256,18 @@ export class Player {
     const ffprobeInput = this.getStreamInput(input)
 
     try {
-      const metadata = await this.flowrFfmpeg.ffprobe(ffprobeInput, { timeout: 30 })
-      return metadata
+      const { process, data } = await this.flowrFfmpeg.ffprobe(ffprobeInput, { timeout: 30 })
+      this.ffprobeProcess = process
+      const ffprobeData = await data
+      return ffprobeData
+    } catch (e) {
+      let errorCode = PlayerErrors.UNKNOWN
+      if (e.message.includes('SIGKILL')) {
+        errorCode = PlayerErrors.TERMINATED
+      }
+      throw new PlayerError(e.message, errorCode)
     } finally {
+      this.ffprobeProcess = undefined
       if (ffprobeInput instanceof Readable) {
         await this.destroyStream(ffprobeInput)
       }

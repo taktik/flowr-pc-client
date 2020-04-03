@@ -3,7 +3,9 @@
   "productName": "flowr-desktop",
 
   "nsis": {
-    "include": "static/installer.nsh"
+    "include": "static/installer.nsh",
+    "oneClick": false,
+    "allowToChangeInstallationDirectory": true
   },
 
   "asar": true,

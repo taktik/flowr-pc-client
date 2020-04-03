@@ -53,19 +53,11 @@ export class FlowrFfmpeg {
     Ffmpeg.setFfprobePath(ffprobePath.replace('app.asar', 'app.asar.unpacked'))
   }
 
-  ffprobe(
+  async ffprobe(
     input?: string | Readable,
     options?: Ffmpeg.FfmpegCommandOptions,
-  ): Promise<Ffmpeg.FfprobeData> {
-    return new Promise((resolve, reject) => {
-      Ffmpeg(input, options).ffprobe((err, data: Ffmpeg.FfprobeData) => {
-        if (err) {
-          reject(err)
-        } else {
-          resolve(data)
-        }
-      })
-    })
+  ): Promise<Ffmpeg.FfprobeResponse> {
+    return Ffmpeg(input, options).ffprobeProcess()
   }
 
   getVideoMpegtsPipeline(
@@ -82,11 +74,15 @@ export class FlowrFfmpeg {
     }
 
     const ffmpegCmd = Ffmpeg(input)
-      .inputOptions('-probesize 700k')
+      .inputOptions('-probesize 2000k')
       .outputOptions('-preset ultrafast')
-      .outputOptions('-g 30')
-      .outputOptions('-r 30')
+      .outputOptions('-g 40')
+      .outputOptions('-r 40')
+      .outputOptions('-crf 27')
       .outputOptions('-tune zerolatency')
+      .outputOptions('-vf scale=\'min(1920,iw)\':-1')
+      .outputOptions('-sws_flags fast_bilinear')
+      .outputOptions('-profile:v baseline')
 
     if (subtitleStream && subtitleStream > -1) {
       console.log('-------- appendCmdWithSubtitle')
