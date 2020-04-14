@@ -1,9 +1,8 @@
 import { Store } from './store'
-import { ipcMain, IpcMainEvent } from 'electron'
+import { ipcMain, IpcMainEvent, app } from 'electron'
 import { IpcStreamer } from './ipcStreamer'
 import { ITsDecryptorConfig, TsDecryptor } from '@taktik/ts-decryptor'
 import { UdpStreamer, UdpStreamerError, UdpStreamerErrors } from '@taktik/udp-streamer'
-import { IChannelData } from './interfaces/channelData'
 import { ICurrentStreams } from './interfaces/currentStreams'
 import { IStreamTrack } from './interfaces/streamTrack'
 import { FfmpegCommand } from 'fluent-ffmpeg'
@@ -19,6 +18,8 @@ import { IStreamerConfig } from './interfaces/ipcStreamerConfig'
 import { ICircularBufferConfig } from '@taktik/buffers'
 import { Dispatcher } from './dispatcher'
 import { ChildProcess } from 'child_process'
+import { storeManager } from '../../launcher'
+import { IFlowrStore } from './interfaces/flowrStore'
 
 export class Player {
   private streams?: IPlayerStreams
@@ -30,31 +31,27 @@ export class Player {
   private streamer: IpcStreamer | null = null
   private replayOnErrorTimeout: number | null = null
   private stopping: Promise<void> = Promise.resolve()
-  private flowrFfmpeg: FlowrFfmpeg
+  private flowrFfmpeg: FlowrFfmpeg = new FlowrFfmpeg()
   private ffprobeProcess?: ChildProcess
-
-  get playerStore(): IPlayerStore {
-    const stored = this.store.get('player') || {}
-    return { ...DEFAULT_PLAYER_STORE, ...stored }
-  }
+  private store: Store<IPlayerStore> = this.initStore()
 
   get ipcStreamerConfig(): IStreamerConfig {
-    return this.playerStore.streamer
+    return this.store.get('streamer')
   }
 
   get decryption(): IDecryption {
-    return this.playerStore.decryption
+    return this.store.get('decryption')
   }
 
   get tsDecryptorConfig(): ITsDecryptorConfig {
-    return this.playerStore.tsDecryptor
+    return this.store.get('tsDecryptor')
   }
 
   get udpStreamerConfig(): ICircularBufferConfig {
-    return this.playerStore.udpStreamer
+    return this.store.get('udpStreamer')
   }
 
-  constructor(private store: Store) {
+  constructor(private flowrStore: Store<IFlowrStore>) {
     this._ipcEvents = {
       closestream: this.closestream.bind(this),
       pausestream: this.pausestream.bind(this),
@@ -68,13 +65,25 @@ export class Player {
       FlowrIsInitializing: this.stop.bind(this),
     }
     Object.entries(this._ipcEvents).forEach(event => ipcMain.on(event[0], event[1]))
-    this.flowrFfmpeg = new FlowrFfmpeg()
+  }
+
+  initStore(): Store<IPlayerStore> {
+    const shouldPersist = !storeManager.exists('player')
+    const store = storeManager.createStore<IPlayerStore>('player', DEFAULT_PLAYER_STORE)
+
+    if (shouldPersist) {
+      store.persist()
+    } else if (store.get('version') !== app.getVersion()) {
+      store.reset(DEFAULT_PLAYER_STORE)
+    }
+
+    return store
   }
 
   updateChannelData(streams: ICurrentStreams) {
-    const channelData = this.store.get('channelData') as IChannelData
+    const channelData = this.flowrStore.get('channelData')
     channelData[streams.url] = streams
-    this.store.set('channelData', channelData)
+    this.flowrStore.set('channelData', channelData)
   }
 
   closestream(evt: IpcMainEvent) {
@@ -132,7 +141,7 @@ export class Player {
         evt.sender.send('typeofstream', 'audio')
       }
     }
-    const channelData = this.store.get('channelData') as IChannelData
+    const channelData = this.flowrStore.get('channelData')
     const stream = channelData[url]
     if (stream) {
       sendTypeOfStream(stream)
@@ -159,7 +168,7 @@ export class Player {
     try {
       console.log('----------- openUrl', url)
       await this.stopping
-      const channelData = (this.store.get('channelData') || {}) as IChannelData
+      const channelData = this.flowrStore.get('channelData')
       const localCurrentStream: ICurrentStreams | undefined = channelData[url]
       const pipeline = await this.getStreamingPipeline(url)
 
@@ -386,7 +395,7 @@ export class Player {
       const videoStreamChannel = streamToPlay.video.tracks[0].pid
       const audiostreamChannel = streamToPlay.audio.currentStream
       const subtitleStreamChannel = streamToPlay.subtitles.currentStream
-      const isDeinterlacingEnabled = this.store.get('deinterlacing')
+      const isDeinterlacingEnabled = this.flowrStore.get('deinterlacing')
       return this.flowrFfmpeg.getVideoMpegtsPipeline(input, videoStreamChannel, audiostreamChannel, subtitleStreamChannel, isDeinterlacingEnabled, this.getErrorHandler(evt))
     }
     if (streamToPlay.audio.tracks.length > 0) {

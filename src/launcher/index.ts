@@ -9,6 +9,8 @@ import { FlowrWindow } from 'src/frontend/flowr-window'
 export const log = require('electron-log')
 import { StoreManager, Store } from '../frontend/src/store'
 import { ApplicationManager } from '../application-manager/application-manager'
+import { IFlowrStore } from '../frontend/src/interfaces/flowrStore'
+
 const FlowrDataDir = resolve(homedir(), '.flowr')
 
 export const storeManager = new StoreManager(FlowrDataDir)
@@ -30,7 +32,7 @@ async function main() {
   ipcMain.setMaxListeners(0)
 
   let flowrWindow: FlowrWindow | null = null
-  let flowrStore: Store | null = null
+  let flowrStore: Store<IFlowrStore> | null = null
 
   let wexondWindow: BrowserWindow | null = null
 
@@ -136,7 +138,7 @@ async function main() {
     }
   }
 
-  function initFlowrStore(): Store {
+  function initFlowrStore(): Store<IFlowrStore> {
     return storeManager.createStore(FRONTEND_CONFIG_NAME, DEFAULT_FRONTEND_STORE)
   }
 }

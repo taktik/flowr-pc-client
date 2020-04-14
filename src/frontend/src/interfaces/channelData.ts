@@ -1,3 +1,3 @@
 import { ICurrentStreams } from './currentStreams'
 
-export type IChannelData = {[key: string]: ICurrentStreams}
+export type IChannelData = {[url: string]: ICurrentStreams}

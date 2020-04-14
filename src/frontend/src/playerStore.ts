@@ -1,6 +1,9 @@
+import { ReadMode } from '@taktik/buffers'
+import { app } from 'electron'
 import { IPlayerStore } from './interfaces/playerStore'
 
 export const DEFAULT_PLAYER_STORE: IPlayerStore = {
+  version: app.getVersion(),
   streamer: {
     capacity: 20000000, // base streamer capacity, keep small for low definition content
     maxCapacity: 30000000, // max expansion value for buffer, useful for HD content
@@ -10,19 +13,16 @@ export const DEFAULT_PLAYER_STORE: IPlayerStore = {
   decryption: { use: true }, // whether to use ts-decryptor
   tsDecryptor: {
     alignConfig: {
-      capacity: 16384, // must be superior or equal to UdpStreamer's capacity
-      maxCapacity: 30000, // must be superior or equal to UdpStreamer's maxCapacity
-      poolConfig: { poolSize: 100 }, // increase this if there are alignment errors
+      capacity: 200000000, // must be superior or equal to UdpStreamer's capacity
+      maxCapacity: 200000000, // must be superior or equal to UdpStreamer's maxCapacity
+      readMode: ReadMode.SLICE,
     },
-    formatterConfig: {
-      leftoversConfig: { allocatedMemory: 5e6 }, // increase this if there are artefacts
-      poolConfig: { allocatedMemory: 5e6 }, // increase this if there are artefacts
-    },
+    poolConfig: { allocatedMemory: 5e6 }, // increase this if there are artefacts
   },
   udpStreamer: {
-    allowOverwrite: true,
-    capacity: 16384, // base streaming "speed"
-    maxCapacity: 30000, // max streaming "speed", to increase on OverflowErrors
-    poolConfig: { poolSize: 65000 }, // per stream output, to increase on alignment errors
+    allowOverwrite: false,
+    capacity: 200000000, // base streaming buffer
+    maxCapacity: 200000000, // max buffer expansion size, to increase on OverflowErrors
+    readMode: ReadMode.SLICE,
   },
 }

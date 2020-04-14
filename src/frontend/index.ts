@@ -7,20 +7,22 @@ import { FlowrWindow } from './flowr-window'
 import { extend } from 'lodash'
 import { URL } from 'url'
 import { networkEverywhere } from 'network-everywhere'
-import { DEFAULT_PLAYER_STORE } from './src/playerStore'
 import defaultBrowserWindowOptions from './defaultBrowserWindowOptions'
+import { IFlowrStore } from './src/interfaces/flowrStore'
 
 const deepExtend = require('deep-extend')
 const FlowrDataDir = resolve(homedir(), '.flowr')
 
 export const FRONTEND_CONFIG_NAME = 'user-preferences'
-export const DEFAULT_FRONTEND_STORE = {
+export const DEFAULT_FRONTEND_STORE: IFlowrStore = {
   // 800x600 is the default size of our window
   windowBounds: { width: 1280, height: 720 },
   channelData: {},
   isMaximized: false,
   clearAppDataOnStart: false,
-  player: DEFAULT_PLAYER_STORE,
+  extUrl: '',
+  isKiosk: false,
+  deinterlacing: false,
 }
 export async function initFlowrConfig(data: object) {
   await initConfigData(join(FlowrDataDir, `${FRONTEND_CONFIG_NAME}.json`), data)
@@ -35,11 +37,11 @@ let isHiddenMenuDisplayed = false
 let isLaunchedUrlCorrect = true
 let reloadTimeout: number | undefined
 
-export function buildBrowserWindowConfig(flowrStore: Store, options: BrowserWindowConstructorOptions): BrowserWindowConstructorOptions {
+export function buildBrowserWindowConfig(flowrStore: Store<IFlowrStore>, options: BrowserWindowConstructorOptions): BrowserWindowConstructorOptions {
   return extend(options, defaultBrowserWindowOptions(flowrStore))
 }
 
-export async function createFlowrWindow(flowrStore: Store): Promise<FlowrWindow> {
+export async function createFlowrWindow(flowrStore: Store<IFlowrStore>): Promise<FlowrWindow> {
   const mac = await getActiveMacAddress()
 
   const defaultUrl = buildFileUrl('config.html')
@@ -125,8 +127,8 @@ export async function createFlowrWindow(flowrStore: Store): Promise<FlowrWindow>
       isLaunchedUrlCorrect = true
     },
     getAppConfig: (evt: any) => {
-      const storedConfig =  flowrStore.get('flowrConfig')
-      const  config: any =  {
+      const storedConfig = flowrStore.get('flowrConfig')
+      const config: any = {
         debugMode : isDebugMode,
         isLaunchedUrlCorrect,
         deinterlacing: flowrStore.get('deinterlacing'),

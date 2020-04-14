@@ -27,7 +27,16 @@
     "depends": ["ffmpeg"]
   },
   "win": {
-    "target": ["zip", "nsis"]
+    "target": [
+      {
+        "target": "zip",
+        "arch": ["x64", "ia32"]
+      }, 
+      {
+        "target": "nsis",
+        "arch": ["x64", "ia32"]
+      }
+    ]
   },
   "mac": {
     "category": "public.app-category.navigation"

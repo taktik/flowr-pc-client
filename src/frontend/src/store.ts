@@ -1,4 +1,4 @@
-import { writeFileSync, ensureFileSync, readFileSync, readFile, writeFile } from 'fs-extra'
+import { writeFileSync, ensureFileSync, readFileSync, readFile, writeFile, existsSync } from 'fs-extra'
 import * as deepExtend from 'deep-extend'
 import { DEFAULT_FRONTEND_STORE } from '..'
 const path = require('path')
@@ -22,69 +22,69 @@ export async function initConfigData(configPath: string, previousData: object): 
   }
 }
 
-interface StoreConstructor {
-  new (storeDir: string, opts: any): Store
+interface StoreOptions<T> {
+  configName: string
+  defaults: T
 }
 
-export interface Store {
+export interface Store<T extends Object> {
   path: string
-  data: {[key: string]: any}
-  get(key: string): any
-  set(key: string, val: any): void
-  bulkSet(data: {[key: string]: any}): void
-  clear(): void
+  data: T
+  get<K extends keyof T>(key: K): T[K]
+  set<K extends keyof T>(key: K, val: T[K]): void
+  bulkSet(data: Partial<T>): void
+  reset(data: T): void
+  persist(): void
 }
 
 /**
  * Manage data persistance
- * This structure of interface (StoreConstructor + Store) allows to type the constructor:
- *  https://www.typescriptlang.org/docs/handbook/interfaces.html
  * @param {String} storeDir name of the folder containing this store
  * @param {Object} opts default values to use if store is empty
  * @param {String} opts.configName name of the file containing this store
  * @param {Object} opts.defaults default values to use if store is empty
  */
-const StoreImpl: StoreConstructor = class StoreImpl implements Store {
+class StoreImpl<T> implements Store<T> {
   path: string
-  data: {[key: string]: any}
+  data: T
 
-  private persist() {
-    // Wait, I thought using the node.js' synchronous APIs was bad form?
-    // We're not writing a server so there's not nearly the same IO demand on the process
-    // Also if we used an async API and our app was quit before the asynchronous write had a chance to complete,
-    // we might lose that data.
-    try {
-      writeFileSync(this.path, JSON.stringify(this.data))
-    } catch (e) {
-      console.error('Error persisting store', e)
-    }
-  }
-
-  constructor(storeDir: string, public opts: any) {
-    this.path = path.join(storeDir, `${this.opts.configName}`)
+  constructor(storeDir: string, public opts: StoreOptions<T>) {
+    this.path = path.join(storeDir, opts.configName)
     this.data = parseDataFile(this.path, opts.defaults)
     ensureFileSync(this.path)
   }
 
   // This will just return the property on the `data` object
-  get(key: string) {
+  get<K extends keyof T>(key: K): T[K] {
     return this.data[key] || this.opts.defaults[key]
   }
 
   // ...and this will set it
-  set(key: string, val: any) {
+  set<K extends keyof T>(key: K, val: T[K]) {
     this.data[key] = val
     this.persist()
   }
 
-  bulkSet(data: {[key: string]: any}) {
+  bulkSet(data: Partial<T>) {
     this.data = { ...this.data, ...data }
     this.persist()
   }
 
-  clear() {
-    this.data = {}
+  reset(data: T) {
+    this.data = data
     this.persist()
+  }
+
+  persist() {
+    // Wait, I thought using the node.js' synchronous APIs was bad form?
+    // We're not writing a server so there's not nearly the same IO demand on the process
+    // Also if we used an async API and our app was quit before the asynchronous write had a chance to complete,
+    // we might lose that data.
+    try {
+      writeFileSync(this.path, JSON.stringify(this.data, null, 2))
+    } catch (e) {
+      console.error('Error persisting store', e)
+    }
   }
 }
 
@@ -106,7 +106,12 @@ export class StoreManager {
     this.path = root
   }
 
-  createStore(namespace: string = 'default', defaults: {[key: string]: any} = {}): Store {
+  exists(namespace: string): boolean {
+    const storePath = path.join(this.path, `${namespace}.json`)
+    return existsSync(storePath)
+  }
+
+  createStore<T>(namespace: string = 'default', defaults: T): Store<T> {
     const configName = `${namespace}.json`
     return new StoreImpl(this.path, { configName, defaults })
   }

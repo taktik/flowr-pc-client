@@ -44,7 +44,7 @@ interface FlowrApplicationInitializer {
   index: string
   package: ApplicationConfig
   preload?: string
-  store?: Store
+  store?: Store<Object>
   config?: {[key: string]: any}
   capabilities?: {[key: string]: boolean}
 }
@@ -53,7 +53,7 @@ export interface ApplicationOptions {
   config: {[key: string]: any},
   preload?: string,
   index: string,
-  store?: Store,
+  store?: Store<Object>,
   capabilities?: {[key: string]: boolean},
   flowrWindow?: FlowrWindow | null,
   wexondWindow?: BrowserWindow | null,
@@ -150,11 +150,11 @@ export class ApplicationManager {
       // const { create, packageJSON } = app
       const preload = buildPreloadPath(name)
       const index = buildFileUrl(name)
-      const store = storeManager.createStore(name)
+      const store = storeManager.createStore<Object>(name, {})
 
       if (clearStore) {
         // Clear application storage on client start
-        store.clear()
+        store.reset({})
       }
 
       if (!packageJSON || !packageJSON.title) {
