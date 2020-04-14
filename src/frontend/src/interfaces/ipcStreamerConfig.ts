@@ -1,8 +1,8 @@
-import { IBufferPoolConfig } from '@taktik/buffers/dist/interfaces/bufferPoolConfig'
+import { ReadMode } from '@taktik/buffers'
 
 export interface IStreamerConfig {
   capacity: number
   maxCapacity?: number
-  poolConfig: Partial<IBufferPoolConfig>
+  readMode: ReadMode
   sendInterval: number
 }

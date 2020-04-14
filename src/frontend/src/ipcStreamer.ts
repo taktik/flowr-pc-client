@@ -17,13 +17,13 @@ export class IpcStreamer extends Writable {
     this._sender = sender
   }
 
-  constructor({ capacity, maxCapacity, poolConfig, sendInterval }: IStreamerConfig) {
+  constructor({ capacity, maxCapacity, readMode, sendInterval }: IStreamerConfig) {
     super({ autoDestroy: false })
     this.buffer = new CircularBuffer({
       allowOverwrite: false,
       capacity,
       maxCapacity,
-      poolConfig,
+      readMode,
     })
     this.sendIntervalValue = sendInterval
   }

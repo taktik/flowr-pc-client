@@ -7,7 +7,7 @@ export const DEFAULT_PLAYER_STORE: IPlayerStore = {
   streamer: {
     capacity: 20000000, // base streamer capacity, keep small for low definition content
     maxCapacity: 30000000, // max expansion value for buffer, useful for HD content
-    poolConfig: { poolSize: 2 },
+    readMode: ReadMode.COPY,
     sendInterval: 300, // to increase on "BUFFER ERROR" in flowr
   },
   decryption: { use: true }, // whether to use ts-decryptor
