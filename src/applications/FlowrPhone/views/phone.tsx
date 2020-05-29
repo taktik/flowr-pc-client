@@ -1,10 +1,18 @@
 import * as React from 'react'
 import { RegisterStateMachine, REGISTERED_STATE } from '../stateMachines/registerStateMachine'
-import { IpcRenderer } from 'electron'
+import { ipcRenderer, IpcRenderer } from 'electron'
 import { WindowModes } from '../WindowModes'
 import { MainView } from './mainView'
 import './icons'
-import { CallState, CallStateMachine, INCOMING_STATE, CALL_OUT_STATE, OFF_HOOK_STATE, ANSWERED_STATE } from '../stateMachines/callStateMachine'
+import {
+  CallState,
+  CallStateMachine,
+  INCOMING_STATE,
+  CALL_OUT_STATE,
+  OFF_HOOK_STATE,
+  ANSWERED_STATE,
+  OUTGOING_STATE,
+} from '../stateMachines/callStateMachine'
 import { fsm } from 'typescript-state-machine'
 import TransitionListener = fsm.ListenerRegistration
 import { PhoneStateMachine } from '../stateMachines/factory'
@@ -15,6 +23,7 @@ import { fr } from '../translations/fr'
 import { History, PhoneHistory } from '../features/history'
 import { UserStore } from '../features'
 import { Favorites } from '../features/favorites'
+import { once } from 'lodash'
 
 declare global {
   interface Window {
@@ -256,6 +265,19 @@ export class Phone extends React.Component<PhoneProps, PhoneAppState> {
       this.callStateMachineListeners = [
         this.callStateMachine.onAnyTransition(this.stateChanged.bind(this)),
         this.callStateMachine.onEnterState(INCOMING_STATE, this.ipcSend('phone-show')),
+        this.callStateMachine.onEnterState(INCOMING_STATE, () => {
+          ipcRenderer.send('phone.incoming-call')
+        }),
+        this.callStateMachine.onEnterState(OUTGOING_STATE, () => {
+          ipcRenderer.send('phone.outgoing-call')
+        }),
+        this.callStateMachine.onEnterState(ANSWERED_STATE, (from) => {
+          const origin = from === INCOMING_STATE ? 'incoming-call' : 'outgoing-call'
+          this.callStateMachine.onLeaveState(ANSWERED_STATE, once(() => {
+            const callDurationSec = this.state.elapsedTime
+            ipcRenderer.send('phone.call-endend', callDurationSec, origin)
+          }))
+        }),
       ]
     }
     this.setState({ callState: this.callStateMachine.state })
