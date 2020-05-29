@@ -1,4 +1,6 @@
 import { fsm } from 'typescript-state-machine'
+import { ipcRenderer } from 'electron'
+import { once } from 'lodash'
 import StateMachineImpl = fsm.StateMachineImpl
 import State = fsm.State
 import { Dispatcher } from './dispatcher'
@@ -95,6 +97,22 @@ export class CallStateMachine extends StateMachineImpl<CallState> {
 
     this.onEnterState(CLIENT_NOT_RUNNING_STATE, this.attemptToInit.bind(this))
     this.onLeaveState(CLIENT_NOT_RUNNING_STATE, this.clearInitAttemps.bind(this))
+    this.onEnterState(INCOMING_STATE, () => {
+      ipcRenderer.send('phone.incoming-call')
+    })
+    this.onEnterState(OUTGOING_STATE, () => {
+      ipcRenderer.send('phone.outgoing-call')
+    })
+    this.onEnterState(ANSWERED_STATE, (from) => {
+      const startCallTs = Number(new Date())
+      const origin = from === INCOMING_STATE ? 'incoming-call' : 'outgoing-call'
+
+      this.onLeaveState(ANSWERED_STATE, once(() => {
+        const endCallTs = Number(new Date())
+        const callDurationSec = ((endCallTs - startCallTs) / 1000).toFixed(0)
+        ipcRenderer.send('phone.call-endend', callDurationSec, origin)
+      }))
+    })
 
     this.onAnyTransition(this.stateChanged.bind(this))
   }
