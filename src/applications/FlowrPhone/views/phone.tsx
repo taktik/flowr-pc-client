@@ -1,6 +1,6 @@
 import * as React from 'react'
 import { RegisterStateMachine, REGISTERED_STATE } from '../stateMachines/registerStateMachine'
-import { ipcRenderer, IpcRenderer } from 'electron'
+import { IpcRenderer } from 'electron'
 import { WindowModes } from '../WindowModes'
 import { MainView } from './mainView'
 import './icons'
@@ -23,7 +23,6 @@ import { fr } from '../translations/fr'
 import { History, PhoneHistory } from '../features/history'
 import { UserStore } from '../features'
 import { Favorites } from '../features/favorites'
-import { once } from 'lodash'
 
 declare global {
   interface Window {
@@ -264,19 +263,18 @@ export class Phone extends React.Component<PhoneProps, PhoneAppState> {
     if (!this.callStateMachineListeners.length) {
       this.callStateMachineListeners = [
         this.callStateMachine.onAnyTransition(this.stateChanged.bind(this)),
-        this.callStateMachine.onEnterState(INCOMING_STATE, this.ipcSend('phone-show')),
         this.callStateMachine.onEnterState(INCOMING_STATE, () => {
-          ipcRenderer.send('phone.incoming-call')
+          this.ipcSend('phone-show')
+          this.ipcSend('phone.incoming-call')
         }),
         this.callStateMachine.onEnterState(OUTGOING_STATE, () => {
-          ipcRenderer.send('phone.outgoing-call')
+          this.ipcSend('phone.outgoing-call')
         }),
-        this.callStateMachine.onEnterState(ANSWERED_STATE, (from) => {
-          const origin = from === INCOMING_STATE ? 'incoming-call' : 'outgoing-call'
-          this.callStateMachine.onLeaveState(ANSWERED_STATE, once(() => {
-            const callDurationSec = this.state.elapsedTime
-            ipcRenderer.send('phone.call-endend', callDurationSec, origin)
-          }))
+        this.callStateMachine.onLeaveState(CALL_OUT_STATE, (from) => {
+          this._ipc.send('phone.call-endend', this.state.elapsedTime, 'outgoing-call')
+        }),
+        this.callStateMachine.onLeaveState(ANSWERED_STATE, (param) => {
+          this._ipc.send('phone.call-endend', this.state.elapsedTime, 'incoming-call')
         }),
       ]
     }
