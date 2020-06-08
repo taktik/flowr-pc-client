@@ -264,11 +264,11 @@ export class Phone extends React.Component<PhoneProps, PhoneAppState> {
       this.callStateMachineListeners = [
         this.callStateMachine.onAnyTransition(this.stateChanged.bind(this)),
         this.callStateMachine.onEnterState(INCOMING_STATE, () => {
-          this.ipcSend('phone-show')
-          this.ipcSend('phone.incoming-call')
+          this._ipc.send('phone-show')
+          this._ipc.send('phone.incoming-call')
         }),
         this.callStateMachine.onEnterState(OUTGOING_STATE, () => {
-          this.ipcSend('phone.outgoing-call')
+          this._ipc.send('phone.outgoing-call')
         }),
         this.callStateMachine.onLeaveState(CALL_OUT_STATE, (from) => {
           this._ipc.send('phone.call-endend', this.state.elapsedTime, 'outgoing-call')
