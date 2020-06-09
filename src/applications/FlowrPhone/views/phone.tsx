@@ -271,10 +271,10 @@ export class Phone extends React.Component<PhoneProps, PhoneAppState> {
           this._ipc.send('phone.outgoing-call')
         }),
         this.callStateMachine.onLeaveState(CALL_OUT_STATE, (from) => {
-          this._ipc.send('phone.call-endend', this.state.elapsedTime, 'outgoing-call')
+          this._ipc.send('phone.call-ended', this.state.elapsedTime, 'outgoing-call')
         }),
         this.callStateMachine.onLeaveState(ANSWERED_STATE, (param) => {
-          this._ipc.send('phone.call-endend', this.state.elapsedTime, 'incoming-call')
+          this._ipc.send('phone.call-ended', this.state.elapsedTime, 'incoming-call')
         }),
       ]
     }

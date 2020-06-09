@@ -101,12 +101,12 @@ export function create(options: PhoneOptions): PhoneWindow {
         aggregationType: 'sum',
       })
   }))
-  ipcMain.on('phone.call-endend', (event, callDuration: number, origine: 'incoming-call' | 'outgoing-call') => {
+  ipcMain.on('phone.call-ended', (event, callDuration: number, origin: 'incoming-call' | 'outgoing-call') => {
     options.flowrWindow.webContents.send('send-statistic-report', {
       type: 'timeGauge',
       value: callDuration,
       name: 'flowr-desktop.phoneApp.call-duration',
-      tag: [origine],
+      tag: [origin],
     })
   })
 
