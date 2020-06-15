@@ -1,7 +1,7 @@
 import { RegisterProps } from './views/phone'
 import { PhoneWindow } from './phoneWindow'
 import { FlowrWindow } from '../../frontend/flowr-window'
-import { BrowserWindow } from 'electron'
+import { BrowserWindow, ipcMain } from 'electron'
 import { ApplicationOptions } from '../../application-manager/application-manager'
 import * as pkgJSON from './package.json'
 import { ApplicationConfig } from '@taktik/flowr-common-js'
@@ -77,6 +77,38 @@ export function create(options: PhoneOptions): PhoneWindow {
     favorites,
     currentUser,
   }
+  ipcMain.on('phone.incoming-call', (event => {
+    options.flowrWindow.webContents.send('send-statistic-report', {
+      type: 'counter',
+      count: 1,
+      name: 'flowr-desktop.phoneApp.incoming-call',
+    },
+      {
+        type: 'counter',
+        valueFieldName: 'count',
+        aggregationType: 'sum',
+      })
+  }))
+  ipcMain.on('phone.outgoing-call', (event => {
+    options.flowrWindow.webContents.send('send-statistic-report', {
+      type: 'counter',
+      count: 1,
+      name: 'flowr-desktop.phoneApp.outgoing-call',
+    },
+      {
+        type: 'counter',
+        valueFieldName: 'count',
+        aggregationType: 'sum',
+      })
+  }))
+  ipcMain.on('phone.call-ended', (event, callDuration: number, origin: 'incoming-call' | 'outgoing-call') => {
+    options.flowrWindow.webContents.send('send-statistic-report', {
+      type: 'timeGauge',
+      value: callDuration,
+      name: 'flowr-desktop.phoneApp.call-duration',
+      tag: [origin],
+    })
+  })
 
   const phoneWindow = new PhoneWindow(
     options.flowrWindow,

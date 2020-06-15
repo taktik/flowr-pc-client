@@ -4,7 +4,15 @@ import { IpcRenderer } from 'electron'
 import { WindowModes } from '../WindowModes'
 import { MainView } from './mainView'
 import './icons'
-import { CallState, CallStateMachine, INCOMING_STATE, CALL_OUT_STATE, OFF_HOOK_STATE, ANSWERED_STATE } from '../stateMachines/callStateMachine'
+import {
+  CallState,
+  CallStateMachine,
+  INCOMING_STATE,
+  CALL_OUT_STATE,
+  OFF_HOOK_STATE,
+  ANSWERED_STATE,
+  OUTGOING_STATE,
+} from '../stateMachines/callStateMachine'
 import { fsm } from 'typescript-state-machine'
 import TransitionListener = fsm.ListenerRegistration
 import { PhoneStateMachine } from '../stateMachines/factory'
@@ -255,7 +263,19 @@ export class Phone extends React.Component<PhoneProps, PhoneAppState> {
     if (!this.callStateMachineListeners.length) {
       this.callStateMachineListeners = [
         this.callStateMachine.onAnyTransition(this.stateChanged.bind(this)),
-        this.callStateMachine.onEnterState(INCOMING_STATE, this.ipcSend('phone-show')),
+        this.callStateMachine.onEnterState(INCOMING_STATE, () => {
+          this._ipc.send('phone-show')
+          this._ipc.send('phone.incoming-call')
+        }),
+        this.callStateMachine.onEnterState(OUTGOING_STATE, () => {
+          this._ipc.send('phone.outgoing-call')
+        }),
+        this.callStateMachine.onLeaveState(CALL_OUT_STATE, (from) => {
+          this._ipc.send('phone.call-ended', this.state.elapsedTime, 'outgoing-call')
+        }),
+        this.callStateMachine.onLeaveState(ANSWERED_STATE, (param) => {
+          this._ipc.send('phone.call-ended', this.state.elapsedTime, 'incoming-call')
+        }),
       ]
     }
     this.setState({ callState: this.callStateMachine.state })
