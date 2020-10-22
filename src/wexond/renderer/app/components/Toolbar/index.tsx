@@ -1,6 +1,5 @@
 import { observer } from 'mobx-react';
 import * as React from 'react';
-import { platform } from 'os';
 
 import store from '~/renderer/app/store';
 import { StyledToolbar, Buttons, Separator } from './style';
@@ -12,7 +11,7 @@ import { ipcRenderer } from 'electron';
 import BrowserAction from '../BrowserAction';
 import { Find } from '../Find';
 import { backToFlowr } from '~/renderer/app/utils';
-import { barcoKeyBoardController } from '../../../../../barcoKeyboard/barcoKeyBoardController';
+import { VirtualKeyboardEvent } from '../../../../../barcoKeyboard/events'
 
 const onUpdateClick = () => {
   ipcRenderer.send('update-install');
@@ -53,7 +52,7 @@ export const Toolbar = observer(() => {
   }
 
   const onKeyboardPress = () => {
-    barcoKeyBoardController.toggle()
+    ipcRenderer.send(VirtualKeyboardEvent.TOGGLE)
   }
 
   return (

@@ -1,8 +1,9 @@
 import { BrowserWindow, BrowserWindowConstructorOptions } from 'electron'
 import { Store } from './src/store'
 import { Player } from './src/player'
+import { KeyboardMixin } from '../barcoKeyboard/keyboardMixin'
 
-export class FlowrWindow extends BrowserWindow {
+export class FlowrWindow extends KeyboardMixin(BrowserWindow) {
 
   private resizeTimeout?: number
   private player: Player

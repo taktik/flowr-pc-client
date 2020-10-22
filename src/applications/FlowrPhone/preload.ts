@@ -1,5 +1,5 @@
 import { IpcRenderer } from 'electron'
-import { barcoKeyBoardController } from '../../barcoKeyboard/barcoKeyBoardController'
+import { VirtualKeyboardEvent } from '../../barcoKeyboard/events'
 
 declare global {
   namespace NodeJS {
@@ -7,8 +7,8 @@ declare global {
       require: any
       ipcRenderer: IpcRenderer
       process: Process
-      openKeyboard: () => Promise<void>
-      closeKeyboard: () => Promise<void>
+      openKeyboard: () => void
+      closeKeyboard: () => void
     }
   }
 
@@ -48,8 +48,8 @@ process.once('loaded', () => {
   if (!production) {
     global.process = process
   }
-  global.openKeyboard = barcoKeyBoardController.open
-  global.closeKeyboard = barcoKeyBoardController.close
+  global.openKeyboard = () => ipcRenderer.send(VirtualKeyboardEvent.OPEN)
+  global.closeKeyboard = () => ipcRenderer.send(VirtualKeyboardEvent.CLOSE)
 })
 
 export {}

@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="UTF-8" />
+    <title>Keyboard</title>
+  </head>
+  <style>
+    body {
+      height: 100%;
+      width: 100%;
+      display: flex;
+      flex-direction: column;
+      margin: 0;
+    }
+    #drag {
+      -webkit-app-region: drag;
+      background-color: rgba(0, 0, 0, .7);
+      height: 30px;
+      width: 100%;
+    }
+    #keyboard {
+      flex-grow: 3;
+    }
+  </style>
+  <body>
+    <div id="drag"></div>
+    <div id="keyboard" class="simple-keyboard"></div>
+  </body>
+</html>

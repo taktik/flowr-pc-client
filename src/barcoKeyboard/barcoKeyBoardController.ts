@@ -1,15 +1,40 @@
-import { BarcoKeyBoardControllerInterface } from './barcoKeyBoardController.interface'
+import { BrowserWindow } from 'electron'
+import { KeyboardWindow } from '../applications/keyboard/keyboardWindow'
 
-class BarcoKeyBoardController implements BarcoKeyBoardControllerInterface {
-  async open(): Promise<void> {
-    await fetch('http://localhost:9000/keyboard/open', { method: 'GET', mode: 'no-cors' })
+class Keyboard {
+  keyboardWindow?: KeyboardWindow
+
+  private createKeyboard(parent: BrowserWindow): KeyboardWindow {
+    const keyboardWindow = new KeyboardWindow(parent)
+    keyboardWindow.on('close', () => this.keyboardWindow = undefined)
+    return keyboardWindow
   }
-  async close(): Promise<void> {
-    await fetch('http://localhost:9000/keyboard/close', { method: 'GET', mode: 'no-cors' })
+
+  open(parent: BrowserWindow) {
+    if (this.keyboardWindow) {
+      this.keyboardWindow.setParentWindow(parent)
+    } else {
+      this.keyboardWindow = this.createKeyboard(parent)
+    }
+    this.keyboardWindow.show()
   }
-  async toggle(): Promise<void> {
-    await fetch('http://localhost:9000/keyboard/toggle', { method: 'GET', mode: 'no-cors' })
+
+  close() {
+    this.keyboardWindow?.hide()
+  }
+
+  toggle(parent: BrowserWindow) {
+    if (!this.keyboardWindow) {
+      this.open(parent)
+    } else {
+      this.keyboardWindow.setParentWindow(parent)
+      if (this.keyboardWindow.isVisible()) {
+        this.keyboardWindow.hide()
+      } else {
+        this.keyboardWindow.show()
+      }
+    }
   }
 }
 
-export const barcoKeyBoardController = new BarcoKeyBoardController()
+export const keyboard = new Keyboard()

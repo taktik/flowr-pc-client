@@ -1,8 +1,6 @@
-import { barcoKeyBoardController } from '../../barcoKeyboard/barcoKeyBoardController'
-import { debounce } from 'lodash'
 
-const KEYBOARD_CLOSE = 0
-const KEYBOARD_OPEN = 1
+import { debounce } from 'lodash'
+import { VirtualKeyboardEvent } from '../../barcoKeyboard/events'
 
 declare global {
   namespace NodeJS {
@@ -48,12 +46,8 @@ function handleHiddenMenuCode(event: KeyboardEvent): any {
   }
 }
 
-function actionKeyboard(type: number) {
-  if (type === KEYBOARD_OPEN) {
-    barcoKeyBoardController.open()
-  } else {
-    barcoKeyBoardController.close()
-  }
+function actionKeyboard(keyboardEvent: VirtualKeyboardEvent) {
+  ipcRenderer.send(keyboardEvent)
 }
 
 const actionKeyboardDebounced = debounce(actionKeyboard, 50)
@@ -71,20 +65,20 @@ function shouldActionKeyboard(event: Event) {
 
 function openKeyboard(event: Event): void {
   if (shouldActionKeyboard(event)) {
-    actionKeyboardDebounced(KEYBOARD_OPEN)
+    actionKeyboardDebounced(VirtualKeyboardEvent.OPEN)
   }
 }
 function closeKeyboard(event: Event): void {
   if (shouldActionKeyboard(event)) {
-    actionKeyboardDebounced(KEYBOARD_CLOSE)
+    actionKeyboardDebounced(VirtualKeyboardEvent.CLOSE)
   }
 }
 
 window.addEventListener('focus', openKeyboard, true)
 window.addEventListener('blur', closeKeyboard, true)
 window.addEventListener('click', openKeyboard)
-
 window.addEventListener('keydown', handleHiddenMenuCode, true)
+
 process.once('loaded', () => {
   global.nodeRequire = (moduleName: string): any => {
     const requiredModule = nodeRequire[moduleName]

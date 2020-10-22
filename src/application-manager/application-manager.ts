@@ -1,11 +1,12 @@
 import { ApplicationConfig, FlowrApplication } from '@taktik/flowr-common-js'
 import { ipcMain, BrowserWindow, app, IpcMainEvent } from 'electron'
-import { resolve, join } from 'path'
+import { join } from 'path'
 import { storeManager } from '../launcher'
 import { Store } from '../frontend/src/store'
 import * as fs from 'fs'
 import { FlowrWindow } from '../frontend/flowr-window'
 import { create, packageJSON, canOpen } from '../applications/FlowrPhone'
+import { buildApplicationPreloadPath, buildFileUrl } from './helpers'
 
 interface ApplicationInitConfig {
   application: FlowrApplication
@@ -59,32 +60,6 @@ export interface ApplicationOptions {
   wexondWindow?: BrowserWindow | null,
 }
 
-/**
- * Return absolute path to a given file name
- * @param {String} fileName
- */
-function buildPreloadPath(fileName: string): string {
-  let result: string = resolve(app.getAppPath(), `build/applications/preloads/${fileName}`)
-  if (process.env.ENV !== 'dev') {
-    result = join(app.getAppPath(), `/build/applications/preloads/${fileName}`)
-  }
-  return result
-}
-
-/**
- * Return path to given application's served file
- * @param {String} name
- */
-function buildFileUrl(name: string): string {
-  let result: string
-  if (process.env.ENV === 'dev') {
-    result = `http://localhost:4444/applications/${name}/index.html`
-  } else {
-    result = join('file://', app.getAppPath(), 'build', 'applications', name, 'index.html')
-  }
-  return result
-}
-
 export class ApplicationManager {
   private applications: {[key: string]: FlowrApplicationInitializer} = {}
   private activeWindows: {[key: string]: FlowrApplicationWindow} = {}
@@ -119,16 +94,18 @@ export class ApplicationManager {
 
   initLocalApps(clearStore: boolean = false): Promise<void[]> {
     return new Promise((resolve, reject) => {
-      fs.readdir(join(app.getAppPath(), 'build', 'applications'), (err, files) => {
+      // TODO: open ticket @ electron "withFileTypes" option is not working inside of the asar archive, it only returns the file names
+      fs.readdir(join(app.getAppPath(), 'build'), { withFileTypes: true }, (err, files) => {
         if (err) {
           reject(err)
           return
         }
         const registeringPromises: Promise<void>[] = files
+          .filter(file => file.isDirectory())
           // Exclude preloads folder
-          .filter(name => name !== 'preloads')
+          .filter(file => file.name !== 'preloads')
           // Register applications
-          .map(name => this.registerApp(name, clearStore))
+          .map(file => this.registerApp(file.name, clearStore))
 
         Promise.all(registeringPromises)
           .then(resolve)
@@ -145,10 +122,10 @@ export class ApplicationManager {
     try {
       console.log('Registering app', name)
       // Can't easily rename fusebox output, so we'll leave the ${name}/${name} folder/file structure for now
-      // const { open, packageJSON } = await import(`./applications/${name}/${name}.js`)
+      // const { create, packageJSON, canOpen } = await import(`./applications/${name}`)
       // const app = (await import(`./applications/${name}/${name}-loader.js`))[name]
       // const { create, packageJSON } = app
-      const preload = buildPreloadPath(name)
+      const preload = buildApplicationPreloadPath(name)
       const index = buildFileUrl(name)
       const store = storeManager.createStore<Object>(name, {})
 

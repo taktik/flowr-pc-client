@@ -1,14 +1,16 @@
-import { BrowserWindow, app, ipcMain, globalShortcut, screen, BrowserWindowConstructorOptions } from 'electron';
-import { resolve, join } from 'path';
-import { platform } from 'os';
-import { windowManager, Window } from 'node-window-manager';
-import mouseEvents from 'mouse-hooks';
-import { extend, map }  from 'lodash';
-import { ViewManager } from './view-manager';
-import { getPath } from '../shared/utils/paths';
-import { existsSync, readFileSync, writeFileSync } from 'fs';
-import { ProcessWindow } from './models/process-window';
-import { TOOLBAR_HEIGHT } from '../renderer/app/constants';
+import { BrowserWindow, app, ipcMain, globalShortcut, screen, BrowserWindowConstructorOptions } from 'electron'
+import { resolve, join } from 'path'
+import { platform } from 'os'
+import { windowManager, Window } from 'node-window-manager'
+import mouseEvents from 'mouse-hooks'
+import { extend, map }  from 'lodash'
+import { existsSync, readFileSync, writeFileSync } from 'fs'
+
+import { ViewManager } from './view-manager'
+import { getPath } from '../shared/utils/paths'
+import { ProcessWindow } from './models/process-window'
+import { TOOLBAR_HEIGHT } from '../renderer/app/constants'
+import { KeyboardMixin } from '../../barcoKeyboard/keyboardMixin'
 const containsPoint = (bounds: any, point: any) => {
   return (
     point.x >= bounds.x &&
@@ -22,7 +24,7 @@ export interface WexondOptions {
   openUrl: string
   maxTab : number
 }
-export class AppWindow extends BrowserWindow {
+export class AppWindow extends KeyboardMixin(BrowserWindow) {
   private readonly _ipcEvents: {[key: string]: (...args: any[]) => void}
 
   public viewManager: ViewManager = new ViewManager();
