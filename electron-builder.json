@@ -1,5 +1,5 @@
 {
-  "appId": "org.taktik.flowr.pcClient",
+  "appId": "org.taktik.flowr.flowr-desktop",
   "productName": "flowr-desktop",
 
   "nsis": {

@@ -54,7 +54,7 @@ async function main() {
   })
 
   async function onReady() {
-    clearBrowsingData()
+    await clearBrowsingData()
     app.on('activate', async () => {
       if (flowrWindow === null) {
         await initFlowr()

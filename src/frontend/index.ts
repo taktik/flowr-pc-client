@@ -53,8 +53,9 @@ export async function createFlowrWindow(flowrStore: Store<IFlowrStore>): Promise
     webPreferences: {
       nodeIntegration: false,
       contextIsolation: false,
-      partition: 'persist:view', // needed to display webcame image
+      partition: 'persist:flowr', // needed to display webcam image
       preload: buildExportPath('exportNode.js'),
+      enableRemoteModule: true, // TODO: FLOW-8215
     },
   })
 

@@ -1,8 +1,7 @@
 import { ipcMain, session } from 'electron';
 import { TOOLBAR_HEIGHT } from '~/renderer/app/constants/design';
-import { appWindow, log } from '.';
+import { appWindow } from '.';
 import { View } from './view';
-import { sendToAllExtensions } from './extensions';
 import { clearBrowsingData } from '~/main/clearBrowsingData'
 
 declare const global: any;

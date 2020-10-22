@@ -1,11 +1,13 @@
 import { session } from 'electron'
 
-export const clearBrowsingData = () => {
+export const clearBrowsingData = async () => {
   console.log('----------- clearBrowsingData ----------------')
   const ses = session.fromPartition('persist:view')
-  ses.clearCache((err: any) => {
-    if (err) console.error(err)
-  })
+  try {
+    await ses.clearCache()
+  } catch (e) {
+    console.error(e)
+  }
 
   ses.clearStorageData({
     storages: [

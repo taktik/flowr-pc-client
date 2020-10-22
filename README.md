@@ -83,6 +83,15 @@ You should re-enable it afterwards with:
 $ sudo spctl --master-enable
 ```
 
+##### getUserMedia (on OSX)
+VSCode terminal does not have enough permission to request access to camera capabilities.
+Using the native terminal does the trick.
+A reference to this issue can be found [here](https://github.com/electron/electron/issues/14801#issuecomment-615219188)
+
+```
+DOMException: Could not start video source
+```
+
 #### Translation
 
 The browser is available in English (default) and French. 

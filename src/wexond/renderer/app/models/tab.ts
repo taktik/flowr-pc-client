@@ -13,6 +13,7 @@ import {
 import { closeWindow, getColorBrightness } from '../utils';
 import { colors } from '~/renderer/constants';
 import { makeId } from '~/shared/utils/string';
+import { IpcRendererEvent } from 'electron/main'
 
 let id = 1;
 
@@ -190,14 +191,11 @@ export class Tab {
     ipcRenderer.on(
       `load-commit-${this.id}`,
       (
-        e: any,
-        event: any,
-        url: string,
-        isInPlace: boolean,
+        e: IpcRendererEvent,
         isMainFrame: boolean,
       ) => {
         if (isMainFrame) {
-          this.blockedAds = 0;
+          this.blockedAds = 0
         }
       },
     );
