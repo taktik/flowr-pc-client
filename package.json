@@ -22,7 +22,7 @@
   "scripts": {
     "dev": "cross-env NODE_ENV='dev' node fuse.js",
     "build": "node fuse.js",
-    "setup": "npm install && npm run install-app-deps && npm run install-widevine && npm run copy-header && npm run build",
+    "setup": "npm install && npm run install-app-deps && npm run build",
     "setup-win": "npm install && npm run install-app-deps && npm run install-widevine && npm run copy-header-win && npm run build",
     "start": "cross-env ENV='dev' electron . --inspect=127.0.0.1:3001",
     "compile-win32": "electron-builder -w",
@@ -56,7 +56,7 @@
     "@types/styled-components": "4.1.14",
     "concurrently": "4.1.0",
     "cross-env": "5.2.0",
-    "electron": "10.1.4",
+    "electron": "11.0.0-beta.8",
     "electron-builder": "22.9.1",
     "fuse-box": "3.7.1",
     "husky": "3.0.5",
