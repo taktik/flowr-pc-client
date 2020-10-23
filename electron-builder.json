@@ -8,7 +8,7 @@
     "allowToChangeInstallationDirectory": true
   },
 
-  "asar": true,
+  "asar": false,
   "directories": {
     "output": "dist",
     "buildResources": "static/app-icons"
