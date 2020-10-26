@@ -97,6 +97,7 @@ export class FlowrFfmpeg {
       .outputOptions(
         '-movflags empty_moov+omit_tfhd_offset+frag_keyframe+default_base_moof+faststart',
       )
+      .outputOption('-c:v copy')
       .on('start', commandLine => {
         console.log('Spawned Ffmpeg with command: ', commandLine)
       })
