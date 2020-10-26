@@ -123,7 +123,7 @@ export class ViewManager {
     const view = this.views[tabId];
     this.selectedId = tabId;
 
-    if (!view || view.isDestroyed()) {
+    if (!view || view.webContents?.isDestroyed()) {
       this.destroy(tabId);
       appWindow.setBrowserView(null);
       return;
@@ -178,7 +178,7 @@ export class ViewManager {
   public destroy(tabId: number) {
     const view = this.views[tabId];
 
-    if (!view || view.isDestroyed()) {
+    if (!view || view.webContents?.isDestroyed()) {
       delete this.views[tabId];
       return;
     }
@@ -187,7 +187,7 @@ export class ViewManager {
       appWindow.setBrowserView(null);
     }
 
-    view.destroy();
+    view.webContents?.destroy();
 
     delete this.views[tabId];
   }

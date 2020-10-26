@@ -359,7 +359,7 @@ export class View extends BrowserView {
   }
 
   public updateNavigationState = () => {
-    if (this.isDestroyed()) return
+    if (!this.webContents || this.webContents.isDestroyed()) return
 
     if (appWindow.viewManager.selectedId === this.tabId) {
       appWindow.webContents.send('update-navigation-state', {
