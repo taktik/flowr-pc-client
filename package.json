@@ -20,9 +20,9 @@
     "url": "git+https://github.com/taktik/flowr-desktop.git"
   },
   "scripts": {
-    "dev": "cross-env NODE_ENV='dev' npm run build && serve ./build -p 4444",
+    "dev": "cross-env NODE_ENV='dev' webpack --config webpack.main.js && webpack serve --config webpack.renderers.js",
     "build": "webpack --config webpack.config.js",
-    "setup": "npm install && npm run install-app-deps && npm run install-widevine && npm run copy-header && npm run build",
+    "setup": "npm install && npm run install-app-deps && npm run build",
     "setup-win": "npm install && npm run install-app-deps && npm run install-widevine && npm run copy-header-win && npm run build",
     "start": "cross-env ENV='dev' electron . --inspect=127.0.0.1:3001",
     "compile-win32": "electron-builder -w",
@@ -79,8 +79,8 @@
     "typescript": "3.7.4",
     "typescript-plugin-styled-components": "1.4.2",
     "url-loader": "^4.1.0",
-    "webpack": "^4.44.2",
-    "webpack-cli": "^3.3.12",
+    "webpack": "^5.3.1",
+    "webpack-cli": "^4.1.0",
     "webpack-dev-server": "^3.11.0"
   },
   "dependencies": {

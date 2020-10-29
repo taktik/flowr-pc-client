@@ -54,7 +54,7 @@ async function main() {
   })
 
   async function onReady() {
-    clearBrowsingData()
+    await clearBrowsingData()
     app.on('activate', async () => {
       if (flowrWindow === null) {
         await initFlowr()
@@ -69,6 +69,7 @@ async function main() {
     })
 
     ipcMain.on('open-browser', async (event: Event, options: any) => {
+      console.log('OPEN BROWSER OPTIONS', options)
       if (wexondWindow === null) {
         flowrStore = flowrStore || initFlowrStore()
         wexondWindow = await createWexondWindow(options, flowrWindow || undefined, buildBrowserWindowConfig(flowrStore, {}))

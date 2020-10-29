@@ -50,6 +50,7 @@ export class ViewManager {
       },
       'browserview-call': async (e: any, data: any) => {
         const view = this.views[data.tabId]
+        if (!view) return
         let scope: any = view
 
         if (data.scope && data.scope.trim() !== '') {

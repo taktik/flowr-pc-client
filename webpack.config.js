@@ -182,28 +182,23 @@ module.exports = async (env, argv) => {
             }),
         ]
     }
-    const frontendPreload = {
-        entry: {
-            exportNode: `./src/frontend/preloads/exportNode.ts`
-        },
-        output,
-        target: 'electron-preload',
-        resolve,
-        mode,
-        optimization,
-        module,
+
+    function preload(name, path) {
+        return {
+            entry: {
+                [name]: path
+            },
+            output,
+            target: 'electron-preload',
+            resolve,
+            mode,
+            optimization,
+            module,
+        }
     }
-    const wexondPreload = {
-        entry: {
-            'wexond-preload': `./src/wexond/preloads/wexond-preload.ts`
-        },
-        output,
-        target: 'electron-preload',
-        resolve,
-        mode,
-        optimization,
-        module,
-    }
+    const frontendPreload = preload('exportNode', './src/frontend/preloads/exportNode.ts')
+    const viewPreload = preload('view-preload', './src/wexond/preloads/view-preload.ts')
+    const backgroundPreload = preload('background-preload', './src/wexond/preloads/background-preload.ts')
 
     function addApp(name, fileType) {
         const renderer = {
@@ -240,7 +235,13 @@ module.exports = async (env, argv) => {
         entries.push(renderer, preload)
     }
     
-    entries.push(wexondMain, wexondRenderer, frontendPreload, wexondPreload)
+    entries.push(
+        wexondMain,
+        wexondRenderer,
+        viewPreload,
+        backgroundPreload,
+        frontendPreload,
+    )
     addApp('FlowrPhone', 'tsx')
     addApp('keyboard', 'ts')
 

@@ -57,11 +57,15 @@ app.on('window-all-closed', () => {
   }
 });
 
-export async function createWexondWindow(wexondOptions: WexondOptions, parentWindow?: BrowserWindow, defaultBrowserWindow: BrowserWindowConstructorOptions = {}): AppWindow {
+export async function createWexondWindow(wexondOptions: WexondOptions, parentWindow?: BrowserWindow, defaultBrowserWindow: BrowserWindowConstructorOptions = {}): Promise<AppWindow> {
   appWindow = new AppWindow(wexondOptions, parentWindow, defaultBrowserWindow);
   appWindow.on('close', () => {
     appWindow = null
   })
+  appWindow.webContents.on('before-input-event', () => {
+    console.log('A KEY EVENT WAS CAUUUUUUUUUGHT HERE')
+  })
+
   session
     .fromPartition('persist:view')
     .on('will-download', (event, item, webContents) => {

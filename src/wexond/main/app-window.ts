@@ -117,7 +117,7 @@ export class AppWindow extends KeyboardMixin(BrowserWindow) {
 
     if (process.env.ENV === 'dev') {
       this.webContents.openDevTools({ mode: 'detach' });
-      this.loadURL(`http://localhost:4444/app.html?${param}`);
+      this.loadURL(`http://localhost:4444/app.html`);
     } else {
       this.loadURL(join('file://', app.getAppPath(), `build/app.html?${param}`));
     }

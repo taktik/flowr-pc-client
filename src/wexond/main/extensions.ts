@@ -62,7 +62,7 @@ export const startBackgroundPage = async (extension: Extension) => {
       partition: 'persist:wexond_extension',
       isBackgroundPage: true,
       commandLineSwitches: ['--background-page'],
-      preload: `${app.getAppPath()}/build/background-preload.js`,
+      preload: `${app.getAppPath()}/background-preload.js`,
       webPreferences: {
         webSecurity: false,
         nodeIntegration: false,

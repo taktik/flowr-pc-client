@@ -4,7 +4,7 @@ import { buildApplicationPreloadPath, buildFileUrl } from '../../application-man
 function buildPositionFromParents(parentRectangle: Rectangle): Rectangle {
   const { width } = screen.getPrimaryDisplay().workAreaSize
   const w = Math.round(.6 * width)
-  const h = Math.round(w / 4)
+  const h = Math.round(w / 3)
   return {
     width: w,
     height: h,
@@ -14,6 +14,8 @@ function buildPositionFromParents(parentRectangle: Rectangle): Rectangle {
 }
 
 export class KeyboardWindow extends BrowserWindow {
+  capsLock: boolean = false
+
   constructor(private parent: BrowserWindow) {
     super({
       parent,
@@ -49,14 +51,14 @@ export class KeyboardWindow extends BrowserWindow {
     }
   }
 
-  onKeyPress(_: IpcMainEvent, keyCode: string) {
+  onKeyPress(_: IpcMainEvent, keyCode: string): void {
     const keyDown = this.makeEvent('keyDown', keyCode)
     const char = this.makeEvent('char', keyCode)
     this.parent.webContents.sendInputEvent(keyDown)
     this.parent.webContents.sendInputEvent(char)
   }
 
-  onKeyUp(_: IpcMainEvent, keyCode: string) {
+  onKeyUp(_: IpcMainEvent, keyCode: string): void {
     const keyUp = this.makeEvent('keyUp', keyCode)
     this.parent.webContents.sendInputEvent(keyUp)
   }
