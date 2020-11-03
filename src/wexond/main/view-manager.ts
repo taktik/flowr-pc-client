@@ -1,33 +1,34 @@
-import { ipcMain, session } from 'electron';
-import { TOOLBAR_HEIGHT } from '~/renderer/app/constants/design';
-import { appWindow, log } from '.';
-import { View } from './view';
-import { sendToAllExtensions } from './extensions';
+import { ipcMain, session } from 'electron'
+import { TOOLBAR_HEIGHT } from '~/renderer/app/constants/design'
+import { appWindow } from '.'
+import { View } from './view'
 import { clearBrowsingData } from '~/main/clearBrowsingData'
+import { watchForInactivity } from '../../inactivity/window'
+import { IInactivityConfig } from '../../inactivity/utils'
 
-declare const global: any;
+declare const global: any
 
-global.viewsMap = {};
+global.viewsMap = {}
 
 export class ViewManager {
-  public views: { [key: number]: View } = {};
-  public selectedId = 0;
-  public _fullscreen = false;
+  public views: { [key: number]: View } = {}
+  public selectedId = 0
+  public _fullscreen = false
 
-  public isHidden = false;
+  public isHidden = false
 
   public get fullscreen() {
-    return this._fullscreen;
+    return this._fullscreen
   }
 
   public set fullscreen(val: boolean) {
-    this._fullscreen = val;
-    this.fixBounds();
+    this._fullscreen = val
+    this.fixBounds()
   }
 
   private readonly _ipcEvents: {[key: string]: (...args: any[]) => void}
 
-  constructor() {
+  constructor(private inactivityConfig?: IInactivityConfig) {
     this._ipcEvents = {
       'browserview-create': (e: Electron.IpcMessageEvent, { tabId, url }: any) => {
         this.create(tabId, url)
@@ -60,7 +61,7 @@ export class ViewManager {
           }
         }
 
-        let result = scope.apply(view.webContents, data.args);
+        let result = scope.apply(view.webContents, data.args)
 
         if (result instanceof Promise) {
           result = await result
@@ -81,20 +82,20 @@ export class ViewManager {
 
     setInterval(() => {
       for (const key in this.views) {
-        const view = this.views[key];
-        const title = view.webContents.getTitle();
-        const url = view.webContents.getURL();
+        const view = this.views[key]
+        const title = view.webContents.getTitle()
+        const url = view.webContents.getURL()
 
         if (title !== view.title) {
           appWindow.webContents.send(`browserview-data-updated-${key}`, {
             title,
             url,
-          });
-          view.url = url;
-          view.title = title;
+          })
+          view.url = url
+          view.title = title
         }
       }
-    }, 200);
+    }, 200)
 
     session.fromPartition('persist:view').on('will-download', (event) => {
       event.preventDefault()
@@ -102,13 +103,26 @@ export class ViewManager {
   }
 
   public get selected() {
-    return this.views[this.selectedId];
+    return this.views[this.selectedId]
   }
 
   public create(tabId: number, url: string) {
-    const view = new View(tabId, url);
-    this.views[tabId] = view;
-    global.viewsMap[view.id] = tabId;
+    const view = new View(tabId, url)
+    this.views[tabId] = view
+    global.viewsMap[view.id] = tabId
+
+    if (this.inactivityConfig) {
+      const { timeout, callback } = this.inactivityConfig
+      try {
+        watchForInactivity(view, timeout, async (browserWindow) => {
+          if (browserWindow.id === this.selectedId) {
+            callback()
+          }
+        })
+      } catch (e) {
+        console.error(e)
+      }
+    }
   }
 
   public clear() {
@@ -122,82 +136,82 @@ export class ViewManager {
   }
 
   public select(tabId: number) {
-    const view = this.views[tabId];
-    this.selectedId = tabId;
+    const view = this.views[tabId]
+    this.selectedId = tabId
 
     if (!view || view.isDestroyed()) {
-      this.destroy(tabId);
-      appWindow.setBrowserView(null);
-      return;
+      this.destroy(tabId)
+      appWindow.setBrowserView(null)
+      return
     }
 
-    if (this.isHidden) return;
+    if (this.isHidden) return
 
-    appWindow.setBrowserView(view);
+    appWindow.setBrowserView(view)
 
-    const currUrl = view.webContents.getURL();
+    const currUrl = view.webContents.getURL()
 
     if (
       (currUrl === '' && view.homeUrl === 'about:blank') ||
       currUrl === 'about:blank'
     ) {
-      appWindow.webContents.focus();
+      appWindow.webContents.focus()
     } else {
-      view.webContents.focus();
+      view.webContents.focus()
     }
 
-    this.fixBounds();
+    this.fixBounds()
   }
 
   public fixBounds() {
-    const view = this.views[this.selectedId];
+    const view = this.views[this.selectedId]
 
-    if (!view) return;
+    if (!view) return
 
-    const { width, height } = appWindow.getContentBounds();
+    const { width, height } = appWindow.getContentBounds()
     view.setBounds({
       x: 0,
       y: this.fullscreen ? 0 : TOOLBAR_HEIGHT + 1,
       width,
       height: this.fullscreen ? height : height - TOOLBAR_HEIGHT,
-    });
+    })
     view.setAutoResize({
       width: true,
       height: true,
-    });
+    })
   }
 
   public hideView() {
-    this.isHidden = true;
-    appWindow.setBrowserView(null);
+    this.isHidden = true
+    appWindow.setBrowserView(null)
   }
 
   public showView() {
-    this.isHidden = false;
-    this.select(this.selectedId);
+    this.isHidden = false
+    this.select(this.selectedId)
   }
 
   public destroy(tabId: number) {
-    const view = this.views[tabId];
+    const view = this.views[tabId]
 
     if (!view || view.isDestroyed()) {
-      delete this.views[tabId];
-      return;
+      delete this.views[tabId]
+      return
     }
 
     if (appWindow && appWindow.getBrowserView() === view) {
-      appWindow.setBrowserView(null);
+      appWindow.setBrowserView(null)
     }
 
-    view.destroy();
+    view.destroy()
 
-    delete this.views[tabId];
+    delete this.views[tabId]
   }
 
   sendToAll(name: string, ...args: any[]) {
     for (const key in this.views) {
-      const view = this.views[key];
-      view.webContents.send(name, ...args);
+      const view = this.views[key]
+      view.webContents.send(name, ...args)
     }
   }
 }

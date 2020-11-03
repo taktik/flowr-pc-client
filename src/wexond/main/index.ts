@@ -62,9 +62,6 @@ export async function createWexondWindow(wexondOptions: WexondOptions, parentWin
   appWindow.on('close', () => {
     appWindow = null
   })
-  appWindow.webContents.on('before-input-event', () => {
-    console.log('A KEY EVENT WAS CAUUUUUUUUUGHT HERE')
-  })
 
   session
     .fromPartition('persist:view')

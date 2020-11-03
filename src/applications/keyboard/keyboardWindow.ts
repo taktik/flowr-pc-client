@@ -1,4 +1,4 @@
-import { BrowserWindow, ipcMain, IpcMainEvent, KeyboardInputEvent, screen, Rectangle } from 'electron'
+import { BrowserWindow, ipcMain, IpcMainEvent, KeyboardInputEvent, screen, Rectangle, WebContents } from 'electron'
 import { buildApplicationPreloadPath, buildFileUrl } from '../../application-manager/helpers'
 
 function buildPositionFromParents(parentRectangle: Rectangle): Rectangle {
@@ -15,6 +15,11 @@ function buildPositionFromParents(parentRectangle: Rectangle): Rectangle {
 
 export class KeyboardWindow extends BrowserWindow {
   capsLock: boolean = false
+
+  get webContentsToSend(): WebContents {
+    const browserView = this.parent.getBrowserView()
+    return browserView?.webContents ?? this.parent.webContents
+  }
 
   constructor(private parent: BrowserWindow) {
     super({
@@ -54,12 +59,12 @@ export class KeyboardWindow extends BrowserWindow {
   onKeyPress(_: IpcMainEvent, keyCode: string): void {
     const keyDown = this.makeEvent('keyDown', keyCode)
     const char = this.makeEvent('char', keyCode)
-    this.parent.webContents.sendInputEvent(keyDown)
-    this.parent.webContents.sendInputEvent(char)
+    this.webContentsToSend.sendInputEvent(keyDown)
+    this.webContentsToSend.sendInputEvent(char)
   }
 
   onKeyUp(_: IpcMainEvent, keyCode: string): void {
     const keyUp = this.makeEvent('keyUp', keyCode)
-    this.parent.webContents.sendInputEvent(keyUp)
+    this.webContentsToSend.sendInputEvent(keyUp)
   }
 }

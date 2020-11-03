@@ -1,4 +1,4 @@
-import { windowManager, Window } from 'node-window-manager';
+import { Window } from 'node-window-manager';
 import mouseEvents from 'mouse-hooks';
 import { appWindow } from '..';
 
@@ -32,7 +32,7 @@ export class ProcessWindow extends Window {
           height: this.initialBounds.height,
         });
 
-        appWindow.webContents.send('remove-tab', this.handle);
+        appWindow.webContents.send('remove-tab', this.id);
       }, 50);
     });
   }

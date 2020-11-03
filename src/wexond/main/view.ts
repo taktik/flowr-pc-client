@@ -1,197 +1,198 @@
 import {
   BrowserView,
-  app,
+  // app,
   Menu,
   nativeImage,
   clipboard,
-  BrowserWindow,
-  BrowserViewConstructorOptions,
+  // BrowserWindow,
+  // BrowserViewConstructorOptions,
 } from 'electron'
 import { appWindow } from '.'
 import { sendToAllExtensions } from './extensions'
 import { engine } from './services/web-request'
 import { settings } from './index'
 import { parse } from 'tldts'
+import { buildPreloadPath } from '../../common/preload'
 
-function BrowserWindowExtend(electronClass: BrowserWindow) {
-  return class implements BrowserWindow {
-    private _browserWindow: BrowserWindow
+// function BrowserWindowExtend(electronClass: BrowserWindow) {
+//   return class implements BrowserWindow {
+//     private _browserWindow: BrowserWindow
 
-    constructor(options: BrowserViewConstructorOptions) {
-      this._browserWindow = new BrowserWindow(options)
-      this.on = this._browserWindow.on.bind(this._browserWindow)
-      this.once = this._browserWindow.once.bind(this._browserWindow)
-      this.removeListener = this._browserWindow.removeListener.bind(this._browserWindow)
+//     constructor(options: BrowserViewConstructorOptions) {
+//       this._browserWindow = new BrowserWindow(options)
+//       this.on = this._browserWindow.on.bind(this._browserWindow)
+//       this.once = this._browserWindow.once.bind(this._browserWindow)
+//       this.removeListener = this._browserWindow.removeListener.bind(this._browserWindow)
 
-      Object.keys(this._browserWindow).forEach((key: keyof BrowserWindow) => {
-        (this as any)[key] = this._browserWindow[key]
-      })
-    }
-    on: (...args: any[]) => any
-    once: (...args: any[]) => any
-    addListener: (...args: any[]) => any
-    removeListener: (...args: any[]) => any
-    addBrowserView(browserView: BrowserView): void
-    addTabbedWindow(browserWindow: BrowserWindow): void
-    blur(): void
-    blurWebView(): void
-    capturePage(rect?: Electron.Rectangle): Promise<Electron.NativeImage>
-    center(): void
-    close(): void
-    closeFilePreview(): void
-    destroy(): void
-    flashFrame(flag: boolean): void
-    focus(): void
-    focusOnWebView(): void
-    getBackgroundColor(): string
-    getBounds(): Electron.Rectangle
-    getBrowserView(): BrowserView
-    getBrowserViews(): BrowserView[]
-    getChildWindows(): BrowserWindow[]
-    getContentBounds(): Electron.Rectangle
-    getContentSize(): number[]
-    getMaximumSize(): number[]
-    getMediaSourceId(): string
-    getMinimumSize(): number[]
-    getNativeWindowHandle(): Buffer
-    getNormalBounds(): Electron.Rectangle
-    getOpacity(): number
-    getParentWindow(): BrowserWindow
-    getPosition(): number[]
-    getRepresentedFilename(): string
-    getSize(): number[]
-    getTitle(): string
-    getTrafficLightPosition(): Electron.Point
-    hasShadow(): boolean
-    hide(): void
-    hookWindowMessage(message: number, callback: () => void): void
-    isAlwaysOnTop(): boolean
-    isClosable(): boolean
-    isDestroyed(): boolean
-    isDocumentEdited(): boolean
-    isEnabled(): boolean
-    isFocused(): boolean
-    isFullScreen(): boolean
-    isFullScreenable(): boolean
-    isKiosk(): boolean
-    isMaximizable(): boolean
-    isMaximized(): boolean
-    isMenuBarAutoHide(): boolean
-    isMenuBarVisible(): boolean
-    isMinimizable(): boolean
-    isMinimized(): boolean
-    isModal(): boolean
-    isMovable(): boolean
-    isNormal(): boolean
-    isResizable(): boolean
-    isSimpleFullScreen(): boolean
-    isVisible(): boolean
-    isVisibleOnAllWorkspaces(): boolean
-    isWindowMessageHooked(message: number): boolean
-    loadFile(filePath: string, options?: Electron.LoadFileOptions): Promise<void>
-    loadURL(url: string, options?: Electron.LoadURLOptions): Promise<void>
-    maximize(): void
-    mergeAllWindows(): void
-    minimize(): void
-    moveAbove(mediaSourceId: string): void
-    moveTabToNewWindow(): void
-    moveTop(): void
-    previewFile(path: string, displayName?: string): void
-    reload(): void
-    removeBrowserView(browserView: BrowserView): void
-    removeMenu(): void
-    restore(): void
-    selectNextTab(): void
-    selectPreviousTab(): void
-    setAlwaysOnTop(flag: boolean, level?: 'normal' | 'floating' | 'torn-off-menu' | 'modal-panel' | 'main-menu' | 'status' | 'pop-up-menu' | 'screen-saver', relativeLevel?: number): void
-    setAppDetails(options: Electron.AppDetailsOptions): void
-    setAspectRatio(aspectRatio: number, extraSize?: Electron.Size): void
-    setAutoHideCursor(autoHide: boolean): void
-    setAutoHideMenuBar(hide: boolean): void
-    setBackgroundColor(backgroundColor: string): void
-    setBounds(bounds: Partial<Electron.Rectangle>, animate?: boolean): void
-    setBrowserView(browserView: BrowserView): void
-    setClosable(closable: boolean): void
-    setContentBounds(bounds: Electron.Rectangle, animate?: boolean): void
-    setContentProtection(enable: boolean): void
-    setContentSize(width: number, height: number, animate?: boolean): void
-    setDocumentEdited(edited: boolean): void
-    setEnabled(enable: boolean): void
-    setFocusable(focusable: boolean): void
-    setFullScreen(flag: boolean): void
-    setFullScreenable(fullscreenable: boolean): void
-    setHasShadow(hasShadow: boolean): void
-    setIcon(icon: string | Electron.NativeImage): void
-    setIgnoreMouseEvents(ignore: boolean, options?: Electron.IgnoreMouseEventsOptions): void
-    setKiosk(flag: boolean): void
-    setMaximizable(maximizable: boolean): void
-    setMaximumSize(width: number, height: number): void
-    setMenu(menu: Menu): void
-    setMenuBarVisibility(visible: boolean): void
-    setMinimizable(minimizable: boolean): void
-    setMinimumSize(width: number, height: number): void
-    setMovable(movable: boolean): void
-    setOpacity(opacity: number): void
-    setOverlayIcon(overlay: Electron.NativeImage, description: string): void
-    setParentWindow(parent: BrowserWindow): void
-    setPosition(x: number, y: number, animate?: boolean): void
-    setProgressBar(progress: number, options?: Electron.ProgressBarOptions): void
-    setRepresentedFilename(filename: string): void
-    setResizable(resizable: boolean): void
-    setShape(rects: Electron.Rectangle[]): void
-    setSheetOffset(offsetY: number, offsetX?: number): void
-    setSimpleFullScreen(flag: boolean): void
-    setSize(width: number, height: number, animate?: boolean): void
-    setSkipTaskbar(skip: boolean): void
-    setThumbarButtons(buttons: Electron.ThumbarButton[]): boolean
-    setThumbnailClip(region: Electron.Rectangle): void
-    setThumbnailToolTip(toolTip: string): void
-    setTitle(title: string): void
-    setTouchBar(touchBar: Electron.TouchBar): void
-    setTrafficLightPosition(position: Electron.Point): void
-    setVibrancy(type: 'appearance-based' | 'light' | 'dark' | 'titlebar' | 'selection' | 'menu' | 'popover' | 'sidebar' | 'medium-light' | 'ultra-dark' | 'header' | 'sheet' | 'window' | 'hud' | 'fullscreen-ui' | 'tooltip' | 'content' | 'under-window' | 'under-page'): void
-    setVisibleOnAllWorkspaces(visible: boolean, options?: Electron.VisibleOnAllWorkspacesOptions): void
-    setWindowButtonVisibility(visible: boolean): void
-    show(): void
-    showDefinitionForSelection(): void
-    showInactive(): void
-    toggleTabBar(): void
-    unhookAllWindowMessages(): void
-    unhookWindowMessage(message: number): void
-    unmaximize(): void
-    accessibleTitle: string
-    autoHideMenuBar: boolean
-    closable: boolean
-    documentEdited: boolean
-    excludedFromShownWindowsMenu: boolean
-    fullScreen: boolean
-    fullScreenable: boolean
-    id: number
-    kiosk: boolean
-    maximizable: boolean
-    menuBarVisible: boolean
-    minimizable: boolean
-    movable: boolean
-    representedFilename: string
-    resizable: boolean
-    shadow: boolean
-    simpleFullScreen: boolean
-    title: string
-    visibleOnAllWorkspaces: boolean
-    webContents: Electron.WebContents
-    prependListener(event: string | symbol, listener: (...args: any[]) => void): this
-    prependOnceListener(event: string | symbol, listener: (...args: any[]) => void): this
-    off(event: string | symbol, listener: (...args: any[]) => void): this
-    removeAllListeners(event?: string | symbol): this
-    setMaxListeners(n: number): this
-    getMaxListeners(): number
-    listeners(event: string | symbol): Function[]
-    rawListeners(event: string | symbol): Function[]
-    emit(event: string | symbol, ...args: any[]): boolean
-    eventNames(): (string | symbol)[]
-    listenerCount(type: string | symbol): number
-  }
-}
+//       Object.keys(this._browserWindow).forEach((key: keyof BrowserWindow) => {
+//         (this as any)[key] = this._browserWindow[key]
+//       })
+//     }
+//     on: (...args: any[]) => any
+//     once: (...args: any[]) => any
+//     addListener: (...args: any[]) => any
+//     removeListener: (...args: any[]) => any
+//     addBrowserView(browserView: BrowserView): void
+//     addTabbedWindow(browserWindow: BrowserWindow): void
+//     blur(): void
+//     blurWebView(): void
+//     capturePage(rect?: Electron.Rectangle): Promise<Electron.NativeImage>
+//     center(): void
+//     close(): void
+//     closeFilePreview(): void
+//     destroy(): void
+//     flashFrame(flag: boolean): void
+//     focus(): void
+//     focusOnWebView(): void
+//     getBackgroundColor(): string
+//     getBounds(): Electron.Rectangle
+//     getBrowserView(): BrowserView
+//     getBrowserViews(): BrowserView[]
+//     getChildWindows(): BrowserWindow[]
+//     getContentBounds(): Electron.Rectangle
+//     getContentSize(): number[]
+//     getMaximumSize(): number[]
+//     getMediaSourceId(): string
+//     getMinimumSize(): number[]
+//     getNativeWindowHandle(): Buffer
+//     getNormalBounds(): Electron.Rectangle
+//     getOpacity(): number
+//     getParentWindow(): BrowserWindow
+//     getPosition(): number[]
+//     getRepresentedFilename(): string
+//     getSize(): number[]
+//     getTitle(): string
+//     getTrafficLightPosition(): Electron.Point
+//     hasShadow(): boolean
+//     hide(): void
+//     hookWindowMessage(message: number, callback: () => void): void
+//     isAlwaysOnTop(): boolean
+//     isClosable(): boolean
+//     isDestroyed(): boolean
+//     isDocumentEdited(): boolean
+//     isEnabled(): boolean
+//     isFocused(): boolean
+//     isFullScreen(): boolean
+//     isFullScreenable(): boolean
+//     isKiosk(): boolean
+//     isMaximizable(): boolean
+//     isMaximized(): boolean
+//     isMenuBarAutoHide(): boolean
+//     isMenuBarVisible(): boolean
+//     isMinimizable(): boolean
+//     isMinimized(): boolean
+//     isModal(): boolean
+//     isMovable(): boolean
+//     isNormal(): boolean
+//     isResizable(): boolean
+//     isSimpleFullScreen(): boolean
+//     isVisible(): boolean
+//     isVisibleOnAllWorkspaces(): boolean
+//     isWindowMessageHooked(message: number): boolean
+//     loadFile(filePath: string, options?: Electron.LoadFileOptions): Promise<void>
+//     loadURL(url: string, options?: Electron.LoadURLOptions): Promise<void>
+//     maximize(): void
+//     mergeAllWindows(): void
+//     minimize(): void
+//     moveAbove(mediaSourceId: string): void
+//     moveTabToNewWindow(): void
+//     moveTop(): void
+//     previewFile(path: string, displayName?: string): void
+//     reload(): void
+//     removeBrowserView(browserView: BrowserView): void
+//     removeMenu(): void
+//     restore(): void
+//     selectNextTab(): void
+//     selectPreviousTab(): void
+//     setAlwaysOnTop(flag: boolean, level?: 'normal' | 'floating' | 'torn-off-menu' | 'modal-panel' | 'main-menu' | 'status' | 'pop-up-menu' | 'screen-saver', relativeLevel?: number): void
+//     setAppDetails(options: Electron.AppDetailsOptions): void
+//     setAspectRatio(aspectRatio: number, extraSize?: Electron.Size): void
+//     setAutoHideCursor(autoHide: boolean): void
+//     setAutoHideMenuBar(hide: boolean): void
+//     setBackgroundColor(backgroundColor: string): void
+//     setBounds(bounds: Partial<Electron.Rectangle>, animate?: boolean): void
+//     setBrowserView(browserView: BrowserView): void
+//     setClosable(closable: boolean): void
+//     setContentBounds(bounds: Electron.Rectangle, animate?: boolean): void
+//     setContentProtection(enable: boolean): void
+//     setContentSize(width: number, height: number, animate?: boolean): void
+//     setDocumentEdited(edited: boolean): void
+//     setEnabled(enable: boolean): void
+//     setFocusable(focusable: boolean): void
+//     setFullScreen(flag: boolean): void
+//     setFullScreenable(fullscreenable: boolean): void
+//     setHasShadow(hasShadow: boolean): void
+//     setIcon(icon: string | Electron.NativeImage): void
+//     setIgnoreMouseEvents(ignore: boolean, options?: Electron.IgnoreMouseEventsOptions): void
+//     setKiosk(flag: boolean): void
+//     setMaximizable(maximizable: boolean): void
+//     setMaximumSize(width: number, height: number): void
+//     setMenu(menu: Menu): void
+//     setMenuBarVisibility(visible: boolean): void
+//     setMinimizable(minimizable: boolean): void
+//     setMinimumSize(width: number, height: number): void
+//     setMovable(movable: boolean): void
+//     setOpacity(opacity: number): void
+//     setOverlayIcon(overlay: Electron.NativeImage, description: string): void
+//     setParentWindow(parent: BrowserWindow): void
+//     setPosition(x: number, y: number, animate?: boolean): void
+//     setProgressBar(progress: number, options?: Electron.ProgressBarOptions): void
+//     setRepresentedFilename(filename: string): void
+//     setResizable(resizable: boolean): void
+//     setShape(rects: Electron.Rectangle[]): void
+//     setSheetOffset(offsetY: number, offsetX?: number): void
+//     setSimpleFullScreen(flag: boolean): void
+//     setSize(width: number, height: number, animate?: boolean): void
+//     setSkipTaskbar(skip: boolean): void
+//     setThumbarButtons(buttons: Electron.ThumbarButton[]): boolean
+//     setThumbnailClip(region: Electron.Rectangle): void
+//     setThumbnailToolTip(toolTip: string): void
+//     setTitle(title: string): void
+//     setTouchBar(touchBar: Electron.TouchBar): void
+//     setTrafficLightPosition(position: Electron.Point): void
+//     setVibrancy(type: 'appearance-based' | 'light' | 'dark' | 'titlebar' | 'selection' | 'menu' | 'popover' | 'sidebar' | 'medium-light' | 'ultra-dark' | 'header' | 'sheet' | 'window' | 'hud' | 'fullscreen-ui' | 'tooltip' | 'content' | 'under-window' | 'under-page'): void
+//     setVisibleOnAllWorkspaces(visible: boolean, options?: Electron.VisibleOnAllWorkspacesOptions): void
+//     setWindowButtonVisibility(visible: boolean): void
+//     show(): void
+//     showDefinitionForSelection(): void
+//     showInactive(): void
+//     toggleTabBar(): void
+//     unhookAllWindowMessages(): void
+//     unhookWindowMessage(message: number): void
+//     unmaximize(): void
+//     accessibleTitle: string
+//     autoHideMenuBar: boolean
+//     closable: boolean
+//     documentEdited: boolean
+//     excludedFromShownWindowsMenu: boolean
+//     fullScreen: boolean
+//     fullScreenable: boolean
+//     id: number
+//     kiosk: boolean
+//     maximizable: boolean
+//     menuBarVisible: boolean
+//     minimizable: boolean
+//     movable: boolean
+//     representedFilename: string
+//     resizable: boolean
+//     shadow: boolean
+//     simpleFullScreen: boolean
+//     title: string
+//     visibleOnAllWorkspaces: boolean
+//     webContents: Electron.WebContents
+//     prependListener(event: string | symbol, listener: (...args: any[]) => void): this
+//     prependOnceListener(event: string | symbol, listener: (...args: any[]) => void): this
+//     off(event: string | symbol, listener: (...args: any[]) => void): this
+//     removeAllListeners(event?: string | symbol): this
+//     setMaxListeners(n: number): this
+//     getMaxListeners(): number
+//     listeners(event: string | symbol): Function[]
+//     rawListeners(event: string | symbol): Function[]
+//     emit(event: string | symbol, ...args: any[]): boolean
+//     eventNames(): (string | symbol)[]
+//     listenerCount(type: string | symbol): number
+//   }
+// }
 
 export class View extends BrowserView {
   public title: string = '';
@@ -202,7 +203,7 @@ export class View extends BrowserView {
   constructor(id: number, url: string) {
     super({
       webPreferences: {
-        preload: `${app.getAppPath()}/view-preload.js`,
+        preload: buildPreloadPath('view-preload.js'),
         nodeIntegration: false,
         additionalArguments: [`--tab-id=${id}`],
         contextIsolation: true,

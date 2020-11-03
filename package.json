@@ -21,7 +21,7 @@
   },
   "scripts": {
     "dev": "cross-env NODE_ENV='dev' webpack --config webpack.main.js && webpack serve --config webpack.renderers.js",
-    "build": "webpack --config webpack.config.js",
+    "build": "webpack --config webpack.main.js --env production && webpack --config webpack.renderers.js --env production",
     "setup": "npm install && npm run install-app-deps && npm run build",
     "setup-win": "npm install && npm run install-app-deps && npm run install-widevine && npm run copy-header-win && npm run build",
     "start": "cross-env ENV='dev' electron . --inspect=127.0.0.1:3001",

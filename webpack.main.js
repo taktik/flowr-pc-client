@@ -21,6 +21,7 @@ module.exports = async (env) => {
                 os: 'commonjs os',
                 process: 'commonjs process',
                 leveldown: 'commonjs leveldown',
+                'node-window-manager': 'commonjs node-window-manager',
             },
         }
 }

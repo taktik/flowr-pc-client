@@ -1,52 +1,52 @@
 import {
   webContents,
-  app,
   WebContents,
   ipcMain,
-  IpcMessageEvent,
-} from 'electron';
-import * as fs from 'fs';
-import { format } from 'url';
-import { resolve } from 'path';
-import { promisify } from 'util';
+  IpcMainEvent,
+} from 'electron'
+import * as fs from 'fs'
+import { format } from 'url'
+import { resolve } from 'path'
+import { promisify } from 'util'
 
-import { getPath } from '~/shared/utils/paths';
-import { Extension, StorageArea } from './models';
-import { IpcExtension } from '~/shared/models';
-import { appWindow } from '.';
+import { getPath } from '~/shared/utils/paths'
+import { Extension, StorageArea } from './models'
+import { IpcExtension } from '~/shared/models'
+import { appWindow } from '.'
+import { buildPreloadPath } from '../../common/preload'
 
-const readFile = promisify(fs.readFile);
-const readdir = promisify(fs.readdir);
-const stat = promisify(fs.stat);
-const exists = promisify(fs.exists);
+const readFile = promisify(fs.readFile)
+const readdir = promisify(fs.readdir)
+const stat = promisify(fs.stat)
+const exists = promisify(fs.exists)
 
-export const extensions: { [key: string]: Extension } = {};
+export const extensions: { [key: string]: Extension } = {}
 
 export const getIpcExtension = (id: string): IpcExtension => {
   const ipcExtension: Extension = {
     ...extensions[id],
-  };
+  }
 
-  delete ipcExtension.databases;
+  delete ipcExtension.databases
 
-  return ipcExtension;
-};
+  return ipcExtension
+}
 
 export const startBackgroundPage = async (extension: Extension) => {
-  const { manifest, path, id } = extension;
+  const { manifest, path, id } = extension
 
   if (manifest.background) {
-    const { background } = manifest;
-    const { page, scripts } = background;
+    const { background } = manifest
+    const { page, scripts } = background
 
-    let html = Buffer.from('');
-    let fileName: string;
+    let html = Buffer.from('')
+    let fileName: string
 
     if (page) {
-      fileName = page;
-      html = await readFile(resolve(path, page));
+      fileName = page
+      html = await readFile(resolve(path, page))
     } else if (scripts) {
-      fileName = 'generated.html';
+      fileName = 'generated.html'
       html = Buffer.from(
         `<html>
           <body>${scripts
@@ -55,29 +55,29 @@ export const startBackgroundPage = async (extension: Extension) => {
           </body>
         </html>`,
         'utf8',
-      );
+      )
     }
 
     const contents: WebContents = (webContents as any).create({
       partition: 'persist:wexond_extension',
       isBackgroundPage: true,
       commandLineSwitches: ['--background-page'],
-      preload: `${app.getAppPath()}/background-preload.js`,
+      preload: buildPreloadPath('background-preload.js'),
       webPreferences: {
         webSecurity: false,
         nodeIntegration: false,
         contextIsolation: false,
       },
-    });
+    })
 
     extension.backgroundPage = {
       html,
       fileName,
       webContentsId: contents.id,
-    };
+    }
 
     if (process.env.ENV === 'dev') {
-      contents.openDevTools({ mode: 'detach' });
+      contents.openDevTools({ mode: 'detach' })
     }
 
     contents.loadURL(
@@ -87,36 +87,36 @@ export const startBackgroundPage = async (extension: Extension) => {
         hostname: id,
         pathname: fileName,
       }),
-    );
+    )
   }
-};
+}
 
 export const loadExtensions = async () => {
-  const extensionsPath = getPath('extensions');
-  const files = await readdir(extensionsPath);
+  const extensionsPath = getPath('extensions')
+  const files = await readdir(extensionsPath)
 
   for (const dir of files) {
-    const extensionPath = resolve(extensionsPath, dir);
-    const stats = await stat(extensionPath);
+    const extensionPath = resolve(extensionsPath, dir)
+    const stats = await stat(extensionPath)
 
     if (stats.isDirectory()) {
-      const manifestPath = resolve(extensionPath, 'manifest.json');
+      const manifestPath = resolve(extensionPath, 'manifest.json')
 
       if (await exists(manifestPath)) {
         const manifest: chrome.runtime.Manifest = JSON.parse(
           await readFile(manifestPath, 'utf8'),
-        );
+        )
 
-        const id = dir.toLowerCase();
+        const id = dir.toLowerCase()
 
         if (extensions[id]) {
-          return;
+          return
         }
 
-        const storagePath = getPath('storage/extensions', id);
-        const local = new StorageArea(resolve(storagePath, 'local'));
-        const sync = new StorageArea(resolve(storagePath, 'sync'));
-        const managed = new StorageArea(resolve(storagePath, 'managed'));
+        const storagePath = getPath('storage/extensions', id)
+        const local = new StorageArea(resolve(storagePath, 'local'))
+        const sync = new StorageArea(resolve(storagePath, 'sync'))
+        const managed = new StorageArea(resolve(storagePath, 'managed'))
 
         const extension: Extension = {
           manifest,
@@ -124,255 +124,255 @@ export const loadExtensions = async () => {
           databases: { local, sync, managed },
           path: extensionPath,
           id,
-        };
+        }
 
-        extensions[id] = extension;
+        extensions[id] = extension
 
         if (typeof manifest.default_locale === 'string') {
           const defaultLocalePath = resolve(
             extensionPath,
             '_locales',
             manifest.default_locale,
-          );
+          )
 
           if (await exists(defaultLocalePath)) {
-            const messagesPath = resolve(defaultLocalePath, 'messages.json');
-            const stats = await stat(messagesPath);
+            const messagesPath = resolve(defaultLocalePath, 'messages.json')
+            const stats = await stat(messagesPath)
 
             if ((await exists(messagesPath)) && !stats.isDirectory()) {
-              const data = await readFile(messagesPath, 'utf8');
-              const locale = JSON.parse(data);
+              const data = await readFile(messagesPath, 'utf8')
+              const locale = JSON.parse(data)
 
-              extension.locale = locale;
+              extension.locale = locale
             }
           }
         }
 
-        startBackgroundPage(extension);
+        startBackgroundPage(extension)
       }
     }
   }
-};
+}
 
-ipcMain.on('get-extension', (e: IpcMessageEvent, id: string) => {
-  e.returnValue = getIpcExtension(id);
-});
+ipcMain.on('get-extension', (e: IpcMainEvent, id: string) => {
+  e.returnValue = getIpcExtension(id)
+})
 
-ipcMain.on('get-extensions', (e: IpcMessageEvent) => {
-  const list = { ...extensions };
+ipcMain.on('get-extensions', (e: IpcMainEvent) => {
+  const list = { ...extensions }
 
   for (const key in list) {
-    list[key] = getIpcExtension(key);
+    list[key] = getIpcExtension(key)
   }
 
-  e.returnValue = list;
-});
+  e.returnValue = list
+})
 
-ipcMain.on('api-tabs-query', (e: Electron.IpcMessageEvent) => {
-  appWindow.webContents.send('api-tabs-query', e.sender.id);
-});
+ipcMain.on('api-tabs-query', (e: IpcMainEvent) => {
+  appWindow.webContents.send('api-tabs-query', e.sender.id)
+})
 
 ipcMain.on(
   'api-tabs-create',
-  (e: IpcMessageEvent, data: chrome.tabs.CreateProperties) => {
-    appWindow.webContents.send('api-tabs-create', data, e.sender.id);
+  (e: IpcMainEvent, data: chrome.tabs.CreateProperties) => {
+    appWindow.webContents.send('api-tabs-create', data, e.sender.id)
   },
-);
+)
 
 ipcMain.on(
   'api-tabs-insertCSS',
-  (e: IpcMessageEvent, tabId: number, details: chrome.tabs.InjectDetails) => {
-    const view = appWindow.viewManager.views[tabId];
+  (e: IpcMainEvent, tabId: number, details: chrome.tabs.InjectDetails) => {
+    const view = appWindow.viewManager.views[tabId]
 
     if (view) {
-      view.webContents.insertCSS(details.code);
-      e.sender.send('api-tabs-insertCSS');
+      view.webContents.insertCSS(details.code)
+      e.sender.send('api-tabs-insertCSS')
     }
   },
-);
+)
 
-ipcMain.on('api-tabs-executeScript', (e: IpcMessageEvent, data: any) => {
-  const { tabId } = data;
-  const view = appWindow.viewManager.views[tabId];
+ipcMain.on('api-tabs-executeScript', (e: IpcMainEvent, data: any) => {
+  const { tabId } = data
+  const view = appWindow.viewManager.views[tabId]
 
   if (view) {
-    view.webContents.send('execute-script-isolated', data, e.sender.id);
+    view.webContents.send('execute-script-isolated', data, e.sender.id)
   }
-});
+})
 
-ipcMain.on('api-runtime-reload', (e: IpcMessageEvent, extensionId: string) => {
-  const { backgroundPage } = extensions[extensionId];
+ipcMain.on('api-runtime-reload', (e: IpcMainEvent, extensionId: string) => {
+  const { backgroundPage } = extensions[extensionId]
 
   if (backgroundPage) {
-    const contents = webContents.fromId(e.sender.id);
-    contents.reload();
+    const contents = webContents.fromId(e.sender.id)
+    contents.reload()
   }
-});
+})
 
 ipcMain.on(
   'api-runtime-connect',
-  async (e: IpcMessageEvent, { extensionId, portId, sender, name }: any) => {
-    const { backgroundPage } = extensions[extensionId];
+  async (e: IpcMainEvent, { extensionId, portId, sender, name }: any) => {
+    const { backgroundPage } = extensions[extensionId]
 
     if (e.sender.id !== backgroundPage.webContentsId) {
-      const view = webContents.fromId(backgroundPage.webContentsId);
+      const view = webContents.fromId(backgroundPage.webContentsId)
 
       if (view) {
         view.send('api-runtime-connect', {
           portId,
           sender,
           name,
-        });
+        })
       }
     }
   },
-);
+)
 
-ipcMain.on('api-runtime-sendMessage', async (e: IpcMessageEvent, data: any) => {
-  const { extensionId } = data;
-  const { backgroundPage } = extensions[extensionId];
+ipcMain.on('api-runtime-sendMessage', async (e: IpcMainEvent, data: any) => {
+  const { extensionId } = data
+  const { backgroundPage } = extensions[extensionId]
 
   if (e.sender.id !== backgroundPage.webContentsId) {
-    const view = webContents.fromId(backgroundPage.webContentsId);
+    const view = webContents.fromId(backgroundPage.webContentsId)
 
     if (view) {
-      view.send('api-runtime-sendMessage', data, e.sender.id);
+      view.send('api-runtime-sendMessage', data, e.sender.id)
     }
   }
-});
+})
 
 ipcMain.on(
   'api-port-postMessage',
-  (e: IpcMessageEvent, { portId, msg }: any) => {
+  (e: IpcMainEvent, { portId, msg }: any) => {
     Object.keys(extensions).forEach(key => {
-      const { backgroundPage } = extensions[key];
+      const { backgroundPage } = extensions[key]
 
       if (e.sender.id !== backgroundPage.webContentsId) {
-        const contents = webContents.fromId(backgroundPage.webContentsId);
-        contents.send(`api-port-postMessage-${portId}`, msg);
+        const contents = webContents.fromId(backgroundPage.webContentsId)
+        contents.send(`api-port-postMessage-${portId}`, msg)
       }
-    });
+    })
 
     for (const key in appWindow.viewManager.views) {
-      const view = appWindow.viewManager.views[key];
+      const view = appWindow.viewManager.views[key]
       if (view.webContents.id !== e.sender.id) {
-        view.webContents.send(`api-port-postMessage-${portId}`, msg);
+        view.webContents.send(`api-port-postMessage-${portId}`, msg)
       }
     }
   },
-);
+)
 
 ipcMain.on(
   'api-storage-operation',
-  (e: IpcMessageEvent, { extensionId, id, area, type, arg }: any) => {
-    const { databases } = extensions[extensionId];
+  (e: IpcMainEvent, { extensionId, id, area, type, arg }: any) => {
+    const { databases } = extensions[extensionId]
 
-    const contents = webContents.fromId(e.sender.id);
-    const msg = `api-storage-operation-${id}`;
+    const contents = webContents.fromId(e.sender.id)
+    const msg = `api-storage-operation-${id}`
 
     if (type === 'get') {
       databases[area].get(arg, d => {
         for (const key in d) {
           if (Buffer.isBuffer(d[key])) {
-            d[key] = JSON.parse(d[key].toString());
+            d[key] = JSON.parse(d[key].toString())
           }
         }
-        contents.send(msg, d);
-      });
+        contents.send(msg, d)
+      })
     } else if (type === 'set') {
       databases[area].set(arg, () => {
-        contents.send(msg);
-      });
+        contents.send(msg)
+      })
     } else if (type === 'clear') {
       databases[area].clear(() => {
-        contents.send(msg);
-      });
+        contents.send(msg)
+      })
     } else if (type === 'remove') {
       databases[area].set(arg, () => {
-        contents.send(msg);
-      });
+        contents.send(msg)
+      })
     }
   },
-);
+)
 
-ipcMain.on('api-alarms-operation', (e: IpcMessageEvent, data: any) => {
-  const { extensionId, type } = data;
-  const contents = webContents.fromId(e.sender.id);
+ipcMain.on('api-alarms-operation', (e: IpcMainEvent, data: any) => {
+  const { extensionId, type } = data
+  const contents = webContents.fromId(e.sender.id)
 
   if (type === 'create') {
-    const extension = extensions[extensionId];
-    const { alarms } = extension;
+    const extension = extensions[extensionId]
+    const { alarms } = extension
 
-    const { name, alarmInfo } = data;
-    const exists = alarms.findIndex(e => e.name === name) !== -1;
+    const { name, alarmInfo } = data
+    const exists = alarms.findIndex(e => e.name === name) !== -1
 
-    e.returnValue = null;
-    if (exists) return;
+    e.returnValue = null
+    if (exists) return
 
-    let scheduledTime = 0;
+    let scheduledTime = 0
 
     if (alarmInfo.when != null) {
-      scheduledTime = alarmInfo.when;
+      scheduledTime = alarmInfo.when
     }
 
     if (alarmInfo.delayInMinutes != null) {
       if (alarmInfo.delayInMinutes < 1) {
         return console.error(
           `Alarm delay is less than minimum of 1 minutes. In released .crx, alarm "${name}" will fire in approximately 1 minutes.`,
-        );
+        )
       }
 
-      scheduledTime = Date.now() + alarmInfo.delayInMinutes * 60000;
+      scheduledTime = Date.now() + alarmInfo.delayInMinutes * 60000
     }
 
     const alarm: chrome.alarms.Alarm = {
       periodInMinutes: alarmInfo.periodInMinutes,
       scheduledTime,
       name,
-    };
+    }
 
-    alarms.push(alarm);
+    alarms.push(alarm)
 
     if (!alarm.periodInMinutes) {
       setTimeout(() => {
-        contents.send('api-emit-event-alarms-onAlarm', alarm);
-      }, alarm.scheduledTime - Date.now());
+        contents.send('api-emit-event-alarms-onAlarm', alarm)
+      }, alarm.scheduledTime - Date.now())
     }
   }
-});
+})
 
 ipcMain.on(
   'api-browserAction-setBadgeText',
-  (e: IpcMessageEvent, ...args: any[]) => {
+  (e: IpcMainEvent, ...args: any[]) => {
     appWindow.webContents.send(
       'api-browserAction-setBadgeText',
       e.sender.id,
       ...args,
-    );
+    )
   },
-);
+)
 
 ipcMain.on(
   'send-to-all-extensions',
-  (e: IpcMessageEvent, msg: string, ...args: any[]) => {
-    sendToAllExtensions(msg, ...args);
-    appWindow.viewManager.sendToAll(msg, ...args);
+  (e: IpcMainEvent, msg: string, ...args: any[]) => {
+    sendToAllExtensions(msg, ...args)
+    appWindow.viewManager.sendToAll(msg, ...args)
   },
-);
+)
 
 ipcMain.on('emit-tabs-event', (e: any, name: string, ...data: any[]) => {
-  appWindow.viewManager.sendToAll(`api-emit-event-tabs-${name}`, ...data);
-  sendToAllExtensions(`api-emit-event-tabs-${name}`, ...data);
-});
+  appWindow.viewManager.sendToAll(`api-emit-event-tabs-${name}`, ...data)
+  sendToAllExtensions(`api-emit-event-tabs-${name}`, ...data)
+})
 
 export const sendToAllExtensions = (msg: string, ...args: any[]) => {
   for (const key in extensions) {
-    const ext = extensions[key];
+    const ext = extensions[key]
 
-    const view = webContents.fromId(ext.backgroundPage.webContentsId);
+    const view = webContents.fromId(ext.backgroundPage.webContentsId)
 
     if (view) {
-      view.send(msg, ...args);
+      view.send(msg, ...args)
     }
   }
-};
+}

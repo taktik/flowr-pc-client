@@ -69,7 +69,6 @@ async function main() {
     })
 
     ipcMain.on('open-browser', async (event: Event, options: any) => {
-      console.log('OPEN BROWSER OPTIONS', options)
       if (wexondWindow === null) {
         flowrStore = flowrStore || initFlowrStore()
         wexondWindow = await createWexondWindow(options, flowrWindow || undefined, buildBrowserWindowConfig(flowrStore, {}))

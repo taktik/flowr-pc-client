@@ -13,15 +13,9 @@ module.exports = (env) => {
     const optimization = getOptimization(mode)
     const baseEntry = {
         app: './src/wexond/renderer/app/index.tsx',
-        exportNode: {
-            import: './src/frontend/preloads/exportNode.ts',
-        },
-        'view-preload': {
-            import: './src/wexond/preloads/view-preload.ts',
-        },
-        'background-preload': {
-            import: './src/wexond/preloads/background-preload.ts',
-        },
+        exportNode: './src/frontend/preloads/exportNode.ts',
+        'view-preload': './src/wexond/preloads/view-preload.ts',
+        'background-preload': './src/wexond/preloads/background-preload.ts',
     }
     const basePlugins = [
         new HtmlWebpackPlugin({
@@ -32,6 +26,7 @@ module.exports = (env) => {
         new HtmlWebpackPlugin({
             template: path.resolve(__dirname, 'static/pages/config.html'),
             filename: 'config.html',
+            chunks: [],
         }),
     ]
     const rendererConfig = {
@@ -65,7 +60,7 @@ module.exports = (env) => {
             },
             [`${name}-preload`]: {
                 import: `./src/applications/${name}/preload.ts`,
-                filename: `${name}/[name].js`,
+                filename: `${name}/preload.js`,
             },
         }
         const plugins = [

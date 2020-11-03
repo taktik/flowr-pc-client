@@ -102,8 +102,6 @@ export class ApplicationManager {
         }
         const registeringPromises: Promise<void>[] = files
           .filter(file => file.isDirectory())
-          // Exclude preloads folder
-          .filter(file => file.name !== 'preloads')
           // Register applications
           .map(file => this.registerApp(file.name, clearStore))
 
