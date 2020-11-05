@@ -1,49 +1,49 @@
-import { observer } from 'mobx-react';
-import * as React from 'react';
+import { observer } from 'mobx-react'
+import * as React from 'react'
 
-import store from '~/renderer/app/store';
-import { StyledToolbar, Buttons, Separator } from './style';
-import { NavigationButtons } from '../NavigationButtons';
-import { Tabbar } from '../Tabbar';
-import ToolbarButton from '../ToolbarButton';
-import { icons, TOOLBAR_ICON_HEIGHT } from '../../constants';
-import { ipcRenderer } from 'electron';
-import BrowserAction from '../BrowserAction';
-import { Find } from '../Find';
-import { backToFlowr } from '~/renderer/app/utils';
+import store from '~/renderer/app/store'
+import { StyledToolbar, Buttons, Separator } from './style'
+import { NavigationButtons } from '../NavigationButtons'
+import { Tabbar } from '../Tabbar'
+import ToolbarButton from '../ToolbarButton'
+import { icons, TOOLBAR_ICON_HEIGHT } from '../../constants'
+import { ipcRenderer } from 'electron'
+import BrowserAction from '../BrowserAction'
+import { Find } from '../Find'
+import { backToFlowr } from '~/renderer/app/utils'
 import { VirtualKeyboardEvent } from '../../../../../barcoKeyboard/events'
+import { Toolbar } from '../../models/toolbar'
 
 const onUpdateClick = () => {
-  ipcRenderer.send('update-install');
-};
+  ipcRenderer.send('update-install')
+}
 
 @observer
 class BrowserActions extends React.Component {
   public render() {
-    const { selectedTabId } = store.tabGroups.currentGroup;
+    const { selectedTabId } = store.tabGroups.currentGroup
 
     return (
       <>
         {selectedTabId &&
           store.extensions.browserActions.map(item => {
             if (item.tabId === selectedTabId) {
-              return <BrowserAction data={item} key={item.extensionId} />;
+              return <BrowserAction data={item} key={item.extensionId} />
             }
-            return null;
+            return null
           })}
       </>
-    );
+    )
   }
 }
 
-export const Toolbar = observer(() => {
-  const { selectedTab } = store.tabs;
+export default observer((data: Toolbar) => {
+  const { selectedTab } = store.tabs
 
-  let isWindow = true; // false
-  let blockedAds: any = '';
+  const isWindow = true // false
+  let blockedAds: any = ''
 
   if (selectedTab) {
-    // isWindow = selectedTab.isWindow
     blockedAds = selectedTab.blockedAds
   }
 
@@ -55,43 +55,54 @@ export const Toolbar = observer(() => {
     ipcRenderer.send(VirtualKeyboardEvent.TOGGLE)
   }
 
+  const buttons: JSX.Element = (<Buttons>
+    <BrowserActions />
+    {store.updateInfo.available && (
+      <ToolbarButton icon={icons.download} onClick={onUpdateClick} />
+    )}
+    {store.extensions.browserActions.length > 0 && <Separator />}
+    {!isWindow && (
+      <BrowserAction
+        size={18}
+        style={{ marginLeft: 0 }}
+        opacity={0.54}
+        data={{
+          badgeBackgroundColor: 'gray',
+          badgeText: blockedAds > 0 ? blockedAds.toString() : '',
+          icon: icons.shield,
+          badgeTextColor: 'white',
+        }}
+      />
+    )}
+    <ToolbarButton
+      disabled={false}
+      size={TOOLBAR_ICON_HEIGHT}
+      icon={icons.home}
+      onClick={onHomePress}
+    />
+    <ToolbarButton
+      disabled={false}
+      size={TOOLBAR_ICON_HEIGHT}
+      icon={icons.keyboard}
+      onClick={onKeyboardPress}
+    />
+  </Buttons>)
+
+  if (data.disableTabs) {
+    return (
+        <StyledToolbar isHTMLFullscreen={store.isHTMLFullscreen}>
+          <NavigationButtons />
+          {buttons}
+        </StyledToolbar>
+    )
+  }
+
   return (
       <StyledToolbar isHTMLFullscreen={store.isHTMLFullscreen}>
         <NavigationButtons />
         <Tabbar />
         <Find />
-        <Buttons>
-          <BrowserActions />
-          {store.updateInfo.available && (
-            <ToolbarButton icon={icons.download} onClick={onUpdateClick} />
-          )}
-          {store.extensions.browserActions.length > 0 && <Separator />}
-          {!isWindow && (
-            <BrowserAction
-              size={18}
-              style={{ marginLeft: 0 }}
-              opacity={0.54}
-              data={{
-                badgeBackgroundColor: 'gray',
-                badgeText: blockedAds > 0 ? blockedAds.toString() : '',
-                icon: icons.shield,
-                badgeTextColor: 'white',
-              }}
-            />
-          )}
-          <ToolbarButton
-            disabled={false}
-            size={TOOLBAR_ICON_HEIGHT}
-            icon={icons.home}
-            onClick={onHomePress}
-          />
-          <ToolbarButton
-            disabled={false}
-            size={TOOLBAR_ICON_HEIGHT}
-            icon={icons.keyboard}
-            onClick={onKeyboardPress}
-          />
-        </Buttons>
+        {buttons}
       </StyledToolbar>
-  );
-});
+  )
+})

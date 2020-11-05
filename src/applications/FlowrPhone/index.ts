@@ -18,7 +18,7 @@ export type OpenPhoneProps = {
 interface PhoneOptions extends ApplicationOptions {
   config: OpenPhoneProps,
   flowrWindow: FlowrWindow,
-  wexondWindow: BrowserWindow,
+  browserWindow: BrowserWindow,
 }
 
 export function create(options: PhoneOptions): PhoneWindow {
@@ -28,8 +28,8 @@ export function create(options: PhoneOptions): PhoneWindow {
     if (options.flowrWindow) {
       muteWindow(options.flowrWindow)
     }
-    if (options.wexondWindow) {
-      muteWindow(options.wexondWindow)
+    if (options.browserWindow) {
+      muteWindow(options.browserWindow)
     }
   }
 
@@ -37,8 +37,8 @@ export function create(options: PhoneOptions): PhoneWindow {
     if (options.flowrWindow) {
       unmuteWindow(options.flowrWindow)
     }
-    if (options.wexondWindow) {
-      unmuteWindow(options.wexondWindow)
+    if (options.browserWindow) {
+      unmuteWindow(options.browserWindow)
     }
   }
 

@@ -16,6 +16,7 @@ module.exports = (env) => {
         exportNode: './src/frontend/preloads/exportNode.ts',
         'view-preload': './src/wexond/preloads/view-preload.ts',
         'background-preload': './src/wexond/preloads/background-preload.ts',
+        'inactivity-preload': './src/inactivity/preload.ts',
     }
     const basePlugins = [
         new HtmlWebpackPlugin({

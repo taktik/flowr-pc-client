@@ -10,6 +10,7 @@ export const log = require('electron-log')
 import { StoreManager, Store } from '../frontend/src/store'
 import { ApplicationManager } from '../application-manager/application-manager'
 import { IFlowrStore } from '../frontend/src/interfaces/flowrStore'
+import { keyboard } from '../barcoKeyboard/barcoKeyBoardController'
 
 const FlowrDataDir = resolve(homedir(), '.flowr')
 
@@ -32,9 +33,8 @@ async function main() {
   ipcMain.setMaxListeners(0)
 
   let flowrWindow: FlowrWindow | null = null
-  let flowrStore: Store<IFlowrStore> | null = null
 
-  let wexondWindow: BrowserWindow | null = null
+  let browserWindow: BrowserWindow | null = null
 
   const gotTheLock = app.requestSingleInstanceLock()
 
@@ -55,12 +55,16 @@ async function main() {
 
   async function onReady() {
     await clearBrowsingData()
+    const flowrStore = initFlowrStore()
+
+    keyboard.flowrStore = flowrStore
+
     app.on('activate', async () => {
       if (flowrWindow === null) {
-        await initFlowr()
+        await initFlowr(flowrStore)
       }
     })
-    await initFlowr()
+    await initFlowr(flowrStore)
 
     ipcMain.on('window-focus', () => {
       if (flowrWindow) {
@@ -69,36 +73,33 @@ async function main() {
     })
 
     ipcMain.on('open-browser', async (event: Event, options: any) => {
-      if (wexondWindow === null) {
-        flowrStore = flowrStore || initFlowrStore()
-        wexondWindow = await createWexondWindow(options, flowrWindow || undefined, buildBrowserWindowConfig(flowrStore, {}))
-        applicationManager.wexondWindow = wexondWindow
-        wexondWindow.on('close', () => {
-          wexondWindow = null
-        })
-      } else {
-        // wexondWindow.moveTop()
-        wexondWindow.webContents.send('open-tab', options)
-      }
-      wexondWindow.webContents.focus()
+      browserWindow?.close()
+
+      browserWindow = await createWexondWindow(options, flowrWindow || undefined, buildBrowserWindowConfig(flowrStore, {}))
+
+      applicationManager.browserWindow = browserWindow
+      browserWindow.webContents.focus()
+      browserWindow.on('close', () => {
+        browserWindow = null
+      })
     })
     ipcMain.on('close-browser', () => {
-      if (wexondWindow !== null) {
-        wexondWindow.close()
+      if (browserWindow !== null) {
+        browserWindow.close()
       }
     })
     ipcMain.on('hide-applications', () => {
       applicationManager.hideAllApplications()
     })
     ipcMain.on('close-applications', () => {
-      if (wexondWindow !== null) {
-        wexondWindow.close()
+      if (browserWindow !== null) {
+        browserWindow.close()
       }
       applicationManager.closeAllApplications()
     })
     ipcMain.on('open-flowr', () => {
-      if (wexondWindow !== null) {
-        wexondWindow.close()
+      if (browserWindow !== null) {
+        browserWindow.close()
       }
       // flowrWindow.moveTop()
     })
@@ -117,17 +118,15 @@ async function main() {
     app.quit()
   })
 
-  async function initFlowr() {
+  async function initFlowr(store: Store<IFlowrStore>) {
     try {
-      flowrStore = flowrStore || initFlowrStore()
+      await applicationManager.initLocalApps(!!store.get('clearAppDataOnStart'))
+    } catch (e) {
+      console.error('Failed to initialize apps', e)
+    }
 
-      try {
-        await applicationManager.initLocalApps(!!flowrStore.get('clearAppDataOnStart'))
-      } catch (e) {
-        console.error('Failed to initialize apps', e)
-      }
-
-      flowrWindow = await createFlowrWindow(flowrStore)
+    try {
+      flowrWindow = await createFlowrWindow(store)
       applicationManager.flowrWindow = flowrWindow
       flowrWindow.on('close', () => {
         flowrWindow = null

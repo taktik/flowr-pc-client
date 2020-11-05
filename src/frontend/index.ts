@@ -1,6 +1,6 @@
 import { resolve, join } from 'path'
 import { homedir } from 'os'
-import { ipcMain, Menu, app, BrowserWindowConstructorOptions } from 'electron'
+import { ipcMain, Menu, app, BrowserWindowConstructorOptions, IpcMainEvent } from 'electron'
 import { initConfigData, Store } from './src/store'
 import { DeviceDetailHelper } from './src/deviceDetail'
 import { FlowrWindow } from './flowr-window'
@@ -24,6 +24,7 @@ export const DEFAULT_FRONTEND_STORE: IFlowrStore = {
   extUrl: '',
   isKiosk: false,
   deinterlacing: false,
+  enableVirtualKeyboard: false,
 }
 export async function initFlowrConfig(data: object) {
   await initConfigData(join(FlowrDataDir, `${FRONTEND_CONFIG_NAME}.json`), data)
@@ -228,6 +229,9 @@ export async function createFlowrWindow(flowrStore: Store<IFlowrStore>): Promise
       flowrStore.set('extUrl', newExtURl)
       app.relaunch()
       app.quit()
+    },
+    setEnableVirtualKeyboard: (evt: IpcMainEvent, enableVirtualKeyboard: boolean) => {
+      flowrStore.set('enableVirtualKeyboard', enableVirtualKeyboard)
     },
     openConfigMode: displayHiddenMenu,
   }

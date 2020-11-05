@@ -10,4 +10,5 @@ export interface IFlowrStore {
   isKiosk: boolean
   deinterlacing: boolean
   flowrConfig?: IFlowrConfig
+  enableVirtualKeyboard: boolean
 }

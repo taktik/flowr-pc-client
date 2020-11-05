@@ -56,9 +56,12 @@
 <h3>Applications</h3>
 <label>Clear app data on start</label> <input type="checkbox" id="clearAppDataOnStart" onclick='toggleClearAppDataCheckbox()'>
 
+<h3>Virtual keyboard</h3>
+<label>Enable virtual keyboard</label> <input type="checkbox" id="enableVirtualKeyboard" onclick='toggleVirtualKeyboardCheckbox()'>
+
 <hr>
 <h3>Debug</h3>
- <label>Activate Debug Mode</label> <input type="checkbox" id="activateDebug" onclick='toggleDebugCheckbox()'>
+<label>Activate Debug Mode</label> <input type="checkbox" id="activateDebug" onclick='toggleDebugCheckbox()'>
 
 <script>
 	const ipc = nodeRequire('electron').ipcRenderer
@@ -79,8 +82,8 @@
 		isDeinterlacingActivated = data.deinterlacing
 		clearAppDataOnStart = data.clearAppDataOnStart
 		externalUrl = data.extUrl || ''
-		isKiosk = data.isKiosk
-		isLaunchedUrlCorrect = data.isLaunchedUrlCorrect
+		isKiosk = !!data.isKiosk
+		isLaunchedUrlCorrect = !!data.isLaunchedUrlCorrect
 		console.log('data: ', data)
 		init()
 	})
@@ -131,8 +134,7 @@
 	}
 
 	function toggleKioskCheckbox(){
-		console.log('toggleKioskCheckbox : '+ document.getElementById('activateKioskMode').checked)//activateKioskMode
-		ipc.send('setKioskMode',document.getElementById('activateKioskMode').checked)
+		ipc.send('setKioskMode', document.getElementById('activateKioskMode').checked)
 	}
 
 	function toggleDebugCheckbox(){
@@ -145,6 +147,10 @@
 
 	function toggleClearAppDataCheckbox(){
 		ipc.send('setClearAppDataOnStart', document.getElementById('clearAppDataOnStart').checked)
+	}
+
+	function toggleVirtualKeyboardCheckbox() {
+		ipc.send('setEnableVirtualKeyboard', document.getElementById('enableVirtualKeyboard').checked)
 	}
 
 	function invalidUrl() {

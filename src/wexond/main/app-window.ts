@@ -11,6 +11,8 @@ import { getPath } from '../shared/utils/paths'
 import { ProcessWindow } from './models/process-window'
 import { TOOLBAR_HEIGHT } from '../renderer/app/constants'
 import { KeyboardMixin } from '../../barcoKeyboard/keyboardMixin'
+import { watchForInactivity } from '../../inactivity/window'
+import { buildPreloadPath } from '../../common/preload'
 const containsPoint = (bounds: any, point: any) => {
   return (
     point.x >= bounds.x &&
@@ -23,6 +25,7 @@ export interface WexondOptions {
   clearBrowsingDataAtClose: boolean,
   openUrl: string
   maxTab : number
+  closeAfterInactivity?: boolean
   inactivityTimeout?: number
 }
 export class AppWindow extends KeyboardMixin(BrowserWindow) {
@@ -55,6 +58,7 @@ export class AppWindow extends KeyboardMixin(BrowserWindow) {
         nodeIntegration: true,
         contextIsolation: false,
         experimentalFeatures: true,
+        preload: buildPreloadPath('inactivity-preload.js'),
       },
       icon: resolve(app.getAppPath(), 'static/app-icons/icon-wexond.png'),
     }, defaultBrowserWindow))
@@ -122,7 +126,11 @@ export class AppWindow extends KeyboardMixin(BrowserWindow) {
       urlString = join('file://', app.getAppPath(), 'build/app.html')
     }
     const url = new URL(urlString)
-    Object.entries(options).forEach(([key, value]) => url.searchParams.set(key, value))
+    Object.entries(options).forEach(([key, value]) => {
+      if (typeof value !== 'boolean' || value) {
+        url.searchParams.set(key, value)
+      }
+    })
     this.loadURL(url.toString())
 
     this.once('ready-to-show', () => {
@@ -197,10 +205,22 @@ export class AppWindow extends KeyboardMixin(BrowserWindow) {
       Object.entries(this._ipcEvents).forEach(event => ipcMain.on(...event))
     }
 
-    if (options.inactivityTimeout) {
+    if (options.closeAfterInactivity) {
+      const timeout = options.inactivityTimeout ?? 5 // default to 5 minutes
       this.viewManager = new ViewManager({
-        timeout: options.inactivityTimeout,
-        callback: () => this.close(),
+        timeout,
+        callback: () => {
+          // Only close if inactivity occurs on "nested" views
+          if (this.getBrowserView()) {
+            this.close()
+          }
+        },
+      })
+      watchForInactivity(this, timeout, () => {
+        // Only close if inactivity occurs on "main" view
+        if (!this.getBrowserView()) {
+          this.close()
+        }
       })
     } else {
       this.viewManager = new ViewManager()

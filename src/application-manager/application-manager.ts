@@ -57,7 +57,7 @@ export interface ApplicationOptions {
   store?: Store<Object>,
   capabilities?: {[key: string]: boolean},
   flowrWindow?: FlowrWindow | null,
-  wexondWindow?: BrowserWindow | null,
+  browserWindow?: BrowserWindow | null,
 }
 
 export class ApplicationManager {
@@ -73,13 +73,13 @@ export class ApplicationManager {
     this._flowrWindow = flowrWindow
     flowrWindow.on('close', () => this._flowrWindow = null)
   }
-  private _wexondWindow: BrowserWindow | null = null
-  get wexondWindow() {
-    return this._wexondWindow
+  private _browserWindow: BrowserWindow | null = null
+  get browserWindow() {
+    return this._browserWindow
   }
-  set wexondWindow(wexondWindow: BrowserWindow) {
-    this._wexondWindow = wexondWindow
-    wexondWindow.on('close', () => this._wexondWindow = null)
+  set browserWindow(browserWindow: BrowserWindow) {
+    this._browserWindow = browserWindow
+    browserWindow.on('close', () => this._browserWindow = null)
   }
   // end
 
@@ -197,7 +197,7 @@ export class ApplicationManager {
             store: application.store,
             capabilities: application.capabilities,
             flowrWindow: this._flowrWindow,
-            wexondWindow: this._wexondWindow,
+            browserWindow: this._browserWindow,
           })
           applicationWindow.on('close', () => delete this.activeWindows[appName])
         } else {

@@ -5,7 +5,7 @@ import { getAPI } from '~/shared/utils/extensions'
 import { format, parse } from 'url'
 import { IpcExtension } from '~/shared/models'
 import { runInThisContext } from 'vm'
-import { setupInactivityListeners } from '../../inactivity/preload'
+import { setupInactivityListeners } from '../../inactivity/setupListeners'
 
 const extensions: { [key: string]: IpcExtension } = ipcRenderer.sendSync(
   'get-extensions',

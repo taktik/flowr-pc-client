@@ -1,8 +1,15 @@
 import { BrowserWindow } from 'electron'
 import { KeyboardWindow } from '../applications/keyboard/keyboardWindow'
+import { IFlowrStore } from '../frontend/src/interfaces/flowrStore'
+import { Store } from '../frontend/src/store'
 
 class Keyboard {
+  flowrStore?: Store<IFlowrStore>
   keyboardWindow?: KeyboardWindow
+
+  get isEnabled(): boolean {
+    return this.flowrStore?.get('enableVirtualKeyboard') ?? false
+  }
 
   private createKeyboard(parent: BrowserWindow): KeyboardWindow {
     const keyboardWindow = new KeyboardWindow(parent)
@@ -11,6 +18,9 @@ class Keyboard {
   }
 
   open(parent: BrowserWindow) {
+    if (!this.isEnabled) {
+      throw Error('Keyboard is not enabled.')
+    }
     if (this.keyboardWindow) {
       this.keyboardWindow.setParentWindow(parent)
     } else {
@@ -24,6 +34,9 @@ class Keyboard {
   }
 
   toggle(parent: BrowserWindow) {
+    if (!this.isEnabled) {
+      throw Error('Keyboard is not enabled.')
+    }
     if (!this.keyboardWindow) {
       this.open(parent)
     } else {
