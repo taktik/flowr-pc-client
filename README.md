@@ -31,10 +31,14 @@ Firstly, run this command to install all needed dependencies. If you have encoun
 $ npm run setup
 ```
 
-The given command below will run flowr-desktop in the development mode.
+The given command below will serve renderer files in the development mode.
 
 ```bash
 $ npm run dev
+```
+and in another terminal
+```bash
+$ npm start
 ```
 
 ## Other commands
@@ -60,7 +64,7 @@ $ npm run <command>
 | `lint`           | Lints code.                                          |
 | `lint-fix`       | Fixes eslint errors if any                           |
 | `start`          | Starts flowr-desktop.                              |
-| `dev`            | Starts flowr-desktop in the development mode       |
+| `dev`            | Build and serves project in the development mode       |
 
 #### Known issues
 
