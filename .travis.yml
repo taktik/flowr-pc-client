@@ -3,7 +3,6 @@ node_js: '12'
 sudo: enabled
 dist: trusty
 before_install:
-- npm i -g npm@6.4.1
 - npm config set '@taktik:registry' 'https://npm.taktik.be/repository/npm/'
 - npm config set '//npm.taktik.be/repository/npm/:_authToken' "${NPM_TOKEN}"
 install:
