@@ -1,7 +1,7 @@
 import Keyboard from 'simple-keyboard'
 import 'simple-keyboard/build/css/index.css'
 import './style.css'
-import { KeyEvents, SimpleKeyboardKeys } from '../../../barcoKeyboard/events'
+import { KeyEvents, SimpleKeyboardKeys } from '../../../keyboard/events'
 
 const simpleToElectronKeys: {[key: string]: string} = {
   [SimpleKeyboardKeys.BACK_SPACE]: KeyEvents.BACK_SPACE,
@@ -51,7 +51,6 @@ export class KeyboardView {
           class: 'hg-highlight',
           buttons: SimpleKeyboardKeys.CAPS_LOCK,
         }]
-      case KeyboardState.DEFAULT:
       default:
         return []
     }
@@ -84,9 +83,8 @@ export class KeyboardView {
             return KeyboardState.CAPS_LOCK
         }
       default:
-        switch (this.state) {
-          case KeyboardState.SHIFT:
-            return KeyboardState.DEFAULT
+        if (this.state === KeyboardState.SHIFT) {
+          return KeyboardState.DEFAULT
         }
     }
   }

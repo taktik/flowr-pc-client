@@ -10,7 +10,7 @@ import { ViewManager } from './view-manager'
 import { getPath } from '../shared/utils/paths'
 import { ProcessWindow } from './models/process-window'
 import { TOOLBAR_HEIGHT } from '../renderer/app/constants'
-import { KeyboardMixin } from '../../barcoKeyboard/keyboardMixin'
+import { KeyboardMixin } from '../../keyboard/keyboardMixin'
 import { watchForInactivity } from '../../inactivity/window'
 import { buildPreloadPath } from '../../common/preload'
 const containsPoint = (bounds: any, point: any) => {

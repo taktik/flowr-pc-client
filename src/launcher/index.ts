@@ -10,7 +10,7 @@ export const log = require('electron-log')
 import { StoreManager, Store } from '../frontend/src/store'
 import { ApplicationManager } from '../application-manager/application-manager'
 import { IFlowrStore } from '../frontend/src/interfaces/flowrStore'
-import { keyboard } from '../barcoKeyboard/barcoKeyBoardController'
+import { keyboard } from '../keyboard/keyboardController'
 
 const FlowrDataDir = resolve(homedir(), '.flowr')
 

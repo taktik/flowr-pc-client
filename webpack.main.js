@@ -1,8 +1,7 @@
-const { getOptimization, webpackModule, resolve, Mode, output, deleteDir, OUTPUT_DIR } = require('./webpack/utils')
+const { CleanWebpackPlugin } = require('clean-webpack-plugin')
+const { getOptimization, webpackModule, resolve, Mode, output } = require('./webpack/utils')
 
 module.exports = async (env) => {
-    await deleteDir(OUTPUT_DIR)
-
     const mode = (env && env.production) ? Mode.PRODUCTION : Mode.DEVELOPMENT
     const optimization = getOptimization(mode)
 
@@ -14,7 +13,9 @@ module.exports = async (env) => {
             mode,
             optimization,
             module: webpackModule,
-            plugins: [],
+            plugins: [
+                new CleanWebpackPlugin()
+            ],
             externals: {
                 fs: 'commonjs fs',
                 path: 'commonjs path',

@@ -94,7 +94,7 @@ export class ApplicationManager {
 
   initLocalApps(clearStore: boolean = false): Promise<void[]> {
     return new Promise((resolve, reject) => {
-      // TODO: open ticket @ electron "withFileTypes" option is not working inside of the asar archive, it only returns the file names
+      // Potential caveats of "withFileTypes" option with asar archives: https://github.com/electron/electron/issues/25349
       fs.readdir(join(app.getAppPath(), 'build'), { withFileTypes: true }, (err, files) => {
         if (err) {
           reject(err)

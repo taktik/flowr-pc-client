@@ -14,7 +14,7 @@ function buildPositionFromParents(parentRectangle: Rectangle): Rectangle {
 }
 
 export class KeyboardWindow extends BrowserWindow {
-  capsLock: boolean = false
+  capsLock = false
 
   get webContentsToSend(): WebContents {
     const browserView = this.parent.getBrowserView()

@@ -2,7 +2,7 @@ import { BrowserWindow, Rectangle, ipcMain } from 'electron'
 import { WindowModes } from './WindowModes'
 import { RegisterProps } from './views/phone'
 import { Store } from '../../frontend/src/store'
-import { KeyboardMixin } from '../../barcoKeyboard/keyboardMixin'
+import { KeyboardMixin } from '../../keyboard/keyboardMixin'
 
 interface PhoneAppProps {
   phoneServer?: string

@@ -8,7 +8,7 @@ class Keyboard {
   keyboardWindow?: KeyboardWindow
 
   get isEnabled(): boolean {
-    return this.flowrStore?.get('enableVirtualKeyboard') ?? false
+    return !!this.flowrStore?.get('enableVirtualKeyboard')
   }
 
   private createKeyboard(parent: BrowserWindow): KeyboardWindow {

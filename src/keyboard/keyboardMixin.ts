@@ -1,5 +1,5 @@
 import { BrowserWindow, ipcMain, IpcMainEvent } from 'electron'
-import { keyboard } from './barcoKeyBoardController'
+import { keyboard } from './keyboardController'
 import { VirtualKeyboardEvent } from './events'
 
 // tslint:disable-next-line: function-name

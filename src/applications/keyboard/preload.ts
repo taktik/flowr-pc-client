@@ -18,5 +18,3 @@ process.once('loaded', () => {
   window.global = window.global || (window as any)
   global.ipcRenderer = ipcRenderer
 })
-
-export {}

@@ -1,5 +1,5 @@
 import { IpcRenderer } from 'electron'
-import { VirtualKeyboardEvent } from '../../barcoKeyboard/events'
+import { VirtualKeyboardEvent } from '../../keyboard/events'
 
 declare global {
   namespace NodeJS {

@@ -129,6 +129,7 @@
 			new URL(url)
 			ipc.send('setExtUrl', url)
 		} catch (e) {
+			console.error('Error when validating the URL', e)
 			invalidUrl()
 		}
 	}

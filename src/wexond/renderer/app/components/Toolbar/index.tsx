@@ -11,7 +11,7 @@ import { ipcRenderer } from 'electron'
 import BrowserAction from '../BrowserAction'
 import { Find } from '../Find'
 import { backToFlowr } from '~/renderer/app/utils'
-import { VirtualKeyboardEvent } from '../../../../../barcoKeyboard/events'
+import { VirtualKeyboardEvent } from '../../../../../keyboard/events'
 import { Toolbar } from '../../models/toolbar'
 
 const onUpdateClick = () => {
@@ -55,54 +55,47 @@ export default observer((data: Toolbar) => {
     ipcRenderer.send(VirtualKeyboardEvent.TOGGLE)
   }
 
-  const buttons: JSX.Element = (<Buttons>
-    <BrowserActions />
-    {store.updateInfo.available && (
-      <ToolbarButton icon={icons.download} onClick={onUpdateClick} />
-    )}
-    {store.extensions.browserActions.length > 0 && <Separator />}
-    {!isWindow && (
-      <BrowserAction
-        size={18}
-        style={{ marginLeft: 0 }}
-        opacity={0.54}
-        data={{
-          badgeBackgroundColor: 'gray',
-          badgeText: blockedAds > 0 ? blockedAds.toString() : '',
-          icon: icons.shield,
-          badgeTextColor: 'white',
-        }}
-      />
-    )}
-    <ToolbarButton
-      disabled={false}
-      size={TOOLBAR_ICON_HEIGHT}
-      icon={icons.home}
-      onClick={onHomePress}
-    />
-    <ToolbarButton
-      disabled={false}
-      size={TOOLBAR_ICON_HEIGHT}
-      icon={icons.keyboard}
-      onClick={onKeyboardPress}
-    />
-  </Buttons>)
-
-  if (data.disableTabs) {
-    return (
-        <StyledToolbar isHTMLFullscreen={store.isHTMLFullscreen}>
-          <NavigationButtons />
-          {buttons}
-        </StyledToolbar>
-    )
-  }
-
   return (
       <StyledToolbar isHTMLFullscreen={store.isHTMLFullscreen}>
         <NavigationButtons />
-        <Tabbar />
-        <Find />
-        {buttons}
+        {!data.disableTabs && (
+          <>
+            <Tabbar />
+            <Find />
+          </>
+        )}
+        <Buttons>
+          <BrowserActions />
+          {store.updateInfo.available && (
+            <ToolbarButton icon={icons.download} onClick={onUpdateClick} />
+          )}
+          {store.extensions.browserActions.length > 0 && <Separator />}
+          {!isWindow && (
+            <BrowserAction
+              size={18}
+              style={{ marginLeft: 0 }}
+              opacity={0.54}
+              data={{
+                badgeBackgroundColor: 'gray',
+                badgeText: blockedAds > 0 ? blockedAds.toString() : '',
+                icon: icons.shield,
+                badgeTextColor: 'white',
+              }}
+            />
+          )}
+          <ToolbarButton
+            disabled={false}
+            size={TOOLBAR_ICON_HEIGHT}
+            icon={icons.home}
+            onClick={onHomePress}
+          />
+          <ToolbarButton
+            disabled={false}
+            size={TOOLBAR_ICON_HEIGHT}
+            icon={icons.keyboard}
+            onClick={onKeyboardPress}
+          />
+        </Buttons>
       </StyledToolbar>
   )
 })

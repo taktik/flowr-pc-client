@@ -1,7 +1,7 @@
 import { BrowserWindow, BrowserWindowConstructorOptions } from 'electron'
 import { Store } from './src/store'
 import { Player } from './src/player'
-import { KeyboardMixin } from '../barcoKeyboard/keyboardMixin'
+import { KeyboardMixin } from '../keyboard/keyboardMixin'
 
 export class FlowrWindow extends KeyboardMixin(BrowserWindow) {
 
