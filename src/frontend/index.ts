@@ -113,6 +113,16 @@ export async function createFlowrWindow(flowrStore: Store<IFlowrStore>): Promise
               }
             },
           },
+          {
+            label: 'Toggle Fullscreen Mode',
+            click() {
+              if (mainWindow.isFullScreen()) {
+                mainWindow.setFullScreen(false)
+              } else {
+                mainWindow.setFullScreen(true)
+              }
+            },
+          },
         ]},
     ]
 
