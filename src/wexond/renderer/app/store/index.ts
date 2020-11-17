@@ -185,8 +185,12 @@ export class Store {
 }
 
 const param = new URLSearchParams(location.search);
-let maxTab = 20;
-if (param.has('maxTab')) {
+let maxTab = 20
+
+if (param.has('disableTabs')) {
+  maxTab = 1
+} else if (param.has('maxTab')) {
   maxTab = Number(param.get('maxTab'))
 }
-export default new Store({ maxTab });
+
+export default new Store({ maxTab })

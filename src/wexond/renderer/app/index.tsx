@@ -1,14 +1,14 @@
-import * as React from 'react';
-import * as ReactDOM from 'react-dom';
+import * as React from 'react'
+import * as ReactDOM from 'react-dom'
 
-import { App } from './components/App';
-import { fonts } from '../constants';
-import store from './store';
-import { ipcRenderer } from 'electron';
+import App from './components/App'
+import { fonts } from '../constants'
+import store from './store'
+import { ipcRenderer } from 'electron'
 
-ipcRenderer.setMaxListeners(0);
+ipcRenderer.setMaxListeners(0)
 
-const styleElement = document.createElement('style');
+const styleElement = document.createElement('style')
 
 styleElement.textContent = `
 @font-face {
@@ -29,9 +29,10 @@ styleElement.textContent = `
   font-weight: 300;
   src: url(${fonts.robotoLight}) format('woff2');
 }
-`;
+`
 
-document.head.appendChild(styleElement);
-
-store.tabGroups.addGroup();
-ReactDOM.render(<App />, document.getElementById('app'));
+document.head.appendChild(styleElement)
+const param = new URLSearchParams(location.search)
+const disableTabs = param.has('disableTabs')
+store.tabGroups.addGroup()
+ReactDOM.render(<App disableTabs={disableTabs}/>, document.getElementById('app'))

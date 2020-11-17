@@ -1,50 +1,49 @@
-import { observer } from 'mobx-react';
-import * as React from 'react';
-import { platform } from 'os';
+import { observer } from 'mobx-react'
+import * as React from 'react'
 
-import store from '~/renderer/app/store';
-import { StyledToolbar, Buttons, Separator } from './style';
-import { NavigationButtons } from '../NavigationButtons';
-import { Tabbar } from '../Tabbar';
-import ToolbarButton from '../ToolbarButton';
-import { icons, TOOLBAR_ICON_HEIGHT } from '../../constants';
-import { ipcRenderer } from 'electron';
-import BrowserAction from '../BrowserAction';
-import { Find } from '../Find';
-import { backToFlowr } from '~/renderer/app/utils';
-import { barcoKeyBoardController } from '../../../../../barcoKeyboard/barcoKeyBoardController';
+import store from '~/renderer/app/store'
+import { StyledToolbar, Buttons, Separator } from './style'
+import { NavigationButtons } from '../NavigationButtons'
+import { Tabbar } from '../Tabbar'
+import ToolbarButton from '../ToolbarButton'
+import { icons, TOOLBAR_ICON_HEIGHT } from '../../constants'
+import { ipcRenderer } from 'electron'
+import BrowserAction from '../BrowserAction'
+import { Find } from '../Find'
+import { backToFlowr } from '~/renderer/app/utils'
+import { VirtualKeyboardEvent } from '../../../../../keyboard/events'
+import { Toolbar } from '../../models/toolbar'
 
 const onUpdateClick = () => {
-  ipcRenderer.send('update-install');
-};
+  ipcRenderer.send('update-install')
+}
 
 @observer
 class BrowserActions extends React.Component {
   public render() {
-    const { selectedTabId } = store.tabGroups.currentGroup;
+    const { selectedTabId } = store.tabGroups.currentGroup
 
     return (
       <>
         {selectedTabId &&
           store.extensions.browserActions.map(item => {
             if (item.tabId === selectedTabId) {
-              return <BrowserAction data={item} key={item.extensionId} />;
+              return <BrowserAction data={item} key={item.extensionId} />
             }
-            return null;
+            return null
           })}
       </>
-    );
+    )
   }
 }
 
-export const Toolbar = observer(() => {
-  const { selectedTab } = store.tabs;
+export default observer((data: Toolbar) => {
+  const { selectedTab } = store.tabs
 
-  let isWindow = true; // false
-  let blockedAds: any = '';
+  const isWindow = true // false
+  let blockedAds: any = ''
 
   if (selectedTab) {
-    // isWindow = selectedTab.isWindow
     blockedAds = selectedTab.blockedAds
   }
 
@@ -53,14 +52,18 @@ export const Toolbar = observer(() => {
   }
 
   const onKeyboardPress = () => {
-    barcoKeyBoardController.toggle()
+    ipcRenderer.send(VirtualKeyboardEvent.TOGGLE)
   }
 
   return (
       <StyledToolbar isHTMLFullscreen={store.isHTMLFullscreen}>
         <NavigationButtons />
-        <Tabbar />
-        <Find />
+        {!data.disableTabs && (
+          <>
+            <Tabbar />
+            <Find />
+          </>
+        )}
         <Buttons>
           <BrowserActions />
           {store.updateInfo.available && (
@@ -94,5 +97,5 @@ export const Toolbar = observer(() => {
           />
         </Buttons>
       </StyledToolbar>
-  );
-});
+  )
+})

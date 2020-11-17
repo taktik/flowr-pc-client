@@ -10,6 +10,7 @@ export const StyledToolbar = styled.div`
   display: flex;
   flex-flow: row;
   align-items: center;
+  justify-content: flex-end;
 
   color: rgba(0, 0, 0, 0.8);
   width: 100%;

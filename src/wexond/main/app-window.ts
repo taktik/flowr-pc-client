@@ -1,44 +1,50 @@
-import { BrowserWindow, app, ipcMain, globalShortcut, screen, BrowserWindowConstructorOptions } from 'electron';
-import { resolve, join } from 'path';
-import { platform } from 'os';
-import { windowManager, Window } from 'node-window-manager';
-import mouseEvents from 'mouse-hooks';
-import { extend, map }  from 'lodash';
-import { ViewManager } from './view-manager';
-import { getPath } from '../shared/utils/paths';
-import { existsSync, readFileSync, writeFileSync } from 'fs';
-import { ProcessWindow } from './models/process-window';
-import { TOOLBAR_HEIGHT } from '../renderer/app/constants';
+import { BrowserWindow, app, ipcMain, globalShortcut, screen, BrowserWindowConstructorOptions } from 'electron'
+import { resolve, join } from 'path'
+import { platform } from 'os'
+import { windowManager, Window } from 'node-window-manager'
+import mouseEvents from 'mouse-hooks'
+import { extend }  from 'lodash'
+import { existsSync, readFileSync, writeFileSync } from 'fs'
+
+import { ViewManager } from './view-manager'
+import { getPath } from '../shared/utils/paths'
+import { ProcessWindow } from './models/process-window'
+import { TOOLBAR_HEIGHT } from '../renderer/app/constants'
+import { KeyboardMixin } from '../../keyboard/keyboardMixin'
+import { watchForInactivity } from '../../inactivity/window'
+import { buildPreloadPath } from '../../common/preload'
 const containsPoint = (bounds: any, point: any) => {
   return (
     point.x >= bounds.x &&
     point.y >= bounds.y &&
     point.x <= bounds.x + bounds.width &&
     point.y <= bounds.y + bounds.height
-  );
-};
+  )
+}
 export interface WexondOptions {
   clearBrowsingDataAtClose: boolean,
   openUrl: string
   maxTab : number
+  closeAfterInactivity?: boolean
+  inactivityTimeout?: number
 }
-export class AppWindow extends BrowserWindow {
+export class AppWindow extends KeyboardMixin(BrowserWindow) {
   private readonly _ipcEvents: {[key: string]: (...args: any[]) => void}
 
-  public viewManager: ViewManager = new ViewManager();
+  public viewManager: ViewManager
 
-  public windows: ProcessWindow[] = [];
-  public selectedWindow: ProcessWindow;
+  public windows: ProcessWindow[] = []
+  public selectedWindow: ProcessWindow
 
-  public window: Window;
-  public draggedWindow: ProcessWindow;
+  public window: Window
+  public draggedWindow: ProcessWindow
 
-  public draggedIn = false;
-  public detached = false;
-  public isMoving = false;
-  public isUpdatingContentBounds = false;
-  public willAttachWindow = false;
-  public isWindowHidden = false;
+  public draggedIn = false
+  public detached = false
+  public isMoving = false
+  public isUpdatingContentBounds = false
+  public willAttachWindow = false
+  public isWindowHidden = false
 
   public interval: number | null = null
 
@@ -52,20 +58,21 @@ export class AppWindow extends BrowserWindow {
         nodeIntegration: true,
         contextIsolation: false,
         experimentalFeatures: true,
+        preload: buildPreloadPath('inactivity-preload.js'),
       },
       icon: resolve(app.getAppPath(), 'static/app-icons/icon-wexond.png'),
     }, defaultBrowserWindow))
 
-    const windowDataPath = getPath('window-data.json');
+    const windowDataPath = getPath('window-data.json')
 
-    let windowState: any = {};
+    let windowState: any = {}
 
     if (existsSync(windowDataPath)) {
       try {
         // Read the last window state from file.
-        windowState = JSON.parse(readFileSync(windowDataPath, 'utf8'));
+        windowState = JSON.parse(readFileSync(windowDataPath, 'utf8'))
       } catch (e) {
-        writeFileSync(windowDataPath, JSON.stringify({}));
+        writeFileSync(windowDataPath, JSON.stringify({}))
       }
     }
 
@@ -76,90 +83,96 @@ export class AppWindow extends BrowserWindow {
 
     if (windowState) {
       if (windowState.maximized) {
-        this.maximize();
+        this.maximize()
       }
       if (windowState.fullscreen) {
-        this.setFullScreen(true);
+        this.setFullScreen(true)
       }
     }
 
     // Update window bounds on resize and on move when window is not maximized.
     this.on('resize', () => {
       if (!this.isMaximized()) {
-        windowState.bounds = this.getBounds();
+        windowState.bounds = this.getBounds()
       }
-    });
+    })
     this.on('move', () => {
       if (!this.isMaximized()) {
-        windowState.bounds = this.getBounds();
+        windowState.bounds = this.getBounds()
       }
-    });
+    })
 
     const resize = () => {
-      this.viewManager.fixBounds();
-      this.webContents.send('tabs-resize');
-    };
+      this.viewManager.fixBounds()
+      this.webContents.send('tabs-resize')
+    }
 
-    this.on('maximize', resize);
-    this.on('restore', resize);
-    this.on('unmaximize', resize);
+    this.on('maximize', resize)
+    this.on('restore', resize)
+    this.on('unmaximize', resize)
 
     // Save current window state to file.
     this.on('close', () => {
-      windowState.maximized = this.isMaximized();
-      windowState.fullscreen = this.isFullScreen();
-      writeFileSync(windowDataPath, JSON.stringify(windowState));
-    });
+      windowState.maximized = this.isMaximized()
+      windowState.fullscreen = this.isFullScreen()
+      writeFileSync(windowDataPath, JSON.stringify(windowState))
+    })
 
-    const param = map(options, (value, key) => `${key}=${value}`).join('&');
-
+    let urlString: string
     if (process.env.ENV === 'dev') {
-      this.webContents.openDevTools({ mode: 'detach' });
-      this.loadURL(`http://localhost:4444/app.html?${param}`);
+      this.webContents.openDevTools({ mode: 'detach' })
+      urlString = 'http://localhost:4444/app.html'
     } else {
-      this.loadURL(join('file://', app.getAppPath(), `build/app.html?${param}`));
+      urlString = join('file://', app.getAppPath(), 'build/app.html')
     }
+    const url = new URL(urlString)
+    Object.entries(options).forEach(([key, value]) => {
+      if (typeof value !== 'boolean' || value) {
+        url.searchParams.set(key, value)
+      }
+    })
+    this.loadURL(url.toString())
 
     this.once('ready-to-show', () => {
-      this.show();
-    });
+      this.show()
+    })
 
     this.on('enter-full-screen', () => {
-      this.webContents.send('fullscreen', true);
-      this.viewManager.fixBounds();
-    });
+      this.webContents.send('fullscreen', true)
+      this.viewManager.fixBounds()
+    })
 
     this.on('leave-full-screen', () => {
-      this.webContents.send('fullscreen', false);
-      this.viewManager.fixBounds();
-    });
+      this.webContents.send('fullscreen', false)
+      this.viewManager.fixBounds()
+    })
 
     this.on('enter-html-full-screen', () => {
-      this.viewManager.fullscreen = true;
-      this.webContents.send('html-fullscreen', true);
-    });
+      this.viewManager.fullscreen = true
+      this.webContents.send('html-fullscreen', true)
+    })
 
     this.on('leave-html-full-screen', () => {
-      this.viewManager.fullscreen = false;
-      this.webContents.send('html-fullscreen', false);
-    });
+      this.viewManager.fullscreen = false
+      this.webContents.send('html-fullscreen', false)
+    })
 
     this.on('scroll-touch-begin', () => {
-      this.webContents.send('scroll-touch-begin');
-    });
+      this.webContents.send('scroll-touch-begin')
+    })
 
     this.on('scroll-touch-end', () => {
-      this.viewManager.selected.webContents.send('scroll-touch-end');
-      this.webContents.send('scroll-touch-end');
-    });
+      this.viewManager.selected.webContents.send('scroll-touch-end')
+      this.webContents.send('scroll-touch-end')
+    })
 
     if (platform() === 'win32') {
       this._ipcEvents = {
         'select-window': (e: any, id: number) => {
-          this.selectWindow(this.windows.find(x => x.handle === id))
+          this.selectWindow(this.windows.find(x => x.id === id))
         },
         'detach-window': (e: any, id: number) => {
-          this.detachWindow(this.windows.find(x => x.handle === id))
+          this.detachWindow(this.windows.find(x => x.id === id))
         },
         'hide-window': () => {
           if (this.selectedWindow) {
@@ -191,22 +204,43 @@ export class AppWindow extends BrowserWindow {
       })
       Object.entries(this._ipcEvents).forEach(event => ipcMain.on(...event))
     }
+
+    if (options.closeAfterInactivity) {
+      const timeout = options.inactivityTimeout ?? 5 // default to 5 minutes
+      this.viewManager = new ViewManager({
+        timeout,
+        callback: () => {
+          // Only close if inactivity occurs on "nested" views
+          if (this.getBrowserView()) {
+            this.close()
+          }
+        },
+      })
+      watchForInactivity(this, timeout, () => {
+        // Only close if inactivity occurs on "main" view
+        if (!this.getBrowserView()) {
+          this.close()
+        }
+      })
+    } else {
+      this.viewManager = new ViewManager()
+    }
   }
 
   public activateWindowCapturing() {
     const updateBounds = () => {
-      this.isMoving = true;
+      this.isMoving = true
 
       if (!this.isUpdatingContentBounds) {
-        this.resizeWindow(this.selectedWindow);
+        this.resizeWindow(this.selectedWindow)
       }
-    };
+    }
 
-    const handle = this.getNativeWindowHandle().readInt32LE(0);
-    this.window = new Window(handle);
+    const handle = this.getNativeWindowHandle().readInt32LE(0)
+    this.window = new Window(handle)
 
-    this.on('move', updateBounds);
-    this.on('resize', updateBounds);
+    this.on('move', updateBounds)
+    this.on('resize', updateBounds)
 
     this.on('close', () => {
       Object.entries(this._ipcEvents).forEach(event => ipcMain.removeListener(...event))
@@ -218,129 +252,131 @@ export class AppWindow extends BrowserWindow {
         clearInterval(this.interval)
         this.interval = null
       }
+
+      windowManager.removeAllListeners('window-activated')
     })
 
-    this.interval = setInterval(this.intervalCallback, 100);
+    this.interval = setInterval(this.intervalCallback, 100)
 
     Object.entries(this._ipcEvents).forEach(event => ipcMain.on(...event))
 
     windowManager.on('window-activated', (window: Window) => {
-      this.webContents.send('select-tab', window.handle);
+      this.webContents.send('select-tab', window.id)
 
       if (
-        window.handle === handle ||
-        (this.selectedWindow && window.handle === this.selectedWindow.handle)
+        window.id === handle ||
+        (this.selectedWindow && window.id === this.selectedWindow.id)
       ) {
         if (!globalShortcut.isRegistered('CmdOrCtrl+Tab')) {
           globalShortcut.register('CmdOrCtrl+Tab', () => {
-            this.webContents.send('next-tab');
-          });
+            this.webContents.send('next-tab')
+          })
         }
       } else if (globalShortcut.isRegistered('CmdOrCtrl+Tab')) {
-        globalShortcut.unregister('CmdOrCtrl+Tab');
+        globalShortcut.unregister('CmdOrCtrl+Tab')
       }
-    });
+    })
 
     mouseEvents.on('mouse-down', () => {
-      if (this.isMinimized()) return;
+      if (this.isMinimized()) return
 
       setTimeout(() => {
         this.draggedWindow = new ProcessWindow(
-          windowManager.getActiveWindow().handle,
-        );
+          windowManager.getActiveWindow().id,
+        )
 
-        if (this.draggedWindow.handle === handle) {
-          this.draggedWindow = null;
-          return;
+        if (this.draggedWindow.id === handle) {
+          this.draggedWindow = null
+          return
         }
-      }, 50);
-    });
+      }, 50)
+    })
 
     mouseEvents.on('mouse-up', async data => {
       if (this.selectedWindow && !this.isMoving) {
-        const bounds = this.selectedWindow.getBounds();
-        const { lastBounds } = this.selectedWindow;
+        const bounds = this.selectedWindow.getBounds()
+        const { lastBounds } = this.selectedWindow
 
         if (
           !this.isMaximized() &&
           (bounds.width !== lastBounds.width ||
             bounds.height !== lastBounds.height)
         ) {
-          this.isUpdatingContentBounds = true;
+          this.isUpdatingContentBounds = true
 
-          clearInterval(this.interval);
+          clearInterval(this.interval)
 
-          const sf = windowManager.getScaleFactor(this.window.getMonitor());
+          const sf = windowManager.getScaleFactor(this.window.getMonitor())
 
-          this.selectedWindow.lastBounds = bounds;
+          this.selectedWindow.lastBounds = bounds
 
           this.setContentBounds({
             width: bounds.width,
             height: bounds.height + TOOLBAR_HEIGHT,
             x: bounds.x,
             y: bounds.y - TOOLBAR_HEIGHT - 1,
-          });
+          })
 
-          this.interval = setInterval(this.intervalCallback, 100);
+          this.interval = setInterval(this.intervalCallback, 100)
 
-          this.isUpdatingContentBounds = false;
+          this.isUpdatingContentBounds = false
         }
       }
 
-      this.isMoving = false;
+      this.isMoving = false
 
       if (this.draggedWindow && this.willAttachWindow) {
-        const win = this.draggedWindow;
+        const win = this.draggedWindow
 
-        win.setOwner(this.window);
+        win.setOwner(this.window)
 
-        this.windows.push(win);
+        this.windows.push(win)
 
-        this.willAttachWindow = false;
+        this.willAttachWindow = false
 
         setTimeout(() => {
-          this.selectWindow(win);
-        }, 50);
+          this.selectWindow(win)
+        }, 50)
       }
 
-      this.draggedWindow = null;
-      this.detached = false;
-    });
+      this.draggedWindow = null
+      this.detached = false
+    })
   }
 
-  intervalCallback = () => {
-    if (this.isMoving) return;
+  intervalCallback = async () => {
+    if (this.isMoving) return
 
     if (!this.isMinimized()) {
       for (const window of this.windows) {
-        const title = window.getTitle();
+        const title = window.getTitle()
         if (window.lastTitle !== title) {
           this.webContents.send('update-tab-title', {
-            id: window.handle,
+            id: window.id,
             title,
-          });
-          window.lastTitle = title;
+          })
+          window.lastTitle = title
         }
 
         if (!window.isWindow()) {
-          this.detachWindow(window);
-          this.webContents.send('remove-tab', window.handle);
+          this.detachWindow(window)
+          this.webContents.send('remove-tab', window.id)
         }
       }
 
       if (this.selectedWindow) {
-        const contentBounds = this.getContentArea();
-        const bounds = this.selectedWindow.getBounds();
-        const { lastBounds } = this.selectedWindow;
+        const contentBounds = this.getContentArea()
+        const bounds = this.selectedWindow.getBounds()
+        const { lastBounds } = this.selectedWindow
 
         if (
           (contentBounds.x !== bounds.x || contentBounds.y !== bounds.y) &&
           (bounds.width === lastBounds.width &&
             bounds.height === lastBounds.height)
         ) {
-          const window = this.selectedWindow;
-          this.detachWindow(window);
-          this.detached = true;
+          const window = this.selectedWindow
+          this.detachWindow(window)
+          this.detached = true
         }
       }
     }
@@ -348,18 +384,18 @@ export class AppWindow extends BrowserWindow {
     if (
       !this.isMinimized() &&
       this.draggedWindow &&
-      this.draggedWindow.getOwner().handle === 0 &&
-      !this.windows.find(x => x.handle === this.draggedWindow.handle)
+      this.draggedWindow.getOwner().id === 0 &&
+      !this.windows.find(x => x.id === this.draggedWindow.id)
     ) {
-      const winBounds = this.draggedWindow.getBounds();
-      const { lastBounds } = this.draggedWindow;
-      const contentBounds = this.getContentArea();
-      const cursor = screen.getCursorScreenPoint();
+      const winBounds = this.draggedWindow.getBounds()
+      const { lastBounds } = this.draggedWindow
+      const contentBounds = this.getContentArea()
+      const cursor = screen.getCursorScreenPoint()
 
-      cursor.y = winBounds.y;
+      cursor.y = winBounds.y
 
-      contentBounds.y -= TOOLBAR_HEIGHT;
-      contentBounds.height = 2 * TOOLBAR_HEIGHT;
+      contentBounds.y -= TOOLBAR_HEIGHT
+      contentBounds.height = 2 * TOOLBAR_HEIGHT
 
       if (
         !this.detached &&
@@ -367,88 +403,90 @@ export class AppWindow extends BrowserWindow {
         (winBounds.x !== lastBounds.x || winBounds.y !== lastBounds.y)
       ) {
         if (!this.draggedIn) {
-          const title = this.draggedWindow.getTitle();
-          app.getFileIcon(this.draggedWindow.process.path, (err, icon) => {
-            if (err) return console.error(err);
+          const title = this.draggedWindow.getTitle()
 
-            this.draggedWindow.lastTitle = title;
+          try {
+            const icon = await app.getFileIcon(this.draggedWindow.path)
+            this.draggedWindow.lastTitle = title
 
             this.webContents.send('add-tab', {
-              id: this.draggedWindow.handle,
+              id: this.draggedWindow.id,
               title,
               icon: icon.toPNG(),
-            });
+            })
 
-            this.draggedIn = true;
-            this.willAttachWindow = true;
-          });
+            this.draggedIn = true
+            this.willAttachWindow = true
+          } catch (e) {
+            console.error(e)
+          }
         }
       } else if (this.draggedIn && !this.detached) {
-        this.webContents.send('remove-tab', this.draggedWindow.handle);
+        this.webContents.send('remove-tab', this.draggedWindow.id)
 
-        this.draggedIn = false;
-        this.willAttachWindow = false;
+        this.draggedIn = false
+        this.willAttachWindow = false
       }
     }
-  };
+  }
 
   getContentArea() {
-    const bounds = this.getContentBounds();
+    const bounds = this.getContentBounds()
 
-    bounds.y += TOOLBAR_HEIGHT;
-    bounds.height -= TOOLBAR_HEIGHT;
+    bounds.y += TOOLBAR_HEIGHT
+    bounds.height -= TOOLBAR_HEIGHT
 
-    return bounds;
+    return bounds
   }
 
   selectWindow(window: ProcessWindow) {
-    if (!window) return;
+    if (!window) return
 
     if (this.selectedWindow) {
       if (
-        window.handle === this.selectedWindow.handle &&
+        window.id === this.selectedWindow.id &&
         !this.isWindowHidden
       ) {
-        return;
+        return
       }
 
-      this.selectedWindow.hide();
+      this.selectedWindow.hide()
     }
 
-    window.show();
+    window.show()
 
-    this.selectedWindow = window;
-    this.isWindowHidden = false;
+    this.selectedWindow = window
+    this.isWindowHidden = false
 
-    this.resizeWindow(window);
+    this.resizeWindow(window)
   }
 
   resizeWindow(window: ProcessWindow) {
-    if (!window || this.isMinimized()) return;
+    if (!window || this.isMinimized()) return
 
-    const newBounds = this.getContentArea();
+    const newBounds = this.getContentArea()
 
-    window.setBounds(newBounds);
-    window.lastBounds = newBounds;
+    window.setBounds(newBounds)
+    window.lastBounds = newBounds
 
-    const bounds = window.getBounds();
+    const bounds = window.getBounds()
 
     if (bounds.width > newBounds.width || bounds.height > newBounds.height) {
-      this.setContentSize(bounds.width, bounds.height + TOOLBAR_HEIGHT);
-      this.setMinimumSize(bounds.width, bounds.height + TOOLBAR_HEIGHT);
+      this.setContentSize(bounds.width, bounds.height + TOOLBAR_HEIGHT)
+      this.setMinimumSize(bounds.width, bounds.height + TOOLBAR_HEIGHT)
     }
   }
 
   detachWindow(window: ProcessWindow) {
-    if (!window) return;
+    if (!window) return
 
     if (this.selectedWindow === window) {
-      this.selectedWindow = null;
+      this.selectedWindow = null
     }
 
-    window.detach();
+    window.detach()
 
-    this.windows = this.windows.filter(x => x.handle !== window.handle);
+    this.windows = this.windows.filter(x => x.id !== window.id)
   }
 
   close() {

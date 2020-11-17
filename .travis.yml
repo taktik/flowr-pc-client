@@ -3,7 +3,6 @@ node_js: '12'
 sudo: enabled
 dist: trusty
 before_install:
-- npm i -g npm@6.4.1
 - npm config set '@taktik:registry' 'https://npm.taktik.be/repository/npm/'
 - npm config set '//npm.taktik.be/repository/npm/:_authToken' "${NPM_TOKEN}"
 install:
@@ -31,5 +30,5 @@ addons:
 script:
   - npm run setup
   - npm run lint
-  - if [[ "$TRAVIS_OS_NAME" == "osx" ]] ; then npm run compile-darwin -- --publish never;fi
+  - if [[ "$TRAVIS_OS_NAME" == "osx" ]] ; then travis_wait 20 npm run compile-darwin -- --publish never;fi
   - if [[ "$TRAVIS_OS_NAME" == "linux" ]] ; then npm run compile-linux ;fi

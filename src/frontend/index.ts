@@ -1,6 +1,6 @@
 import { resolve, join } from 'path'
 import { homedir } from 'os'
-import { ipcMain, Menu, app, BrowserWindowConstructorOptions } from 'electron'
+import { ipcMain, Menu, app, BrowserWindowConstructorOptions, IpcMainEvent } from 'electron'
 import { initConfigData, Store } from './src/store'
 import { DeviceDetailHelper } from './src/deviceDetail'
 import { FlowrWindow } from './flowr-window'
@@ -9,6 +9,7 @@ import { URL } from 'url'
 import { networkEverywhere } from 'network-everywhere'
 import defaultBrowserWindowOptions from './defaultBrowserWindowOptions'
 import { IFlowrStore } from './src/interfaces/flowrStore'
+import { buildPreloadPath } from '../common/preload'
 
 const deepExtend = require('deep-extend')
 const FlowrDataDir = resolve(homedir(), '.flowr')
@@ -23,6 +24,7 @@ export const DEFAULT_FRONTEND_STORE: IFlowrStore = {
   extUrl: '',
   isKiosk: false,
   deinterlacing: false,
+  enableVirtualKeyboard: false,
 }
 export async function initFlowrConfig(data: object) {
   await initConfigData(join(FlowrDataDir, `${FRONTEND_CONFIG_NAME}.json`), data)
@@ -46,15 +48,23 @@ export async function createFlowrWindow(flowrStore: Store<IFlowrStore>): Promise
 
   const defaultUrl = buildFileUrl('config.html')
   const kiosk = flowrStore.get('isKiosk') || false
-  const url = new URL(flowrStore.get('extUrl') || defaultUrl)
+  const flowrUrl = flowrStore.get('extUrl')
+  let url: URL
+  try {
+    url = new URL(flowrUrl)
+  } catch (e) {
+    isLaunchedUrlCorrect = false
+    console.error(`Invalid FlowR URL: ${flowrUrl}. Display config page.`)
+    url = new URL(defaultUrl)
+  }
   // Create the browser window.
   const opts = buildBrowserWindowConfig(flowrStore, {
     icon: resolve(app.getAppPath(), 'static/app-icons/icon.png'),
     webPreferences: {
       nodeIntegration: false,
       contextIsolation: false,
-      partition: 'persist:view', // needed to display webcame image
-      preload: buildExportPath('exportNode.js'),
+      partition: 'persist:flowr', // needed to display webcame image
+      preload: buildPreloadPath('exportNode.js'),
     },
   })
 
@@ -92,7 +102,6 @@ export async function createFlowrWindow(flowrStore: Store<IFlowrStore>): Promise
           { label: 'Config',
             click() {
               const formattedPath = buildFileUrl('config.html')
-              console.log('formattedPath', formattedPath)
               mainWindow.loadURL(formattedPath)
               isHiddenMenuDisplayed = true
             },
@@ -193,7 +202,6 @@ export async function createFlowrWindow(flowrStore: Store<IFlowrStore>): Promise
     updateAppConfig: (evt: any, data: any) => {
       const currentConfig = flowrStore.get('flowrConfig')
       const newConfig =  deepExtend(currentConfig, data)
-      console.log(JSON.stringify(data))
       flowrStore.set('flowrConfig', newConfig)
       app.relaunch()
       app.quit()
@@ -218,10 +226,12 @@ export async function createFlowrWindow(flowrStore: Store<IFlowrStore>): Promise
       app.quit()
     },
     setExtUrl: (evt: any, newExtURl: string) => {
-      console.log('set new ext url', newExtURl)
       flowrStore.set('extUrl', newExtURl)
       app.relaunch()
       app.quit()
+    },
+    setEnableVirtualKeyboard: (evt: IpcMainEvent, enableVirtualKeyboard: boolean) => {
+      flowrStore.set('enableVirtualKeyboard', enableVirtualKeyboard)
     },
     openConfigMode: displayHiddenMenu,
   }
@@ -234,14 +244,6 @@ export async function createFlowrWindow(flowrStore: Store<IFlowrStore>): Promise
       result = `http://localhost:4444/${fileName}`
     } else {
       result = join('file://', app.getAppPath(), 'build', fileName)
-    }
-    return result
-  }
-
-  function buildExportPath(fileName: string): string {
-    let result: string = resolve(app.getAppPath(), `build/${fileName}`)
-    if (process.env.ENV !== 'dev') {
-      result = join(app.getAppPath(), `/build/${fileName}`)
     }
     return result
   }
