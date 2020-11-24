@@ -33,7 +33,7 @@ export class Player {
   private stopping: Promise<void> = Promise.resolve()
   private flowrFfmpeg: FlowrFfmpeg = new FlowrFfmpeg()
   private ffprobeProcess?: ChildProcess
-  public store: Store<IPlayerStore> = this.initStore()
+  private store: Store<IPlayerStore> = storeManager.createStore<IPlayerStore>('player', DEFAULT_PLAYER_STORE)
 
   get ipcStreamerConfig(): IStreamerConfig {
     return this.store.get('streamer')
@@ -67,17 +67,18 @@ export class Player {
     Object.entries(this._ipcEvents).forEach(event => ipcMain.on(event[0], event[1]))
   }
 
-  initStore(): Store<IPlayerStore> {
+  initStore(playerConfig: IPlayerStore): void {
     const shouldPersist = !storeManager.exists('player')
-    const store = storeManager.createStore<IPlayerStore>('player', DEFAULT_PLAYER_STORE)
 
-    if (shouldPersist) {
-      store.persist()
-    } else if (store.get('version') !== app.getVersion()) {
-      store.reset(DEFAULT_PLAYER_STORE)
+    if (storeManager.exists('player')) {
+      this.store.bulkSet(playerConfig)
     }
 
-    return store
+    if (shouldPersist) {
+      this.store.persist()
+    } else if (this.store.get('version') !== app.getVersion()) {
+      this.store.reset(DEFAULT_PLAYER_STORE)
+    }
   }
 
   updateChannelData(streams: ICurrentStreams) {

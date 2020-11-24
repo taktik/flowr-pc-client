@@ -74,7 +74,7 @@ async function main() {
 
     ipcMain.on('flowr-desktop-config', (event: IpcMainEvent, desktopConfig: any) => {
       flowrStore.bulkSet(desktopConfig.userPreferences)
-      flowrWindow.player.store.bulkSet(desktopConfig.player)
+      flowrWindow.player.initStore(desktopConfig.player)
     })
 
     ipcMain.on('open-browser', async (event: Event, options: any) => {
