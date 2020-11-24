@@ -1,4 +1,4 @@
-import { ipcMain, app, BrowserWindow } from 'electron'
+import { ipcMain, app, BrowserWindow, IpcMainEvent } from 'electron'
 import { resolve } from 'path'
 import { homedir } from 'os'
 import { createFlowrWindow, initFlowrConfig, buildBrowserWindowConfig, FRONTEND_CONFIG_NAME, DEFAULT_FRONTEND_STORE } from '../frontend'
@@ -70,6 +70,11 @@ async function main() {
       if (flowrWindow) {
         flowrWindow.webContents.focus()
       }
+    })
+
+    ipcMain.on('flowr-desktop-config', (event: IpcMainEvent, desktopConfig: any) => {
+      flowrStore.bulkSet(desktopConfig.userPreferences)
+      flowrWindow.player.store.bulkSet(desktopConfig.player)
     })
 
     ipcMain.on('open-browser', async (event: Event, options: any) => {

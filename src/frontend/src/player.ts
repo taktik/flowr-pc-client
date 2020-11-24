@@ -33,7 +33,7 @@ export class Player {
   private stopping: Promise<void> = Promise.resolve()
   private flowrFfmpeg: FlowrFfmpeg = new FlowrFfmpeg()
   private ffprobeProcess?: ChildProcess
-  private store: Store<IPlayerStore> = this.initStore()
+  public store: Store<IPlayerStore> = this.initStore()
 
   get ipcStreamerConfig(): IStreamerConfig {
     return this.store.get('streamer')
