@@ -64,6 +64,7 @@ export class IpcStreamer extends Writable {
     this.sendInterval = undefined
     this._sender = undefined
     this.isFirstChunk = true
+    this.removeAllListeners()
   }
 
   // tslint:disable-next-line: function-name

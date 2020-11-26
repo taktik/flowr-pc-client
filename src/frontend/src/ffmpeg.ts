@@ -68,13 +68,16 @@ export class FlowrFfmpeg {
   ): Ffmpeg.FfmpegCommand {
     if (process.platform === 'darwin' && !(input instanceof Readable)) {
       input +=
-        '?fifo_size=13160&overrun_nonfatal=1&buffer_size=/18800&pkt_size=188'
+        '?fifo_size=1880000&overrun_nonfatal=1&buffer_size=/1880000&pkt_size=188'
     }
 
     const ffmpegCmd = Ffmpeg(input)
-      .inputOptions('-probesize 2000k')
+      .inputOptions('-probesize 1000k')
+      .inputOptions('-flags low_delay')
       .outputOptions('-preset ultrafast')
       .outputOptions('-tune zerolatency')
+      .outputOptions('-g 30')
+      .outputOptions('-r 30')
 
     if (subtitleStream && subtitleStream > -1) {
       console.log('-------- appendCmdWithSubtitle')
@@ -95,8 +98,9 @@ export class FlowrFfmpeg {
     return ffmpegCmd
       .format('mp4')
       .outputOptions(
-        '-movflags empty_moov+omit_tfhd_offset+frag_keyframe+default_base_moof+faststart',
+        '-movflags empty_moov+frag_keyframe+default_base_moof+disable_chpl',
       )
+      .outputOption('-frag_duration 2200000')
       .outputOption('-c:v copy')
       .on('start', commandLine => {
         console.log('Spawned Ffmpeg with command: ', commandLine)
