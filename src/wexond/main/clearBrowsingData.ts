@@ -5,8 +5,8 @@ export const clearBrowsingData = async () => {
   const ses = session.fromPartition('persist:view')
   try {
     await ses.clearCache()
-  } catch (e) {
-    console.error(e)
+  } catch (err) {
+    console.error(err)
   }
 
   ses.clearStorageData({

@@ -1,13 +1,11 @@
 import { observer } from 'mobx-react';
 import * as React from 'react';
-import { ipcRenderer } from 'electron';
 
 import store from '~/renderer/app/store';
 import ToolbarButton from '~/renderer/app/components/ToolbarButton';
 import { icons } from '~/renderer/app/constants/icons';
 import { TOOLBAR_ICON_HEIGHT } from '~/renderer/app/constants/design';
 import { StyledContainer } from './style';
-import { backToFlowr } from '~/renderer/app/utils';
 
 const onBackClick = () => {
   store.tabs.selectedTab.callViewMethod('webContents.goBack');

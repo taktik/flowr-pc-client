@@ -1,6 +1,5 @@
 import {
   BrowserView,
-  app,
   Menu,
   nativeImage,
   clipboard,
@@ -10,6 +9,7 @@ import { sendToAllExtensions } from './extensions'
 import { engine } from './services/web-request'
 import { settings } from './index'
 import { parse } from 'tldts'
+import { buildPreloadPath } from '../../common/preload'
 
 export class View extends BrowserView {
   public title: string = ''
@@ -20,7 +20,7 @@ export class View extends BrowserView {
   constructor(id: number, url: string) {
     super({
       webPreferences: {
-        preload: `${app.getAppPath()}/build/view-preload.js`,
+        preload: buildPreloadPath('view-preload.js'),
         nodeIntegration: false,
         additionalArguments: [`--tab-id=${id}`],
         contextIsolation: true,

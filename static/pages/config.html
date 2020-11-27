@@ -11,6 +11,15 @@
 	input[type=text]{
 		width: 300px;
 	}
+
+	#wrongurl {
+		color: red;
+		display: inline;
+	}
+
+	#wrongurl.hidden {
+		display: none;
+	}
 	</style>
 </head>
 <body>
@@ -22,11 +31,11 @@
 
 
 <h3>External Config</h3>
-<div class='config-label'>Url to flowr :</div> <input type="text" id="extUrl">&emsp;<span id='wrongurl' style="color: red;"> Invalid url*</span><br>
-<button id="validateURL"  onclick="validateExtUrl()">Validate</button>
-<button id="reinit"  onclick="init()">Reinit</button>
+<div class='config-label'>Url to flowr :</div> <input type="text" id="extUrl" onchange='resetInvalidUrl()'>&emsp;<span id="wrongurl" class="hidden"> Invalid url*</span><br>
+<button id="validateURL" onclick="validateExtUrl()">Validate</button>
+<button id="reinit" onclick="init()">Reinit</button>
 <br>
- <label>Activate Kiosk Mode</label> <input type="checkbox" id="activateKioskMode"  onclick='toggleKioskCheckbox()'>
+ <label>Activate Kiosk Mode</label> <input type="checkbox" id="activateKioskMode" onclick='toggleKioskCheckbox()'>
 
 <div id='app-configuration'>
 <hr>
@@ -36,20 +45,23 @@
 	<div class='config-label'>Socket API :</div> <input type="text" id="socketApi"><br>
 	<div class='config-label'>Push vod socket API :</div> <input type="text" id="pushVodSocketApi"><br>
 	<div class='config-label'>Anevia vod socket API :</div> <input type="text" id="aneviaVodSocketApi"><br>
-	<button id="reinit"  onclick="init()">Reinit</button>
-	<button id="validate"  onclick="validate()">Validate</button>
+	<button id="reinit" onclick="init()">Reinit</button>
+	<button id="validate" onclick="validate()">Validate</button>
 </div>
 
 <hr>
 <h3>Deinterlacing</h3>
-<label>Activate Deinterlacing</label> <input type="checkbox" id="activateDeinterlacing"  onclick='toggleDeinterlacingCheckbox()'>
+<label>Activate Deinterlacing</label> <input type="checkbox" id="activateDeinterlacing" onclick='toggleDeinterlacingCheckbox()'>
 
 <h3>Applications</h3>
-<label>Clear app data on start</label> <input type="checkbox" id="clearAppDataOnStart"  onclick='toggleClearAppDataCheckbox()'>
+<label>Clear app data on start</label> <input type="checkbox" id="clearAppDataOnStart" onclick='toggleClearAppDataCheckbox()'>
+
+<h3>Virtual keyboard</h3>
+<label>Enable virtual keyboard</label> <input type="checkbox" id="enableVirtualKeyboard" onclick='toggleVirtualKeyboardCheckbox()'>
 
 <hr>
 <h3>Debug</h3>
- <label>Activate Debug Mode</label> <input type="checkbox" id="activateDebug"  onclick='toggleDebugCheckbox()'>
+<label>Activate Debug Mode</label> <input type="checkbox" id="activateDebug" onclick='toggleDebugCheckbox()'>
 
 <script>
 	const ipc = nodeRequire('electron').ipcRenderer
@@ -63,15 +75,15 @@
 	let clearAppDataOnStart = false
 
 	ipc.removeAllListeners('receiveConfig')
-	ipc.send('FlowrIsInitializing')
+
 	ipc.on('receiveConfig', function(evt, data) {
 		config = data.appConfig
 		isDebugMode = data.debugMode
 		isDeinterlacingActivated = data.deinterlacing
 		clearAppDataOnStart = data.clearAppDataOnStart
 		externalUrl = data.extUrl || ''
-		isKiosk = data.isKiosk
-		isLaunchedUrlCorrect = data.isLaunchedUrlCorrect
+		isKiosk = !!data.isKiosk
+		isLaunchedUrlCorrect = !!data.isLaunchedUrlCorrect
 		console.log('data: ', data)
 		init()
 	})
@@ -84,7 +96,7 @@
 		config.socketApi.host = document.getElementById('socketApi').value
 		config.pushVodSocketApi.host = document.getElementById('pushVodSocketApi').value
 		config.aneviaVodSocketApi.host = document.getElementById('aneviaVodSocketApi').value
-		ipc.send('updateAppConfig',config)
+		ipc.send('updateAppConfig', config)
 	}
 
 	function init(){
@@ -105,19 +117,25 @@
 		document.getElementById('activateDebug').checked = isDebugMode
 		document.getElementById('clearAppDataOnStart').checked = clearAppDataOnStart
 
-		if (isLaunchedUrlCorrect) {
-			document.getElementById('wrongurl').style.display = 'none'
+		if (!isLaunchedUrlCorrect) {
+			invalidUrl()
 		}
 	}
 
-	function validateExtUrl(){
-		externalUrl = document.getElementById('extUrl').value
-		ipc.send('setExtUrl',externalUrl)
+	function validateExtUrl() {
+		const url = document.getElementById('extUrl').value
+		try {
+			// try to parse as URL to check validity
+			new URL(url)
+			ipc.send('setExtUrl', url)
+		} catch (e) {
+			console.error('Error when validating the URL', e)
+			invalidUrl()
+		}
 	}
 
 	function toggleKioskCheckbox(){
-		console.log('toggleKioskCheckbox : '+ document.getElementById('activateKioskMode').checked)//activateKioskMode
-		ipc.send('setKioskMode',document.getElementById('activateKioskMode').checked)
+		ipc.send('setKioskMode', document.getElementById('activateKioskMode').checked)
 	}
 
 	function toggleDebugCheckbox(){
@@ -130,6 +148,18 @@
 
 	function toggleClearAppDataCheckbox(){
 		ipc.send('setClearAppDataOnStart', document.getElementById('clearAppDataOnStart').checked)
+	}
+
+	function toggleVirtualKeyboardCheckbox() {
+		ipc.send('setEnableVirtualKeyboard', document.getElementById('enableVirtualKeyboard').checked)
+	}
+
+	function invalidUrl() {
+		document.getElementById('wrongurl').classList.remove('hidden')
+	}
+
+	function resetInvalidUrl() {
+		document.getElementById('wrongurl').classList.add('hidden')
 	}
 </script>
 </body>

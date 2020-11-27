@@ -3,13 +3,16 @@ import { resolve, join } from 'path'
 import { platform } from 'os'
 import { windowManager, Window } from 'node-window-manager'
 import mouseEvents from 'mouse-hooks'
-import { extend, map }  from 'lodash'
+import { extend }  from 'lodash'
 import { existsSync, readFileSync, writeFileSync } from 'fs'
 
 import { ViewManager } from './view-manager'
 import { getPath } from '../shared/utils/paths'
 import { ProcessWindow } from './models/process-window'
 import { TOOLBAR_HEIGHT } from '../renderer/app/constants'
+import { KeyboardMixin } from '../../keyboard/keyboardMixin'
+import { watchForInactivity } from '../../inactivity/window'
+import { buildPreloadPath } from '../../common/preload'
 const containsPoint = (bounds: any, point: any) => {
   return (
     point.x >= bounds.x &&
@@ -22,11 +25,13 @@ export interface WexondOptions {
   clearBrowsingDataAtClose: boolean,
   openUrl: string
   maxTab : number
+  closeAfterInactivity?: boolean
+  inactivityTimeout?: number
 }
-export class AppWindow extends BrowserWindow {
+export class AppWindow extends KeyboardMixin(BrowserWindow) {
   private readonly _ipcEvents: {[key: string]: (...args: any[]) => void}
 
-  public viewManager: ViewManager = new ViewManager()
+  public viewManager: ViewManager
 
   public windows: ProcessWindow[] = []
   public selectedWindow: ProcessWindow
@@ -53,6 +58,8 @@ export class AppWindow extends BrowserWindow {
         nodeIntegration: true,
         contextIsolation: false,
         enableRemoteModule: true, // TODO: FLOW-8215
+        experimentalFeatures: true,
+        preload: buildPreloadPath('inactivity-preload.js'),
       },
       icon: resolve(app.getAppPath(), 'static/app-icons/icon-wexond.png'),
     }, defaultBrowserWindow))
@@ -112,14 +119,20 @@ export class AppWindow extends BrowserWindow {
       writeFileSync(windowDataPath, JSON.stringify(windowState))
     })
 
-    const query = map(options, (value, key) => `${key}=${encodeURIComponent(value)}`).join('&')
-
+    let urlString: string
     if (process.env.ENV === 'dev') {
       this.webContents.openDevTools({ mode: 'detach' })
-      this.loadURL(`http://localhost:4444/app.html?${query}`)
+      urlString = 'http://localhost:4444/app.html'
     } else {
-      this.loadURL(join('file://', app.getAppPath(), `build/app.html?${query}`))
+      urlString = join('file://', app.getAppPath(), 'build/app.html')
     }
+    const url = new URL(urlString)
+    Object.entries(options).forEach(([key, value]) => {
+      if (typeof value !== 'boolean' || value) {
+        url.searchParams.set(key, value)
+      }
+    })
+    this.loadURL(url.toString())
 
     this.once('ready-to-show', () => {
       this.show()
@@ -157,10 +170,10 @@ export class AppWindow extends BrowserWindow {
     if (platform() === 'win32') {
       this._ipcEvents = {
         'select-window': (e: any, id: number) => {
-          this.selectWindow(this.windows.find(x => x.handle === id))
+          this.selectWindow(this.windows.find(x => x.id === id))
         },
         'detach-window': (e: any, id: number) => {
-          this.detachWindow(this.windows.find(x => x.handle === id))
+          this.detachWindow(this.windows.find(x => x.id === id))
         },
         'hide-window': () => {
           if (this.selectedWindow) {
@@ -192,6 +205,27 @@ export class AppWindow extends BrowserWindow {
       })
       Object.entries(this._ipcEvents).forEach(event => ipcMain.on(...event))
     }
+
+    if (options.closeAfterInactivity) {
+      const timeout = options.inactivityTimeout ?? 5 // default to 5 minutes
+      this.viewManager = new ViewManager({
+        timeout,
+        callback: () => {
+          // Only close if inactivity occurs on "nested" views
+          if (this.getBrowserView()) {
+            this.close()
+          }
+        },
+      })
+      watchForInactivity(this, timeout, () => {
+        // Only close if inactivity occurs on "main" view
+        if (!this.getBrowserView()) {
+          this.close()
+        }
+      })
+    } else {
+      this.viewManager = new ViewManager()
+    }
   }
 
   public activateWindowCapturing() {
@@ -219,6 +253,8 @@ export class AppWindow extends BrowserWindow {
         clearInterval(this.interval)
         this.interval = null
       }
+
+      windowManager.removeAllListeners('window-activated')
     })
 
     this.interval = setInterval(this.intervalCallback, 100)
@@ -226,11 +262,11 @@ export class AppWindow extends BrowserWindow {
     Object.entries(this._ipcEvents).forEach(event => ipcMain.on(...event))
 
     windowManager.on('window-activated', (window: Window) => {
-      this.webContents.send('select-tab', window.handle)
+      this.webContents.send('select-tab', window.id)
 
       if (
-        window.handle === handle ||
-        (this.selectedWindow && window.handle === this.selectedWindow.handle)
+        window.id === handle ||
+        (this.selectedWindow && window.id === this.selectedWindow.id)
       ) {
         if (!globalShortcut.isRegistered('CmdOrCtrl+Tab')) {
           globalShortcut.register('CmdOrCtrl+Tab', () => {
@@ -247,10 +283,10 @@ export class AppWindow extends BrowserWindow {
 
       setTimeout(() => {
         this.draggedWindow = new ProcessWindow(
-          windowManager.getActiveWindow().handle,
+          windowManager.getActiveWindow().id,
         )
 
-        if (this.draggedWindow.handle === handle) {
+        if (this.draggedWindow.id === handle) {
           this.draggedWindow = null
           return
         }
@@ -309,7 +345,7 @@ export class AppWindow extends BrowserWindow {
     })
   }
 
-  intervalCallback = () => {
+  intervalCallback = async () => {
     if (this.isMoving) return
 
     if (!this.isMinimized()) {
@@ -317,7 +353,7 @@ export class AppWindow extends BrowserWindow {
         const title = window.getTitle()
         if (window.lastTitle !== title) {
           this.webContents.send('update-tab-title', {
-            id: window.handle,
+            id: window.id,
             title,
           })
           window.lastTitle = title
@@ -325,7 +361,7 @@ export class AppWindow extends BrowserWindow {
 
         if (!window.isWindow()) {
           this.detachWindow(window)
-          this.webContents.send('remove-tab', window.handle)
+          this.webContents.send('remove-tab', window.id)
         }
       }
 
@@ -349,8 +385,8 @@ export class AppWindow extends BrowserWindow {
     if (
       !this.isMinimized() &&
       this.draggedWindow &&
-      this.draggedWindow.getOwner().handle === 0 &&
-      !this.windows.find(x => x.handle === this.draggedWindow.handle)
+      this.draggedWindow.getOwner().id === 0 &&
+      !this.windows.find(x => x.id === this.draggedWindow.id)
     ) {
       const winBounds = this.draggedWindow.getBounds()
       const { lastBounds } = this.draggedWindow
@@ -369,23 +405,25 @@ export class AppWindow extends BrowserWindow {
       ) {
         if (!this.draggedIn) {
           const title = this.draggedWindow.getTitle()
-          app.getFileIcon(this.draggedWindow.process.path, (err, icon) => {
-            if (err) return console.error(err)
 
+          try {
+            const icon = await app.getFileIcon(this.draggedWindow.path)
             this.draggedWindow.lastTitle = title
 
             this.webContents.send('add-tab', {
-              id: this.draggedWindow.handle,
+              id: this.draggedWindow.id,
               title,
               icon: icon.toPNG(),
             })
 
             this.draggedIn = true
             this.willAttachWindow = true
-          })
+          } catch (e) {
+            console.error(e)
+          }
         }
       } else if (this.draggedIn && !this.detached) {
-        this.webContents.send('remove-tab', this.draggedWindow.handle)
+        this.webContents.send('remove-tab', this.draggedWindow.id)
 
         this.draggedIn = false
         this.willAttachWindow = false
@@ -407,7 +445,7 @@ export class AppWindow extends BrowserWindow {
 
     if (this.selectedWindow) {
       if (
-        window.handle === this.selectedWindow.handle &&
+        window.id === this.selectedWindow.id &&
         !this.isWindowHidden
       ) {
         return
@@ -449,7 +487,7 @@ export class AppWindow extends BrowserWindow {
 
     window.detach()
 
-    this.windows = this.windows.filter(x => x.handle !== window.handle)
+    this.windows = this.windows.filter(x => x.id !== window.id)
   }
 
   close() {

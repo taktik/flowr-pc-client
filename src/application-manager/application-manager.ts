@@ -1,11 +1,12 @@
 import { ApplicationConfig, FlowrApplication } from '@taktik/flowr-common-js'
 import { ipcMain, BrowserWindow, app, IpcMainEvent } from 'electron'
-import { resolve, join } from 'path'
+import { join } from 'path'
 import { storeManager } from '../launcher'
 import { Store } from '../frontend/src/store'
 import * as fs from 'fs'
 import { FlowrWindow } from '../frontend/flowr-window'
 import { create, packageJSON, canOpen } from '../applications/FlowrPhone'
+import { buildApplicationPreloadPath, buildFileUrl } from './helpers'
 
 interface ApplicationInitConfig {
   application: FlowrApplication
@@ -56,33 +57,7 @@ export interface ApplicationOptions {
   store?: Store<Object>,
   capabilities?: {[key: string]: boolean},
   flowrWindow?: FlowrWindow | null,
-  wexondWindow?: BrowserWindow | null,
-}
-
-/**
- * Return absolute path to a given file name
- * @param {String} fileName
- */
-function buildPreloadPath(fileName: string): string {
-  let result: string = resolve(app.getAppPath(), `build/applications/preloads/${fileName}`)
-  if (process.env.ENV !== 'dev') {
-    result = join(app.getAppPath(), `/build/applications/preloads/${fileName}`)
-  }
-  return result
-}
-
-/**
- * Return path to given application's served file
- * @param {String} name
- */
-function buildFileUrl(name: string): string {
-  let result: string
-  if (process.env.ENV === 'dev') {
-    result = `http://localhost:4444/applications/${name}/index.html`
-  } else {
-    result = join('file://', app.getAppPath(), 'build', 'applications', name, 'index.html')
-  }
-  return result
+  browserWindow?: BrowserWindow | null,
 }
 
 export class ApplicationManager {
@@ -98,13 +73,13 @@ export class ApplicationManager {
     this._flowrWindow = flowrWindow
     flowrWindow.on('close', () => this._flowrWindow = null)
   }
-  private _wexondWindow: BrowserWindow | null = null
-  get wexondWindow() {
-    return this._wexondWindow
+  private _browserWindow: BrowserWindow | null = null
+  get browserWindow() {
+    return this._browserWindow
   }
-  set wexondWindow(wexondWindow: BrowserWindow) {
-    this._wexondWindow = wexondWindow
-    wexondWindow.on('close', () => this._wexondWindow = null)
+  set browserWindow(browserWindow: BrowserWindow) {
+    this._browserWindow = browserWindow
+    browserWindow.on('close', () => this._browserWindow = null)
   }
   // end
 
@@ -119,16 +94,16 @@ export class ApplicationManager {
 
   initLocalApps(clearStore: boolean = false): Promise<void[]> {
     return new Promise((resolve, reject) => {
-      fs.readdir(join(app.getAppPath(), 'build', 'applications'), (err, files) => {
+      // Potential caveats of "withFileTypes" option with asar archives: https://github.com/electron/electron/issues/25349
+      fs.readdir(join(app.getAppPath(), 'build'), { withFileTypes: true }, (err, files) => {
         if (err) {
           reject(err)
           return
         }
         const registeringPromises: Promise<void>[] = files
-          // Exclude preloads folder
-          .filter(name => name !== 'preloads')
+          .filter(file => file.isDirectory())
           // Register applications
-          .map(name => this.registerApp(name, clearStore))
+          .map(file => this.registerApp(file.name, clearStore))
 
         Promise.all(registeringPromises)
           .then(resolve)
@@ -145,10 +120,10 @@ export class ApplicationManager {
     try {
       console.log('Registering app', name)
       // Can't easily rename fusebox output, so we'll leave the ${name}/${name} folder/file structure for now
-      // const { open, packageJSON } = await import(`./applications/${name}/${name}.js`)
+      // const { create, packageJSON, canOpen } = await import(`./applications/${name}`)
       // const app = (await import(`./applications/${name}/${name}-loader.js`))[name]
       // const { create, packageJSON } = app
-      const preload = buildPreloadPath(name)
+      const preload = buildApplicationPreloadPath(name)
       const index = buildFileUrl(name)
       const store = storeManager.createStore<Object>(name, {})
 
@@ -222,7 +197,7 @@ export class ApplicationManager {
             store: application.store,
             capabilities: application.capabilities,
             flowrWindow: this._flowrWindow,
-            wexondWindow: this._wexondWindow,
+            browserWindow: this._browserWindow,
           })
           applicationWindow.on('close', () => delete this.activeWindows[appName])
         } else {
