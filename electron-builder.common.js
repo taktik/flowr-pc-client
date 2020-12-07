@@ -1,7 +1,7 @@
 module.exports = {
   appId: 'org.taktik.flowr.pcClient',
   productName: 'flowr-desktop',
-  artifactName: '${productName}-${version}.${ext}',
+  artifactName: '${productName}-${version}-${os}.${ext}',
   nsis: {
     include: 'static/installer.nsh',
     oneClick: false,
