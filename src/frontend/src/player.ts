@@ -20,7 +20,7 @@ import { Dispatcher } from './dispatcher'
 import { ChildProcess } from 'child_process'
 import { storeManager } from '../../launcher'
 import { IFlowrStore } from './interfaces/flowrStore'
-
+import { mergeWith } from 'lodash'
 export class Player {
   private streams?: IPlayerStreams
   private currentStreams?: ICurrentStreams
@@ -71,7 +71,8 @@ export class Player {
     const shouldPersist = !storeManager.exists('player')
 
     if (storeManager.exists('player')) {
-      this.store.bulkSet(playerConfig)
+      const playerConfigMerged = mergeWith({}, this.flowrStore.data.player, DEFAULT_PLAYER_STORE, playerConfig, (a, b) => b === null || b === '' ? a : undefined)
+      this.store.bulkSet(playerConfigMerged)
     }
 
     if (shouldPersist) {

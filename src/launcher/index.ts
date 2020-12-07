@@ -6,11 +6,12 @@ import { createWexondWindow, setWexondLog } from '~/main'
 import { clearBrowsingData } from '~/main/clearBrowsingData'
 import { getMigrateUserPreferences } from './migration/fromFlowrClientToFlowrPcClient'
 import { FlowrWindow } from 'src/frontend/flowr-window'
-export const log = require('electron-log')
 import { StoreManager, Store } from '../frontend/src/store'
 import { ApplicationManager } from '../application-manager/application-manager'
 import { IFlowrStore } from '../frontend/src/interfaces/flowrStore'
 import { keyboard } from '../keyboard/keyboardController'
+import { mergeWith, cloneDeep } from 'lodash'
+export const log = require('electron-log')
 
 const FlowrDataDir = resolve(homedir(), '.flowr')
 
@@ -72,9 +73,14 @@ async function main() {
       }
     })
 
-    ipcMain.on('flowr-desktop-config', (event: IpcMainEvent, desktopConfig: any) => {
-      flowrStore.bulkSet(desktopConfig.userPreferences)
-      flowrWindow.player.initStore(desktopConfig.player)
+    ipcMain.on('flowr-desktop-config', (event: IpcMainEvent, desktopConfig?: any) => {
+      const currentFlowrStore = cloneDeep(flowrStore.data)
+      delete currentFlowrStore.player
+      if (desktopConfig) {
+        const userPreferencesMerged = mergeWith({}, currentFlowrStore, DEFAULT_FRONTEND_STORE, desktopConfig.userPreferences, (a, b) => b === null || b === '' ? a : undefined)
+        flowrStore.bulkSet(userPreferencesMerged)
+        flowrWindow.player.initStore(desktopConfig.player)
+      }
     })
 
     ipcMain.on('open-browser', async (event: Event, options: any) => {
