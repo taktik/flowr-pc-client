@@ -313,13 +313,10 @@ export const runWebRequestService = (window: AppWindow) => {
   // onHeadersReceived
 
   const onHeadersReceived = async (details: any, callback: any) => {
-    const responseHeaders = objectToArray(details.responseHeaders)
-
     const newDetails: any = {
       ...getDetails(details, window, true),
-      responseHeaders,
+      responseHeaders: details.responseHeaders,
     }
-
     interceptRequest('onHeadersReceived', newDetails, callback)
   }
 

@@ -2,6 +2,8 @@ import * as Ffmpeg from 'fluent-ffmpeg'
 import * as ffmpegPath from 'ffmpeg-static'
 import { path as ffprobePath } from 'ffprobe-static'
 import { Readable } from 'stream'
+import { resolve } from 'path'
+import { app } from 'electron'
 import { PlayerError, PlayerErrors } from './playerError'
 
 function appendCmdWithoutSubtitle(
@@ -49,8 +51,8 @@ function handleError(
 
 export class FlowrFfmpeg {
   constructor() {
-    Ffmpeg.setFfmpegPath(ffmpegPath.replace('app.asar', 'app.asar.unpacked'))
-    Ffmpeg.setFfprobePath(ffprobePath.replace('app.asar', 'app.asar.unpacked'))
+    Ffmpeg.setFfmpegPath(resolve(app.getAppPath(), ffmpegPath))
+    Ffmpeg.setFfprobePath(resolve(app.getAppPath(), ffprobePath))
   }
 
   async ffprobe(

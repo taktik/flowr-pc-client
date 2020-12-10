@@ -55,11 +55,6 @@ export const registerProtocols = () => {
 
         return null;
       },
-      error => {
-        if (error) {
-          console.error(`Failed to register extension protocol: ${error}`);
-        }
-      },
     );
     sess.protocol.registerFileProtocol(
       'wexond',
@@ -91,9 +86,6 @@ export const registerProtocols = () => {
         return callback({
           path: join(app.getAppPath(), 'static/pages', parsed.path),
         });
-      },
-      error => {
-        if (error) console.error('Failed to register protocol');
       },
     );
   });
