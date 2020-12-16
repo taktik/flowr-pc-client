@@ -1,4 +1,4 @@
-import { BrowserWindow } from 'electron'
+import { app, BrowserWindow } from 'electron'
 import { KeyboardWindow } from '../applications/keyboard/keyboardWindow'
 import { IFlowrStore } from '../frontend/src/interfaces/flowrStore'
 import { Store } from '../frontend/src/store'
@@ -11,20 +11,24 @@ class Keyboard {
     return !!this.flowrStore?.get('enableVirtualKeyboard')
   }
 
-  private createKeyboard(parent: BrowserWindow): KeyboardWindow {
+  private get shouldCreateNewKeyboardWindow() {
+    return !this.keyboardWindow || this.keyboardWindow.isDestroyed()
+  }
+
+  createKeyboard(parent?: BrowserWindow): void {
     const keyboardWindow = new KeyboardWindow(parent)
     keyboardWindow.on('close', () => this.keyboardWindow = undefined)
-    return keyboardWindow
+    this.keyboardWindow =  keyboardWindow
   }
 
   open(parent: BrowserWindow) {
     if (!this.isEnabled) {
       throw Error('Keyboard is not enabled.')
     }
-    if (this.keyboardWindow) {
-      this.keyboardWindow.setParentWindow(parent)
+    if (this.shouldCreateNewKeyboardWindow) {
+      this.createKeyboard(parent)
     } else {
-      this.keyboardWindow = this.createKeyboard(parent)
+      this.setParentWindow(parent)
     }
     this.keyboardWindow.show()
   }
@@ -37,10 +41,10 @@ class Keyboard {
     if (!this.isEnabled) {
       throw Error('Keyboard is not enabled.')
     }
-    if (!this.keyboardWindow) {
+    if (this.shouldCreateNewKeyboardWindow) {
       this.open(parent)
     } else {
-      this.keyboardWindow.setParentWindow(parent)
+      this.setParentWindow(parent)
       if (this.keyboardWindow.isVisible()) {
         this.keyboardWindow.hide()
       } else {
@@ -48,6 +52,25 @@ class Keyboard {
       }
     }
   }
+
+  setParentWindow(parent: BrowserWindow) {
+    parent.on('close', () => {
+      this.keyboardWindow?.setParentWindow(null)
+      this.keyboardWindow.hide()
+    })
+    this.keyboardWindow.setParentWindow(parent)
+  }
 }
 
 export const keyboard = new Keyboard()
+
+/**
+ * Create the keyboard window early on
+ * This is to circumvent an issue on Windows when creating this window later would put it behind every other window along with its parent
+ * If the real source of this issue is found those lines can be deleted (to avoid creating a potentially unused window)
+ */
+if (app.isReady()) {
+  keyboard.createKeyboard()
+} else {
+  app.once('ready', () => keyboard.createKeyboard())
+}

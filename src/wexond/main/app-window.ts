@@ -29,8 +29,6 @@ export interface WexondOptions {
   inactivityTimeout?: number
 }
 export class AppWindow extends KeyboardMixin(BrowserWindow) {
-  private readonly _ipcEvents: {[key: string]: (...args: any[]) => void}
-
   public viewManager: ViewManager
 
   public windows: ProcessWindow[] = []
@@ -167,7 +165,7 @@ export class AppWindow extends KeyboardMixin(BrowserWindow) {
     })
 
     if (platform() === 'win32') {
-      this._ipcEvents = {
+      const ipcEvents = {
         'select-window': (e: any, id: number) => {
           this.selectWindow(this.windows.find(x => x.id === id))
         },
@@ -188,9 +186,9 @@ export class AppWindow extends KeyboardMixin(BrowserWindow) {
           }
         },
       }
-      this.activateWindowCapturing()
+      this.activateWindowCapturing(ipcEvents)
     } else {
-      this._ipcEvents = {
+      const ipcEvents = {
         setDebugMode: (evt: any, debugMode: boolean) => {
           if (debugMode) {
             this.webContents.openDevTools({ mode: 'detach' })
@@ -200,9 +198,9 @@ export class AppWindow extends KeyboardMixin(BrowserWindow) {
         },
       }
       this.on('close', () => {
-        Object.entries(this._ipcEvents).forEach(event => ipcMain.removeListener(...event))
+        Object.entries(ipcEvents).forEach(event => ipcMain.removeListener(...event))
       })
-      Object.entries(this._ipcEvents).forEach(event => ipcMain.on(...event))
+      Object.entries(ipcEvents).forEach(event => ipcMain.on(...event))
     }
 
     if (options.closeAfterInactivity) {
@@ -227,7 +225,73 @@ export class AppWindow extends KeyboardMixin(BrowserWindow) {
     }
   }
 
-  public activateWindowCapturing() {
+  public activateWindowCapturing(ipcEvents: {[key: string]: (...args: any[]) => void}) {
+    const mouseEventsListeners = {
+      'mouse-down': () => {
+        if (this.isMinimized()) return
+  
+        setTimeout(() => {
+          this.draggedWindow = new ProcessWindow(
+            windowManager.getActiveWindow().id,
+          )
+  
+          if (this.draggedWindow.id === handle) {
+            this.draggedWindow = null
+            return
+          }
+        }, 50)
+      },
+      'mouse-up': async () => {
+        if (this.selectedWindow && !this.isMoving) {
+          const bounds = this.selectedWindow.getBounds()
+          const { lastBounds } = this.selectedWindow
+  
+          if (
+            !this.isMaximized() &&
+            (bounds.width !== lastBounds.width ||
+              bounds.height !== lastBounds.height)
+          ) {
+            this.isUpdatingContentBounds = true
+  
+            clearInterval(this.interval)
+  
+            const sf = windowManager.getScaleFactor(this.window.getMonitor())
+  
+            this.selectedWindow.lastBounds = bounds
+  
+            this.setContentBounds({
+              width: bounds.width,
+              height: bounds.height + TOOLBAR_HEIGHT,
+              x: bounds.x,
+              y: bounds.y - TOOLBAR_HEIGHT - 1,
+            })
+  
+            this.interval = setInterval(this.intervalCallback, 100)
+  
+            this.isUpdatingContentBounds = false
+          }
+        }
+  
+        this.isMoving = false
+  
+        if (this.draggedWindow && this.willAttachWindow) {
+          const win = this.draggedWindow
+  
+          win.setOwner(this.window)
+  
+          this.windows.push(win)
+  
+          this.willAttachWindow = false
+  
+          setTimeout(() => {
+            this.selectWindow(win)
+          }, 50)
+        }
+  
+        this.draggedWindow = null
+        this.detached = false
+      },
+    }
     const updateBounds = () => {
       this.isMoving = true
 
@@ -243,7 +307,8 @@ export class AppWindow extends KeyboardMixin(BrowserWindow) {
     this.on('resize', updateBounds)
 
     this.on('close', () => {
-      Object.entries(this._ipcEvents).forEach(event => ipcMain.removeListener(...event))
+      Object.entries(ipcEvents).forEach(event => ipcMain.off(...event))
+      Object.entries(mouseEventsListeners).forEach(([eventName, callback]) => mouseEvents.off(eventName, callback))
       for (const window of this.windows) {
         this.detachWindow(window)
       }
@@ -258,7 +323,8 @@ export class AppWindow extends KeyboardMixin(BrowserWindow) {
 
     this.interval = setInterval(this.intervalCallback, 100)
 
-    Object.entries(this._ipcEvents).forEach(event => ipcMain.on(...event))
+    Object.entries(ipcEvents).forEach(event => ipcMain.on(...event))
+    Object.entries(mouseEventsListeners).forEach(([eventName, callback]) => mouseEvents.on(eventName, callback))
 
     windowManager.on('window-activated', (window: Window) => {
       this.webContents.send('select-tab', window.id)
@@ -275,72 +341,6 @@ export class AppWindow extends KeyboardMixin(BrowserWindow) {
       } else if (globalShortcut.isRegistered('CmdOrCtrl+Tab')) {
         globalShortcut.unregister('CmdOrCtrl+Tab')
       }
-    })
-
-    mouseEvents.on('mouse-down', () => {
-      if (this.isMinimized()) return
-
-      setTimeout(() => {
-        this.draggedWindow = new ProcessWindow(
-          windowManager.getActiveWindow().id,
-        )
-
-        if (this.draggedWindow.id === handle) {
-          this.draggedWindow = null
-          return
-        }
-      }, 50)
-    })
-
-    mouseEvents.on('mouse-up', async data => {
-      if (this.selectedWindow && !this.isMoving) {
-        const bounds = this.selectedWindow.getBounds()
-        const { lastBounds } = this.selectedWindow
-
-        if (
-          !this.isMaximized() &&
-          (bounds.width !== lastBounds.width ||
-            bounds.height !== lastBounds.height)
-        ) {
-          this.isUpdatingContentBounds = true
-
-          clearInterval(this.interval)
-
-          const sf = windowManager.getScaleFactor(this.window.getMonitor())
-
-          this.selectedWindow.lastBounds = bounds
-
-          this.setContentBounds({
-            width: bounds.width,
-            height: bounds.height + TOOLBAR_HEIGHT,
-            x: bounds.x,
-            y: bounds.y - TOOLBAR_HEIGHT - 1,
-          })
-
-          this.interval = setInterval(this.intervalCallback, 100)
-
-          this.isUpdatingContentBounds = false
-        }
-      }
-
-      this.isMoving = false
-
-      if (this.draggedWindow && this.willAttachWindow) {
-        const win = this.draggedWindow
-
-        win.setOwner(this.window)
-
-        this.windows.push(win)
-
-        this.willAttachWindow = false
-
-        setTimeout(() => {
-          this.selectWindow(win)
-        }, 50)
-      }
-
-      this.draggedWindow = null
-      this.detached = false
     })
   }
 

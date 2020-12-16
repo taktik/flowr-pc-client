@@ -137,16 +137,6 @@ const getDetails = (details: any, window: AppWindow, isTabRelated: boolean) => {
   return newDetails
 }
 
-const objectToArray = (obj: any): any[] => {
-  const arr: any = []
-  Object.keys(obj).forEach(k => {
-    if (obj[k]) {
-      arr.push({ name: k, value: obj[k][0] })
-    }
-  })
-  return arr
-}
-
 const arrayToObject = (arr: any[]) => {
   const obj: any = {}
   arr.forEach((item: any) => {
@@ -260,14 +250,8 @@ export const runWebRequestService = (window: AppWindow) => {
   // onBeforeSendHeaders
 
   const onBeforeSendHeaders = async (details: any, callback: any) => {
-    const requestHeaders = objectToArray(details.requestHeaders)
 
-    const newDetails: any = {
-      ...getDetails(details, window, true),
-      requestHeaders,
-    }
-
-    interceptRequest('onBeforeSendHeaders', newDetails, callback)
+    interceptRequest('onBeforeSendHeaders', getDetails(details, window, true), callback)
   }
 
   webviewRequest.onBeforeSendHeaders(async (details: any, callback: any) => {
@@ -356,13 +340,8 @@ export const runWebRequestService = (window: AppWindow) => {
   // onSendHeaders
 
   const onSendHeaders = async (details: any) => {
-    const requestHeaders = objectToArray(details.requestHeaders)
-    const newDetails: any = {
-      ...getDetails(details, window, true),
-      requestHeaders,
-    }
 
-    interceptRequest('onSendHeaders', newDetails)
+    interceptRequest('onSendHeaders', getDetails(details, window, true))
   }
 
   webviewRequest.onSendHeaders(async (details: any) => {
