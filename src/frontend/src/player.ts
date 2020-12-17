@@ -77,8 +77,6 @@ export class Player {
 
     if (shouldPersist) {
       this.store.persist()
-    } else if (this.store.get('version') !== app.getVersion()) {
-      this.store.reset(DEFAULT_PLAYER_STORE)
     }
   }
 
