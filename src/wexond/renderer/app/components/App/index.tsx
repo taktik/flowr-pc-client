@@ -23,7 +23,7 @@ export default observer((data: App) => {
     <ThemeProvider theme={store.theme}>
       <StyledApp>
         <GlobalStyle />
-        <Toolbar disableTabs={data.disableTabs} />
+        <Toolbar disableTabs={data.disableTabs} enableVirtualKeyboard={data.enableVirtualKeyboard} />
         <Line />
         <Overlay />
         {platform() !== 'darwin' && <WindowsButtons />}

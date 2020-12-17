@@ -34,5 +34,6 @@ styleElement.textContent = `
 document.head.appendChild(styleElement)
 const param = new URLSearchParams(location.search)
 const disableTabs = param.has('disableTabs')
+const enableVirtualKeyboard = param.has('enableVirtualKeyboard')
 store.tabGroups.addGroup()
-ReactDOM.render(<App disableTabs={disableTabs}/>, document.getElementById('app'))
+ReactDOM.render(<App disableTabs={disableTabs} enableVirtualKeyboard={enableVirtualKeyboard}/>, document.getElementById('app'))

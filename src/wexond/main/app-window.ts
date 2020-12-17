@@ -25,6 +25,7 @@ export interface WexondOptions {
   clearBrowsingDataAtClose: boolean,
   openUrl: string
   maxTab : number
+  enableVirtualKeyboard: boolean
   closeAfterInactivity?: boolean
   inactivityTimeout?: number
 }

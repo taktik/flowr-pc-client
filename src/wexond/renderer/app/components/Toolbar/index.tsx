@@ -89,12 +89,12 @@ export default observer((data: Toolbar) => {
             icon={icons.home}
             onClick={onHomePress}
           />
-          <ToolbarButton
+          {data.enableVirtualKeyboard && <ToolbarButton
             disabled={false}
             size={TOOLBAR_ICON_HEIGHT}
             icon={icons.keyboard}
             onClick={onKeyboardPress}
-          />
+          />}
         </Buttons>
       </StyledToolbar>
   )

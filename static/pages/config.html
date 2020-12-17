@@ -73,6 +73,7 @@
 	let isKiosk = false
 	let isLaunchedUrlCorrect = true
 	let clearAppDataOnStart = false
+	let enableVirtualKeyboard = false
 
 	ipc.removeAllListeners('receiveConfig')
 
@@ -84,6 +85,7 @@
 		externalUrl = data.extUrl || ''
 		isKiosk = !!data.isKiosk
 		isLaunchedUrlCorrect = !!data.isLaunchedUrlCorrect
+		enableVirtualKeyboard = !!data.enableVirtualKeyboard
 		console.log('data: ', data)
 		init()
 	})
@@ -116,6 +118,7 @@
 		document.getElementById('activateDeinterlacing').checked = isDeinterlacingActivated
 		document.getElementById('activateDebug').checked = isDebugMode
 		document.getElementById('clearAppDataOnStart').checked = clearAppDataOnStart
+		document.getElementById('enableVirtualKeyboard').checked = enableVirtualKeyboard
 
 		if (!isLaunchedUrlCorrect) {
 			invalidUrl()

@@ -1,14 +1,27 @@
-import { app, BrowserWindow } from 'electron'
+import { BrowserWindow } from 'electron'
 import { KeyboardWindow } from '../applications/keyboard/keyboardWindow'
 import { IFlowrStore } from '../frontend/src/interfaces/flowrStore'
 import { Store } from '../frontend/src/store'
 
 class Keyboard {
-  flowrStore?: Store<IFlowrStore>
+  private _flowrStore?: Store<IFlowrStore>
   keyboardWindow?: KeyboardWindow
 
+  set flowrStore(flowrStore: Store<IFlowrStore>) {
+    this._flowrStore = flowrStore
+
+    /**
+     * Create the keyboard window early on
+     * This is to circumvent an issue on Windows when creating this window later would put it behind every other window along with its parent
+     * If the real source of this issue is found those lines can be deleted (to avoid creating a potentially unused window)
+     */
+    if (this.isEnabled) {
+      this.createKeyboard()
+    }
+  }
+
   get isEnabled(): boolean {
-    return !!this.flowrStore?.get('enableVirtualKeyboard')
+    return !!this._flowrStore?.get('enableVirtualKeyboard')
   }
 
   private get shouldCreateNewKeyboardWindow() {
@@ -63,14 +76,3 @@ class Keyboard {
 }
 
 export const keyboard = new Keyboard()
-
-/**
- * Create the keyboard window early on
- * This is to circumvent an issue on Windows when creating this window later would put it behind every other window along with its parent
- * If the real source of this issue is found those lines can be deleted (to avoid creating a potentially unused window)
- */
-if (app.isReady()) {
-  keyboard.createKeyboard()
-} else {
-  app.once('ready', () => keyboard.createKeyboard())
-}

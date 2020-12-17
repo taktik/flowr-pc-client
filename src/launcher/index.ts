@@ -75,7 +75,12 @@ async function main() {
     ipcMain.on('open-browser', async (event: Event, options: any) => {
       browserWindow?.close()
 
-      browserWindow = await createWexondWindow(options, flowrWindow || undefined, buildBrowserWindowConfig(flowrStore, {}))
+      const wexondOptions = {
+        ...options,
+        enableVirtualKeyboard: flowrStore.get('enableVirtualKeyboard'),
+      }
+
+      browserWindow = await createWexondWindow(wexondOptions, flowrWindow || undefined, buildBrowserWindowConfig(flowrStore, {}))
 
       applicationManager.browserWindow = browserWindow
       browserWindow.webContents.focus()

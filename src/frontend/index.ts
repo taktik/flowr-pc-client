@@ -148,6 +148,10 @@ export async function createFlowrWindow(flowrStore: Store<IFlowrStore>): Promise
         debugMode : isDebugMode,
         isLaunchedUrlCorrect,
         deinterlacing: flowrStore.get('deinterlacing'),
+        extUrl: flowrStore.get('extUrl'),
+        isKiosk: flowrStore.get('isKiosk'),
+        clearAppDataOnStart: flowrStore.get('clearAppDataOnStart'),
+        enableVirtualKeyboard: flowrStore.get('enableVirtualKeyboard'),
       }
       // no need to expose the complete config
       if (storedConfig && storedConfig.ozoneApi) {
@@ -175,10 +179,6 @@ export async function createFlowrWindow(flowrStore: Store<IFlowrStore>): Promise
           },
         }
       }
-
-      config.extUrl = flowrStore.get('extUrl')
-      config.isKiosk = flowrStore.get('isKiosk')
-      config.clearAppDataOnStart = flowrStore.get('clearAppDataOnStart')
 
       evt.sender.send('receiveConfig', config)
     },
