@@ -6,7 +6,7 @@ import { KeyboardMixin } from '../keyboard/keyboardMixin'
 export class FlowrWindow extends KeyboardMixin(BrowserWindow) {
 
   private resizeTimeout?: number
-  private player: Player
+  public player: Player
 
   get phoneServerUrl(): string | undefined {
     return this.store.get('phoneServer')
