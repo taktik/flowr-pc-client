@@ -23,19 +23,6 @@ ipcMain.on('settings', (e: any, s: Settings) => {
 registerProtocols();
 
 app.on('ready', () => {
-  const settingsPath = getPath('settings.json')
-
-  if (settingsPath && !existsSync(settingsPath)) {
-    writeFileSync(
-      settingsPath,
-      JSON.stringify({
-        dialType: 'top-sites',
-        isDarkTheme: false,
-        isShieldToggled: false,
-      } as Settings),
-    );
-  }
-
   const defaultSession = session.defaultSession
 
   if (defaultSession) {
@@ -58,6 +45,19 @@ app.on('window-all-closed', () => {
 });
 
 export async function createWexondWindow(wexondOptions: WexondOptions, parentWindow?: BrowserWindow, defaultBrowserWindow: BrowserWindowConstructorOptions = {}): Promise<AppWindow> {
+  const settingsPath = getPath('settings.json')
+
+  if (settingsPath && !existsSync(settingsPath)) {
+    writeFileSync(
+      settingsPath,
+      JSON.stringify({
+        dialType: 'top-sites',
+        isDarkTheme: false,
+        isShieldToggled: false,
+      } as Settings),
+    );
+  }
+
   appWindow = new AppWindow(wexondOptions, parentWindow, defaultBrowserWindow);
   appWindow.on('close', () => {
     appWindow = null
