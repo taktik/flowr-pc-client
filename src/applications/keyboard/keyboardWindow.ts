@@ -16,12 +16,12 @@ function buildPositionFromParents(parentRectangle: Rectangle): Rectangle {
 export class KeyboardWindow extends BrowserWindow {
   capsLock = false
 
-  get webContentsToSend(): WebContents {
-    const browserView = this.parent.getBrowserView()
-    return browserView?.webContents ?? this.parent.webContents
+  get webContentsToSend(): WebContents | undefined {
+    const browserView = this.parent?.getBrowserView()
+    return browserView?.webContents ?? this.parent?.webContents
   }
 
-  constructor(private parent: BrowserWindow) {
+  constructor(private parent?: BrowserWindow) {
     super({
       parent,
       acceptFirstMouse: true,
@@ -32,10 +32,11 @@ export class KeyboardWindow extends BrowserWindow {
       minimizable: false,
       transparent: true,
       resizable: false,
+      show: false,
       webPreferences: {
         preload: buildApplicationPreloadPath('keyboard'),
       },
-      ...buildPositionFromParents(parent.getBounds()),
+      ...(parent ? buildPositionFromParents(parent.getBounds()) : {}),
     })
     const url = buildFileUrl('keyboard')
     this.loadURL(url)
@@ -59,12 +60,22 @@ export class KeyboardWindow extends BrowserWindow {
   onKeyPress(_: IpcMainEvent, keyCode: string): void {
     const keyDown = this.makeEvent('keyDown', keyCode)
     const char = this.makeEvent('char', keyCode)
-    this.webContentsToSend.sendInputEvent(keyDown)
-    this.webContentsToSend.sendInputEvent(char)
+    this.webContentsToSend?.sendInputEvent(keyDown)
+    this.webContentsToSend?.sendInputEvent(char)
   }
 
   onKeyUp(_: IpcMainEvent, keyCode: string): void {
     const keyUp = this.makeEvent('keyUp', keyCode)
-    this.webContentsToSend.sendInputEvent(keyUp)
+    this.webContentsToSend?.sendInputEvent(keyUp)
+  }
+
+  setParentWindow(parent: BrowserWindow | null) {
+    if (parent) {
+      const { x, y, width, height } = buildPositionFromParents(parent.getBounds())
+      this.setSize(width, height)
+      this.setPosition(x, y)
+    }
+    this.parent = parent
+    super.setParentWindow(parent)
   }
 }

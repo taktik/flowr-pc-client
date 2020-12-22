@@ -13,6 +13,9 @@ module.exports = async (env) => {
             mode,
             optimization,
             module: webpackModule,
+            node: {
+                __dirname: true,
+            },
             plugins: [
                 new CleanWebpackPlugin()
             ],

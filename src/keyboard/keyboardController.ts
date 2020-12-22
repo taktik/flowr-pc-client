@@ -4,27 +4,44 @@ import { IFlowrStore } from '../frontend/src/interfaces/flowrStore'
 import { Store } from '../frontend/src/store'
 
 class Keyboard {
-  flowrStore?: Store<IFlowrStore>
+  private _flowrStore?: Store<IFlowrStore>
   keyboardWindow?: KeyboardWindow
 
-  get isEnabled(): boolean {
-    return !!this.flowrStore?.get('enableVirtualKeyboard')
+  set flowrStore(flowrStore: Store<IFlowrStore>) {
+    this._flowrStore = flowrStore
+
+    /**
+     * Create the keyboard window early on
+     * This is to circumvent an issue on Windows when creating this window later would put it behind every other window along with its parent
+     * If the real source of this issue is found those lines can be deleted (to avoid creating a potentially unused window)
+     */
+    if (this.isEnabled) {
+      this.createKeyboard()
+    }
   }
 
-  private createKeyboard(parent: BrowserWindow): KeyboardWindow {
+  get isEnabled(): boolean {
+    return !!this._flowrStore?.get('enableVirtualKeyboard')
+  }
+
+  private get shouldCreateNewKeyboardWindow() {
+    return !this.keyboardWindow || this.keyboardWindow.isDestroyed()
+  }
+
+  createKeyboard(parent?: BrowserWindow): void {
     const keyboardWindow = new KeyboardWindow(parent)
     keyboardWindow.on('close', () => this.keyboardWindow = undefined)
-    return keyboardWindow
+    this.keyboardWindow =  keyboardWindow
   }
 
   open(parent: BrowserWindow) {
     if (!this.isEnabled) {
       throw Error('Keyboard is not enabled.')
     }
-    if (this.keyboardWindow) {
-      this.keyboardWindow.setParentWindow(parent)
+    if (this.shouldCreateNewKeyboardWindow) {
+      this.createKeyboard(parent)
     } else {
-      this.keyboardWindow = this.createKeyboard(parent)
+      this.setParentWindow(parent)
     }
     this.keyboardWindow.show()
   }
@@ -37,16 +54,24 @@ class Keyboard {
     if (!this.isEnabled) {
       throw Error('Keyboard is not enabled.')
     }
-    if (!this.keyboardWindow) {
+    if (this.shouldCreateNewKeyboardWindow) {
       this.open(parent)
     } else {
-      this.keyboardWindow.setParentWindow(parent)
+      this.setParentWindow(parent)
       if (this.keyboardWindow.isVisible()) {
         this.keyboardWindow.hide()
       } else {
         this.keyboardWindow.show()
       }
     }
+  }
+
+  setParentWindow(parent: BrowserWindow) {
+    parent.on('close', () => {
+      this.keyboardWindow?.setParentWindow(null)
+      this.keyboardWindow.hide()
+    })
+    this.keyboardWindow.setParentWindow(parent)
   }
 }
 

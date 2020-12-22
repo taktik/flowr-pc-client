@@ -1,5 +1,6 @@
 import { IFlowrConfig } from './flowrConfig'
 import { IChannelData } from './channelData'
+import { IPlayerStore } from './playerStore'
 
 export interface IFlowrStore {
   windowBounds: { width: number, height: number }
@@ -10,5 +11,6 @@ export interface IFlowrStore {
   isKiosk: boolean
   deinterlacing: boolean
   flowrConfig?: IFlowrConfig
+  player?: IPlayerStore
   enableVirtualKeyboard: boolean
 }

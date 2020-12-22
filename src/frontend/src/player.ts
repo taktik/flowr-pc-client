@@ -1,5 +1,5 @@
 import { Store } from './store'
-import { ipcMain, IpcMainEvent, app } from 'electron'
+import { ipcMain, IpcMainEvent } from 'electron'
 import { IpcStreamer } from './ipcStreamer'
 import { ITsDecryptorConfig, TsDecryptor } from '@taktik/ts-decryptor'
 import { UdpStreamer, UdpStreamerError, UdpStreamerErrors } from '@taktik/udp-streamer'
@@ -20,7 +20,7 @@ import { Dispatcher } from './dispatcher'
 import { ChildProcess } from 'child_process'
 import { storeManager } from '../../launcher'
 import { IFlowrStore } from './interfaces/flowrStore'
-
+import { mergeWith } from 'lodash'
 export class Player {
   private streams?: IPlayerStreams
   private currentStreams?: ICurrentStreams
@@ -33,7 +33,7 @@ export class Player {
   private stopping: Promise<void> = Promise.resolve()
   private flowrFfmpeg: FlowrFfmpeg = new FlowrFfmpeg()
   private ffprobeProcess?: ChildProcess
-  private store: Store<IPlayerStore> = this.initStore()
+  private store: Store<IPlayerStore> = storeManager.createStore<IPlayerStore>('player', DEFAULT_PLAYER_STORE)
 
   get ipcStreamerConfig(): IStreamerConfig {
     return this.store.get('streamer')
@@ -67,17 +67,17 @@ export class Player {
     Object.entries(this._ipcEvents).forEach(event => ipcMain.on(event[0], event[1]))
   }
 
-  initStore(): Store<IPlayerStore> {
+  initStore(playerConfig: IPlayerStore): void {
     const shouldPersist = !storeManager.exists('player')
-    const store = storeManager.createStore<IPlayerStore>('player', DEFAULT_PLAYER_STORE)
 
-    if (shouldPersist) {
-      store.persist()
-    } else if (store.get('version') !== app.getVersion()) {
-      store.reset(DEFAULT_PLAYER_STORE)
+    if (storeManager.exists('player')) {
+      const playerConfigMerged = mergeWith({}, this.flowrStore.data.player, DEFAULT_PLAYER_STORE, playerConfig, (a, b) => b === null || b === '' ? a : undefined)
+      this.store.bulkSet(playerConfigMerged)
     }
 
-    return store
+    if (shouldPersist) {
+      this.store.persist()
+    }
   }
 
   updateChannelData(streams: ICurrentStreams) {
