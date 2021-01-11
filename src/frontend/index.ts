@@ -259,7 +259,7 @@ export async function createFlowrWindow(flowrStore: Store<IFlowrStore>): Promise
   }
 
   async function getActiveMacAddress(): Promise<string> {
-    if (flowrStore.get('realMacAddress')) {
+    if (flowrStore.get('useRealMacAddress')) {
       return (await networkEverywhere.getActiveInterface()).mac
     }
     return (await devicesDetailsHelper.getDeviceDetails()).uuid
