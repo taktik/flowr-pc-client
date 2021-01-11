@@ -97,9 +97,11 @@ export async function createFlowrWindow(flowrStore: Store<IFlowrStore>): Promise
   function displayHiddenMenu(): void {
     const flowrUrl = flowrStore.get('extUrl') || buildFileUrl('config.html')
     const template: any = [
-      { label: 'Menu',
+      {
+        label: 'Menu',
         submenu: [
-          { label: 'Config',
+          {
+            label: 'Config',
             click() {
               const formattedPath = buildFileUrl('config.html')
               mainWindow.loadURL(formattedPath)
@@ -129,7 +131,8 @@ export async function createFlowrWindow(flowrStore: Store<IFlowrStore>): Promise
               mainWindow.setFullScreen(!windowIsFullscreen)
             },
           },
-        ]},
+        ],
+      },
     ]
 
     const appMenu = Menu.buildFromTemplate(template)
@@ -137,7 +140,7 @@ export async function createFlowrWindow(flowrStore: Store<IFlowrStore>): Promise
     mainWindow.setMenuBarVisibility(true)
   }
 
-  const _ipcEvents: {[key: string]: (...args: any[]) => void} = {
+  const _ipcEvents: { [key: string]: (...args: any[]) => void } = {
     FlowrIsInitializing: () => {
       clearInterval(reloadTimeout)
       isLaunchedUrlCorrect = true
@@ -145,7 +148,7 @@ export async function createFlowrWindow(flowrStore: Store<IFlowrStore>): Promise
     getAppConfig: (evt: any) => {
       const storedConfig = flowrStore.get('flowrConfig')
       const config: any = {
-        debugMode : isDebugMode,
+        debugMode: isDebugMode,
         isLaunchedUrlCorrect,
         deinterlacing: flowrStore.get('deinterlacing'),
         extUrl: flowrStore.get('extUrl'),
@@ -171,10 +174,10 @@ export async function createFlowrWindow(flowrStore: Store<IFlowrStore>): Promise
           socketApi: {
             host: socketApi,
           },
-          pushVodSocketApi:{
+          pushVodSocketApi: {
             host: pushVodSocketApi,
           },
-          aneviaVodSocketApi:{
+          aneviaVodSocketApi: {
             host: aneviaVodSocketApi,
           },
         }
@@ -208,7 +211,7 @@ export async function createFlowrWindow(flowrStore: Store<IFlowrStore>): Promise
     },
     updateAppConfig: (evt: any, data: any) => {
       const currentConfig = flowrStore.get('flowrConfig')
-      const newConfig =  deepExtend(currentConfig, data)
+      const newConfig = deepExtend(currentConfig, data)
       flowrStore.set('flowrConfig', newConfig)
       app.relaunch()
       app.quit()
@@ -256,6 +259,9 @@ export async function createFlowrWindow(flowrStore: Store<IFlowrStore>): Promise
   }
 
   async function getActiveMacAddress(): Promise<string> {
+    if (flowrStore.get('realMacAddress')) {
+      return (await networkEverywhere.getActiveInterface()).mac
+    }
     return (await devicesDetailsHelper.getDeviceDetails()).uuid
   }
 
