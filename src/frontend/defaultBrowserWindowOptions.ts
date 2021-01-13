@@ -1,7 +1,9 @@
 import { Store } from './src/store'
 import { BrowserWindowConstructorOptions } from 'electron'
+import { IFlowrStore } from './src/interfaces/flowrStore'
+import { FullScreenManager } from '../common/fullscreen'
 
-export default function (flowrStore: Store): BrowserWindowConstructorOptions {
+export default function (flowrStore: Store<IFlowrStore>): BrowserWindowConstructorOptions {
   const kiosk = flowrStore.get('isKiosk') || false
   const winBounds = flowrStore.get('windowBounds')
   // Create the browser window.
@@ -11,7 +13,8 @@ export default function (flowrStore: Store): BrowserWindowConstructorOptions {
     minWidth: 430,
     minHeight: 270,
     title: 'FlowR',
-    fullscreen: true,
+    fullscreen: FullScreenManager.shouldBeDefaultFullScreen,
+    fullscreenable: FullScreenManager.fullscreenable,
     kiosk,
     titleBarStyle: 'hiddenInset',
     alwaysOnTop: false,

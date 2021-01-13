@@ -6,7 +6,7 @@ const param = new URLSearchParams(location.search)
 let UILanguage = defaultLanguage
 
 if (param.has('lang')) {
-  UILanguage = param.get('lang') || defaultLanguage
+  UILanguage = decodeURIComponent(param.get('lang')) || defaultLanguage
 }
 moment.locale(UILanguage)
 

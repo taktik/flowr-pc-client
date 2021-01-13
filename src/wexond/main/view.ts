@@ -12,10 +12,10 @@ import { parse } from 'tldts'
 import { buildPreloadPath } from '../../common/preload'
 
 export class View extends BrowserView {
-  public title: string = '';
-  public url: string = '';
-  public tabId: number;
-  public homeUrl: string;
+  public title: string = ''
+  public url: string = ''
+  public tabId: number
+  public homeUrl: string
 
   constructor(id: number, url: string) {
     super({
@@ -27,13 +27,13 @@ export class View extends BrowserView {
         partition: 'persist:view',
         plugins: true,
       },
-    });
+    })
 
-    this.homeUrl = url;
-    this.tabId = id;
+    this.homeUrl = url
+    this.tabId = id
 
     this.webContents.on('context-menu', (e, params) => {
-      let menuItems: Electron.MenuItemConstructorOptions[] = [];
+      let menuItems: Electron.MenuItemConstructorOptions[] = []
 
       if (params.linkURL !== '') {
         menuItems = menuItems.concat([
@@ -47,7 +47,7 @@ export class View extends BrowserView {
                   active: false,
                 },
                 true,
-              );
+              )
             },
           },
           {
@@ -56,14 +56,14 @@ export class View extends BrowserView {
           {
             label: 'Copy link address',
             click: () => {
-              clipboard.clear();
-              clipboard.writeText(params.linkURL);
+              clipboard.clear()
+              clipboard.writeText(params.linkURL)
             },
           },
           {
             type: 'separator',
           },
-        ]);
+        ])
       }
 
       if (params.hasImageContents) {
@@ -78,29 +78,29 @@ export class View extends BrowserView {
                   active: false,
                 },
                 true,
-              );
+              )
             },
           },
           {
             label: 'Copy image',
             click: () => {
-              const img = nativeImage.createFromDataURL(params.srcURL);
+              const img = nativeImage.createFromDataURL(params.srcURL)
 
-              clipboard.clear();
-              clipboard.writeImage(img);
+              clipboard.clear()
+              clipboard.writeImage(img)
             },
           },
           {
             label: 'Copy image address',
             click: () => {
-              clipboard.clear();
-              clipboard.writeText(params.srcURL);
+              clipboard.clear()
+              clipboard.writeText(params.srcURL)
             },
           },
           {
             type: 'separator',
           },
-        ]);
+        ])
       }
 
       if (params.isEditable) {
@@ -132,7 +132,7 @@ export class View extends BrowserView {
           {
             type: 'separator',
           },
-        ] as any);
+        ] as any)
       }
 
       if (!params.isEditable && params.selectionText !== '') {
@@ -140,7 +140,7 @@ export class View extends BrowserView {
           {
             role: 'copy',
           },
-        ]);
+        ])
       }
 
       if (
@@ -154,85 +154,85 @@ export class View extends BrowserView {
             label: 'Go back',
             enabled: this.webContents.canGoBack(),
             click: () => {
-              this.webContents.goBack();
+              this.webContents.goBack()
             },
           },
           {
             label: 'Go forward',
             enabled: this.webContents.canGoForward(),
             click: () => {
-              this.webContents.goForward();
+              this.webContents.goForward()
             },
           },
           {
             label: 'Refresh',
             click: () => {
-              this.webContents.reload();
+              this.webContents.reload()
             },
           },
           {
             label: 'Close',
             click: () => {
-              this.webContents.executeJavaScript('document.exitFullscreen()');
-              appWindow.webContents.send('remove-tab', this.tabId);
+              this.webContents.executeJavaScript('document.exitFullscreen()')
+              appWindow.webContents.send('remove-tab', this.tabId)
             },
           },
           {
             type: 'separator',
           },
-        ]);
+        ])
       }
 
       menuItems.push({
         label: 'Inspect Element',
         click: () => {
-          this.webContents.inspectElement(params.x, params.y);
+          this.webContents.inspectElement(params.x, params.y)
 
           if (this.webContents.isDevToolsOpened()) {
-            this.webContents.devToolsWebContents.focus();
+            this.webContents.devToolsWebContents.focus()
           }
         },
-      });
+      })
 
-      const menu = Menu.buildFromTemplate(menuItems);
+      const menu = Menu.buildFromTemplate(menuItems)
 
-      menu.popup();
-    });
+      menu.popup()
+    })
 
     this.webContents.addListener('found-in-page', (e, result) => {
-      appWindow.webContents.send('found-in-page', result);
-    });
+      appWindow.webContents.send('found-in-page', result)
+    })
 
     this.webContents.addListener('did-stop-loading', () => {
-      this.updateNavigationState();
-      appWindow.webContents.send(`view-loading-${this.tabId}`, false);
-    });
+      this.updateNavigationState()
+      appWindow.webContents.send(`view-loading-${this.tabId}`, false)
+    })
 
     this.webContents.addListener('did-start-loading', () => {
-      this.updateNavigationState();
-      appWindow.webContents.send(`view-loading-${this.tabId}`, true);
-    });
+      this.updateNavigationState()
+      appWindow.webContents.send(`view-loading-${this.tabId}`, true)
+    })
 
-    this.webContents.addListener('did-start-navigation', (...args: any[]) => {
-      this.updateNavigationState();
+    this.webContents.addListener('did-start-navigation', (e: any, _: string, isInPlace: boolean, isMainFrame: boolean) => {
+      this.updateNavigationState()
 
-      const url = this.webContents.getURL();
+      const url = this.webContents.getURL()
 
       // Adblocker cosmetic filtering
       if (settings.isShieldToggled) {
         const { styles, scripts } = engine.getCosmeticsFilters({
           url,
           ...parse(url),
-        });
+        })
 
-        this.webContents.insertCSS(styles);
+        this.webContents.insertCSS(styles)
 
         for (const script of scripts) {
-          this.webContents.executeJavaScript(script);
+          this.webContents.executeJavaScript(script)
         }
       }
 
-      appWindow.webContents.send(`load-commit-${this.tabId}`, ...args);
+      appWindow.webContents.send(`load-commit-${this.tabId}`, isMainFrame)
 
       this.emitWebNavigationEvent('onBeforeNavigate', {
         tabId: this.tabId,
@@ -241,7 +241,7 @@ export class View extends BrowserView {
         timeStamp: Date.now(),
         processId: process.pid,
         parentFrameId: -1,
-      });
+      })
 
       this.emitWebNavigationEvent('onCommitted', {
         tabId: this.tabId,
@@ -251,8 +251,8 @@ export class View extends BrowserView {
         processId: process.pid,
         frameId: 0,
         parentFrameId: -1,
-      });
-    });
+      })
+    })
 
     this.webContents.addListener('did-finish-load', async () => {
       this.emitWebNavigationEvent('onCompleted', {
@@ -261,19 +261,19 @@ export class View extends BrowserView {
         frameId: 0,
         timeStamp: Date.now(),
         processId: process.pid,
-      });
-    });
+      })
+    })
 
     this.webContents.addListener(
       'new-window',
       (e, url, frameName, disposition) => {
         if (disposition === 'new-window') {
           if (frameName === '_self') {
-            e.preventDefault();
-            appWindow.viewManager.selected.webContents.loadURL(url);
+            e.preventDefault()
+            appWindow.viewManager.selected.webContents.loadURL(url)
           } else if (frameName === '_blank') {
-            e.preventDefault();
-            this.webContents.executeJavaScript('document.exitFullscreen()');
+            e.preventDefault()
+            this.webContents.executeJavaScript('document.exitFullscreen()')
             appWindow.webContents.send(
               'api-tabs-create',
               {
@@ -281,22 +281,22 @@ export class View extends BrowserView {
                 active: true,
               },
               true,
-            );
+            )
           }
         } else if (disposition === 'foreground-tab') {
-          e.preventDefault();
+          e.preventDefault()
           appWindow.webContents.send(
             'api-tabs-create',
             { url, active: true },
             true,
-          );
+          )
         } else if (disposition === 'background-tab') {
-          e.preventDefault();
+          e.preventDefault()
           appWindow.webContents.send(
             'api-tabs-create',
             { url, active: false },
             true,
-          );
+          )
         }
 
         this.emitWebNavigationEvent('onCreatedNavigationTarget', {
@@ -304,9 +304,9 @@ export class View extends BrowserView {
           url,
           sourceFrameId: 0,
           timeStamp: Date.now(),
-        });
+        })
       },
-    );
+    )
 
     this.webContents.addListener('dom-ready', () => {
       this.emitWebNavigationEvent('onDOMContentLoaded', {
@@ -315,8 +315,8 @@ export class View extends BrowserView {
         frameId: 0,
         timeStamp: Date.now(),
         processId: process.pid,
-      });
-    });
+      })
+    })
 
     this.webContents.addListener(
       'page-favicon-updated',
@@ -324,15 +324,15 @@ export class View extends BrowserView {
         appWindow.webContents.send(
           `browserview-favicon-updated-${this.tabId}`,
           favicons[0],
-        );
+        )
       },
-    );
+    )
 
     this.webContents.addListener('did-change-theme-color', (e, color) => {
       appWindow.webContents.send(
         `browserview-theme-color-updated-${this.tabId}`,
         color,
-      );
+      )
     });
 
     (this.webContents as any).addListener(
@@ -344,42 +344,38 @@ export class View extends BrowserView {
         certificate: Electron.Certificate,
         callback: Function,
       ) => {
-        console.log(certificate, error, url);
+        console.log(certificate, error, url)
         // TODO: properly handle insecure websites.
-        event.preventDefault();
-        callback(true);
+        event.preventDefault()
+        callback(true)
       },
-    );
+    )
 
     this.setAutoResize({
       width: true,
       height: true,
-    });
-    this.webContents.loadURL(url);
+    })
+    this.webContents.loadURL(url)
   }
 
-  public updateNavigationState() {
-    if (this.isDestroyed()) return;
+  public updateNavigationState = () => {
+    if (!this.webContents || this.webContents.isDestroyed()) return
 
     if (appWindow.viewManager.selectedId === this.tabId) {
       appWindow.webContents.send('update-navigation-state', {
         canGoBack: this.webContents.canGoBack(),
         canGoForward: this.webContents.canGoForward(),
-      });
+      })
     }
   }
 
   public emitWebNavigationEvent = (name: string, ...data: any[]) => {
-    this.webContents.send(`api-emit-event-webNavigation-${name}`, ...data);
+    this.webContents.send(`api-emit-event-webNavigation-${name}`, ...data)
+    sendToAllExtensions(`api-emit-event-webNavigation-${name}`, ...data)
+  }
 
-    sendToAllExtensions(`api-emit-event-webNavigation-${name}`, ...data);
-  };
-
-  public async getScreenshot(): Promise<string> {
-    return new Promise(resolve => {
-      this.webContents.capturePage(img => {
-        resolve(img.toDataURL());
-      });
-    });
+  public getScreenshot = async (): Promise<string> => {
+    const img = await this.webContents.capturePage()
+    return img.toDataURL()
   }
 }

@@ -11,6 +11,8 @@ import { ApplicationManager } from '../application-manager/application-manager'
 import { IFlowrStore } from '../frontend/src/interfaces/flowrStore'
 import { keyboard } from '../keyboard/keyboardController'
 import { mergeWith, cloneDeep } from 'lodash'
+import { FullScreenManager } from '../common/fullscreen'
+
 export const log = require('electron-log')
 
 const FlowrDataDir = resolve(homedir(), '.flowr')
@@ -90,13 +92,20 @@ async function main() {
         ...options,
         enableVirtualKeyboard: flowrStore.get('enableVirtualKeyboard'),
       }
-
+      
       browserWindow = await createWexondWindow(wexondOptions, flowrWindow || undefined, buildBrowserWindowConfig(flowrStore, {}))
-
+      FullScreenManager.applySameWindowState(flowrWindow, browserWindow)
       applicationManager.browserWindow = browserWindow
+
+      flowrWindow.webContents.setAudioMuted(true)
       browserWindow.webContents.focus()
+
+      flowrWindow?.hide()
+
       browserWindow.on('close', () => {
         browserWindow = null
+        flowrWindow?.webContents.setAudioMuted(false)
+        flowrWindow?.show()
       })
     })
     ipcMain.on('close-browser', () => {
@@ -117,7 +126,6 @@ async function main() {
       if (browserWindow !== null) {
         browserWindow.close()
       }
-      // flowrWindow.moveTop()
     })
   }
 
@@ -143,6 +151,7 @@ async function main() {
 
     try {
       flowrWindow = await createFlowrWindow(store)
+      FullScreenManager.applyDefaultActionOnWindow(flowrWindow)
       applicationManager.flowrWindow = flowrWindow
       flowrWindow.on('close', () => {
         flowrWindow = null

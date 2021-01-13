@@ -139,7 +139,7 @@ export class ViewManager {
     const view = this.views[tabId]
     this.selectedId = tabId
 
-    if (!view || view.isDestroyed()) {
+    if (!view || view.webContents.isDestroyed()) {
       this.destroy(tabId)
       appWindow.setBrowserView(null)
       return
@@ -194,7 +194,7 @@ export class ViewManager {
   public destroy(tabId: number) {
     const view = this.views[tabId]
 
-    if (!view || view.isDestroyed()) {
+    if (!view || view.webContents?.isDestroyed()) {
       delete this.views[tabId]
       return
     }
@@ -203,7 +203,8 @@ export class ViewManager {
       appWindow.setBrowserView(null)
     }
 
-    view.destroy()
+    // Undocumented electron API: https://github.com/electron/electron/issues/26929#issuecomment-754294324
+    (view.webContents as any).destroy()
 
     delete this.views[tabId]
   }

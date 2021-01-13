@@ -161,7 +161,7 @@ export class Store {
       const param = new URLSearchParams(location.search);
       const url: string = param.get('openUrl')
       if (url) {
-        this.tabs.addTab({ url, active: true });
+        this.tabs.addTab({ url: decodeURIComponent(url), active: true });
       }
     });
 
@@ -171,12 +171,11 @@ export class Store {
     };
 
     this.theme = this.settings.isDarkTheme ? darkTheme : lightTheme;
-
-    ipcRenderer.send('settings', this.settings);
+    ipcRenderer.send('settings', { ...this.settings });
   }
 
   public saveSettings() {
-    ipcRenderer.send('settings', this.settings);
+    ipcRenderer.send('settings', { ...this.settings });
 
     writeFile(getPath('settings.json'), JSON.stringify(this.settings), err => {
       if (err) console.error(err);
@@ -190,7 +189,7 @@ let maxTab = 20
 if (param.has('disableTabs')) {
   maxTab = 1
 } else if (param.has('maxTab')) {
-  maxTab = Number(param.get('maxTab'))
+  maxTab = Number(decodeURIComponent(param.get('maxTab')))
 }
 
 export default new Store({ maxTab })

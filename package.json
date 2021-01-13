@@ -35,9 +35,9 @@
     "lint": "tslint \"src/**/*.ts*\" --exclude \"src/wexond/**/*.ts*\" --project tsconfig.json",
     "lint-fix": "prettier --write \"src/**/*.ts*\" && tslint \"src/**/*.ts*\" --fix",
     "install-app-deps": "electron-builder install-app-deps",
-    "install-widevine": "npm install castlabs/electron-releases#v7.1.9-wvvmp --no-save",
-    "copy-header": "cp -r $HOME/.electron-gyp/7.1.9 $HOME/.electron-gyp/7.1.9-wvvmp",
-    "copy-header-win": "cp -r %HOME%/.electron-gyp/7.1.9 %HOME%/.electron-gyp/7.1.9-wvvmp"
+    "install-widevine": "npm install castlabs/electron-releases#v11.1.1-wvvmp --no-save",
+    "copy-header": "cp -r $HOME/.electron-gyp/11.1.1 $HOME/.electron-gyp/11.1.1-wvvmp",
+    "copy-header-win": "cp -r %HOME%/.electron-gyp/11.1.1 %HOME%/.electron-gyp/11.1.1-wvvmp"
   },
   "pre-commit": [
     "lint-fix"
@@ -64,8 +64,8 @@
     "copy-webpack-plugin": "6.2.0",
     "cross-env": "5.2.0",
     "css-loader": "4.3.0",
-    "electron": "7.1.9",
-    "electron-builder": "22.2.0",
+    "electron": "11.1.1",
+    "electron-builder": "22.9.1",
     "file-loader": "6.1.0",
     "fuse-box": "3.7.1",
     "html-webpack-plugin": "4.5.0",
