@@ -92,7 +92,7 @@ async function main() {
         ...options,
         enableVirtualKeyboard: flowrStore.get('enableVirtualKeyboard'),
       }
-      
+
       browserWindow = await createWexondWindow(wexondOptions, flowrWindow || undefined, buildBrowserWindowConfig(flowrStore, {}))
       FullScreenManager.applySameWindowState(flowrWindow, browserWindow)
       applicationManager.browserWindow = browserWindow

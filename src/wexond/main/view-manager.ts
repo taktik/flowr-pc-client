@@ -6,10 +6,6 @@ import { clearBrowsingData } from '~/main/clearBrowsingData'
 import { watchForInactivity } from '../../inactivity/window'
 import { IInactivityConfig } from '../../inactivity/utils'
 
-declare const global: any
-
-global.viewsMap = {}
-
 export class ViewManager {
   public views: { [key: number]: View } = {}
   public selectedId = 0
@@ -33,10 +29,13 @@ export class ViewManager {
       'browserview-create': (e: Electron.IpcMessageEvent, { tabId, url }: any) => {
         this.create(tabId, url)
 
-        appWindow.webContents.send(
-          `browserview-created-${tabId}`,
-          this.views[tabId].id,
-        )
+        const webContents = this.views[tabId].webContents
+        if (webContents) {
+          appWindow.webContents.send(
+            `browserview-created-${tabId}`,
+            webContents.id,
+          )
+        }
       },
       'browserview-select': (e: Electron.IpcMessageEvent, id: number, force: boolean) => {
         const view = this.views[id]
@@ -109,13 +108,13 @@ export class ViewManager {
   public create(tabId: number, url: string) {
     const view = new View(tabId, url)
     this.views[tabId] = view
-    global.viewsMap[view.id] = tabId
 
     if (this.inactivityConfig) {
       const { timeout, callback } = this.inactivityConfig
       try {
-        watchForInactivity(view, timeout, async (browserWindow) => {
-          if (browserWindow.id === this.selectedId) {
+        watchForInactivity(view, timeout, async (browserView) => {
+          const selectedView = this.views[this.selectedId]
+          if (selectedView && selectedView.webContents.id === browserView.webContents.id) {
             callback()
           }
         })
