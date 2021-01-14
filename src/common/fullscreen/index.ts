@@ -4,6 +4,17 @@ import { DarwinFullScreen } from './darwin'
 import { RegularFullScreen } from './regular'
 import { IFullScreenManager } from './IFullscreenManager'
 
+function applyMaximizeTransform(browserWindow: BrowserWindow, transform: () => void) {
+  const isMaximizable = browserWindow.isMaximizable()
+  if (!isMaximizable) {
+    browserWindow.setMaximizable(true)
+  }
+  transform.call(browserWindow)
+  if (!isMaximizable) {
+    browserWindow.setMaximizable(false)
+  }
+}
+
 class FullScreen implements IFullScreenManager {
   private handler = this.buildFullScreenHandler()
 
@@ -18,7 +29,16 @@ class FullScreen implements IFullScreenManager {
   fullscreenable = this.handler.fullscreenable
 
   applySameWindowState(source: BrowserWindow, target: BrowserWindow) {
-    this.setFullScreen(target, this.isFullScreen(source))
+    if (this.isFullScreen(source)) {
+      this.setFullScreen(target, true)
+    } else if (source.isMaximized()) {
+      applyMaximizeTransform(target, target.maximize)
+    } else {
+      if (target.isMaximized()) {
+        applyMaximizeTransform(target, target.unmaximize)
+      }
+      target.setBounds(source.getBounds())
+    }
   }
 
   applyDefaultActionOnWindow(browserWindow: BrowserWindow): void {

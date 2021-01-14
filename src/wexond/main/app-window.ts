@@ -211,8 +211,6 @@ export class AppWindow extends KeyboardMixin(BrowserWindow) {
   
             clearInterval(this.interval)
   
-            const sf = windowManager.getScaleFactor(this.window.getMonitor())
-  
             this.selectedWindow.lastBounds = bounds
   
             this.setContentBounds({

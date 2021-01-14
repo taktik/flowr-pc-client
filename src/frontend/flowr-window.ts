@@ -3,6 +3,11 @@ import { Store } from './src/store'
 import { Player } from './src/player'
 import { KeyboardMixin } from '../keyboard/keyboardMixin'
 import { IFlowrStore } from './src/interfaces/flowrStore'
+import { FullScreenManager } from '../common/fullscreen'
+
+function toRatio(width: number, height: number) {
+  return (value: number) => Math.floor((value - width) * height / width)
+}
 
 export class FlowrWindow extends KeyboardMixin(BrowserWindow) {
 
@@ -20,14 +25,10 @@ export class FlowrWindow extends KeyboardMixin(BrowserWindow) {
     this.on('close', () => {
       this.player.close()
     })
-    this.on('maximize',  () => {
-      this.store.set('isMaximized', true)
-    })
 
     this.on('unmaximize', () => {
-      this.store.set('isMaximized', false)
       const width = this.store.get('windowBounds').width
-      const height =  Math.floor((width - 16) * 9 / 16)
+      const height = toRatio(16, 9)(width)
 
       this.setSize(width, height + 40)
     })
@@ -37,10 +38,10 @@ export class FlowrWindow extends KeyboardMixin(BrowserWindow) {
         clearTimeout(this.resizeTimeout)
       }
       this.resizeTimeout = setTimeout(() => {
-        if (!store.get('isMaximized')) {
+        if (!this.isMaximized() && !FullScreenManager.isFullScreen(this)) {
           const size = this.getSize()
           const width = size[0]
-          const height =  Math.floor((width - 16) * 9 / 16)
+          const height = toRatio(16, 9)(width)
           this.setSize(width, height + 40)
           store.set('windowBounds', { width, height })
         }

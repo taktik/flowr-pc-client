@@ -103,6 +103,7 @@ async function main() {
       flowrWindow?.hide()
 
       browserWindow.on('close', () => {
+        FullScreenManager.applySameWindowState(browserWindow, flowrWindow)
         browserWindow = null
         flowrWindow?.webContents.setAudioMuted(false)
         flowrWindow?.show()
