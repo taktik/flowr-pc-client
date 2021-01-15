@@ -2,7 +2,7 @@ import { BrowserView, BrowserWindow, IpcMainEvent } from 'electron'
 import { throttle } from 'lodash'
 import { ACTIVITY_EVENT, INACTIVITY_THROTTLE } from './utils'
 
-export async function watchForInactivity(baseWindow: BrowserWindow | BrowserView, timeoutDuration: number, callback: (baseWindow: BrowserWindow | BrowserView) => any) {
+export async function watchForInactivity<T extends BrowserWindow | BrowserView>(baseWindow: T, timeoutDuration: number, callback: (baseWindow: T) => any) {
   let timeout: number | undefined = undefined
 
   function start() {

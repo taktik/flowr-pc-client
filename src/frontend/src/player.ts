@@ -1,5 +1,5 @@
 import { Store } from './store'
-import { ipcMain, IpcMainEvent, app } from 'electron'
+import { ipcMain, IpcMainEvent } from 'electron'
 import { IpcStreamer } from './ipcStreamer'
 import { ITsDecryptorConfig, TsDecryptor } from '@taktik/ts-decryptor'
 import { UdpStreamer, UdpStreamerError, UdpStreamerErrors } from '@taktik/udp-streamer'
@@ -24,7 +24,7 @@ import { mergeWith } from 'lodash'
 export class Player {
   private streams?: IPlayerStreams
   private currentStreams?: ICurrentStreams
-  private readonly _ipcEvents: {[key: string]: (...args: any[]) => void}
+  private readonly _ipcEvents: { [key: string]: (...args: any[]) => void }
   private udpStreamer: UdpStreamer | null = null
   private decryptor: TsDecryptor | null = null
   private dispatcher: Dispatcher | null = null
@@ -285,18 +285,18 @@ export class Player {
 
   hasStreamChanged(newStreamData: ICurrentStreams, localCurrentStream: ICurrentStreams | undefined): boolean {
     const isSameUrlButDifferentCodec: boolean = !!this.currentStreams &&
-        this.currentStreams.url === localCurrentStream?.url &&
-        this.currentStreams.video.tracks[0]?.codecName !== newStreamData.video.tracks[0]?.codecName
+      this.currentStreams.url === localCurrentStream?.url &&
+      this.currentStreams.video.tracks[0]?.codecName !== newStreamData.video.tracks[0]?.codecName
     const audioStreamExists = this.currentStreams?.audio.currentStream === -1 ||
-        newStreamData.audio.tracks.some(track => track.pid === this.currentStreams?.audio.currentStream)
+      newStreamData.audio.tracks.some(track => track.pid === this.currentStreams?.audio.currentStream)
     const subtitlesStreamExists = this.currentStreams?.subtitles.currentStream === -1 ||
-        newStreamData.subtitles.tracks.some(track => track.pid === this.currentStreams?.subtitles.currentStream)
+      newStreamData.subtitles.tracks.some(track => track.pid === this.currentStreams?.subtitles.currentStream)
     // If nothing is playing
     return !localCurrentStream ||
-        // or if currently playing stream video track's codec name is different than the newly fetched one
-        isSameUrlButDifferentCodec ||
-        // or if current audio/subtitle streams do not exist anymore
-        !audioStreamExists || !subtitlesStreamExists
+      // or if currently playing stream video track's codec name is different than the newly fetched one
+      isSameUrlButDifferentCodec ||
+      // or if current audio/subtitle streams do not exist anymore
+      !audioStreamExists || !subtitlesStreamExists
   }
 
   async attemptReplay(evt: IpcMainEvent) {
@@ -337,8 +337,8 @@ export class Player {
     // lazy instantiate if necessary
     const udpStreamer = this.udpStreamer || (this.udpStreamer = new UdpStreamer(this.udpStreamerConfig))
     const cleanUrl = url
-        .replace(/\s/g, '') // remove whitespaces
-        .replace(/(udp|rtp):\/\/@?(.+)/, '$2') // retrieve ip:port
+      .replace(/\s/g, '') // remove whitespaces
+      .replace(/(udp|rtp):\/\/@?(.+)/, '$2') // retrieve ip:port
     const ip = cleanUrl.split(':')[0]
     const port = parseInt(cleanUrl.split(':')[1], 10)
     try {
@@ -431,34 +431,34 @@ export class Player {
     await this.playUrl(pipeline, streamToPlay, evt)
   }
 
-  processStreams (streams: Ffmpeg.FfprobeStream[], url: string): ICurrentStreams {
+  processStreams(streams: Ffmpeg.FfprobeStream[], url: string): ICurrentStreams {
     const audioTracks: IStreamTrack[] = streams
-        .filter((stream: Ffmpeg.FfprobeStream) => stream.codec_type === 'audio')
-        .map((stream: Ffmpeg.FfprobeStream, index: number) => ({
-          index,
-          code: (stream.tags?.language === '???') ? 'zzz' : stream.tags?.language,
-          pid: stream.index,
-          codecName: stream.codec_name,
-        }),
+      .filter((stream: Ffmpeg.FfprobeStream) => stream.codec_type === 'audio')
+      .map((stream: Ffmpeg.FfprobeStream, index: number) => ({
+        index,
+        code: (stream.tags?.language === '???') ? 'zzz' : stream.tags?.language,
+        pid: stream.index,
+        codecName: stream.codec_name,
+      }),
       )
 
     const subtitleTracks: IStreamTrack[] = streams
-        .filter((stream: Ffmpeg.FfprobeStream) => stream.codec_type === 'subtitle')
-        .map((stream: Ffmpeg.FfprobeStream, index: number) => ({
-          index,
-          code: (stream.tags?.language === '???') ? 'zzz' : stream.tags?.language,
-          pid: stream.index,
-          codecName: stream.codec_name,
-        }),
+      .filter((stream: Ffmpeg.FfprobeStream) => stream.codec_type === 'subtitle')
+      .map((stream: Ffmpeg.FfprobeStream, index: number) => ({
+        index,
+        code: (stream.tags?.language === '???') ? 'zzz' : stream.tags?.language,
+        pid: stream.index,
+        codecName: stream.codec_name,
+      }),
       )
 
     const videoTracks: IStreamTrack[] = streams
-        .filter((stream: Ffmpeg.FfprobeStream)  => stream.codec_type === 'video')
-        .map((stream: Ffmpeg.FfprobeStream, index: number) => ({
-          index,
-          pid: stream.index,
-          codecName: stream.codec_name,
-        }),
+      .filter((stream: Ffmpeg.FfprobeStream) => stream.codec_type === 'video')
+      .map((stream: Ffmpeg.FfprobeStream, index: number) => ({
+        index,
+        pid: stream.index,
+        codecName: stream.codec_name,
+      }),
       )
 
     return {

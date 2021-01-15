@@ -33,6 +33,7 @@ export class KeyboardWindow extends BrowserWindow {
       transparent: true,
       resizable: false,
       show: false,
+      movable: true,
       webPreferences: {
         preload: buildApplicationPreloadPath('keyboard'),
       },

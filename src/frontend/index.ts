@@ -10,6 +10,7 @@ import { networkEverywhere } from 'network-everywhere'
 import defaultBrowserWindowOptions from './defaultBrowserWindowOptions'
 import { IFlowrStore } from './src/interfaces/flowrStore'
 import { buildPreloadPath } from '../common/preload'
+import { FullScreenManager } from '../common/fullscreen'
 
 const deepExtend = require('deep-extend')
 const FlowrDataDir = resolve(homedir(), '.flowr')
@@ -63,8 +64,9 @@ export async function createFlowrWindow(flowrStore: Store<IFlowrStore>): Promise
     webPreferences: {
       nodeIntegration: false,
       contextIsolation: false,
-      partition: 'persist:flowr', // needed to display webcame image
+      partition: 'persist:flowr', // needed to display webcam image
       preload: buildPreloadPath('exportNode.js'),
+      enableRemoteModule: true, // TODO: FLOW-8215
     },
   })
 
@@ -76,9 +78,6 @@ export async function createFlowrWindow(flowrStore: Store<IFlowrStore>): Promise
     Menu.setApplicationMenu(appMenu)
   }
 
-  if (flowrStore.get('isMaximized')) {
-    mainWindow.maximize()
-  }
   // mainWindow.setAspectRatio(16/9)
   mainWindow.setMenuBarVisibility(false)
   // mainWindow.setAlwaysOnTop(true, 'floating', 0)
@@ -97,9 +96,11 @@ export async function createFlowrWindow(flowrStore: Store<IFlowrStore>): Promise
   function displayHiddenMenu(): void {
     const flowrUrl = flowrStore.get('extUrl') || buildFileUrl('config.html')
     const template: any = [
-      { label: 'Menu',
+      {
+        label: 'Menu',
         submenu: [
-          { label: 'Config',
+          {
+            label: 'Config',
             click() {
               const formattedPath = buildFileUrl('config.html')
               mainWindow.loadURL(formattedPath)
@@ -125,11 +126,12 @@ export async function createFlowrWindow(flowrStore: Store<IFlowrStore>): Promise
           {
             label: 'Toggle Fullscreen Mode',
             click() {
-              const windowIsFullscreen = mainWindow.isFullScreen()
-              mainWindow.setFullScreen(!windowIsFullscreen)
+              const windowIsFullscreen = FullScreenManager.isFullScreen(mainWindow)
+              FullScreenManager.setFullScreen(mainWindow, !windowIsFullscreen)
             },
           },
-        ]},
+        ],
+      },
     ]
 
     const appMenu = Menu.buildFromTemplate(template)
@@ -137,7 +139,7 @@ export async function createFlowrWindow(flowrStore: Store<IFlowrStore>): Promise
     mainWindow.setMenuBarVisibility(true)
   }
 
-  const _ipcEvents: {[key: string]: (...args: any[]) => void} = {
+  const _ipcEvents: { [key: string]: (...args: any[]) => void } = {
     FlowrIsInitializing: () => {
       clearInterval(reloadTimeout)
       isLaunchedUrlCorrect = true
@@ -145,7 +147,7 @@ export async function createFlowrWindow(flowrStore: Store<IFlowrStore>): Promise
     getAppConfig: (evt: any) => {
       const storedConfig = flowrStore.get('flowrConfig')
       const config: any = {
-        debugMode : isDebugMode,
+        debugMode: isDebugMode,
         isLaunchedUrlCorrect,
         deinterlacing: flowrStore.get('deinterlacing'),
         extUrl: flowrStore.get('extUrl'),
@@ -171,10 +173,10 @@ export async function createFlowrWindow(flowrStore: Store<IFlowrStore>): Promise
           socketApi: {
             host: socketApi,
           },
-          pushVodSocketApi:{
+          pushVodSocketApi: {
             host: pushVodSocketApi,
           },
-          aneviaVodSocketApi:{
+          aneviaVodSocketApi: {
             host: aneviaVodSocketApi,
           },
         }
@@ -208,7 +210,7 @@ export async function createFlowrWindow(flowrStore: Store<IFlowrStore>): Promise
     },
     updateAppConfig: (evt: any, data: any) => {
       const currentConfig = flowrStore.get('flowrConfig')
-      const newConfig =  deepExtend(currentConfig, data)
+      const newConfig = deepExtend(currentConfig, data)
       flowrStore.set('flowrConfig', newConfig)
       app.relaunch()
       app.quit()
@@ -239,6 +241,8 @@ export async function createFlowrWindow(flowrStore: Store<IFlowrStore>): Promise
     },
     setEnableVirtualKeyboard: (evt: IpcMainEvent, enableVirtualKeyboard: boolean) => {
       flowrStore.set('enableVirtualKeyboard', enableVirtualKeyboard)
+      app.relaunch()
+      app.quit()
     },
     openConfigMode: displayHiddenMenu,
   }
@@ -256,6 +260,9 @@ export async function createFlowrWindow(flowrStore: Store<IFlowrStore>): Promise
   }
 
   async function getActiveMacAddress(): Promise<string> {
+    if (flowrStore.get('useRealMacAddress')) {
+      return (await networkEverywhere.getActiveInterface()).mac
+    }
     return (await devicesDetailsHelper.getDeviceDetails()).uuid
   }
 

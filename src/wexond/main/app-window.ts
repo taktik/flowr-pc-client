@@ -3,16 +3,14 @@ import { resolve, join } from 'path'
 import { platform } from 'os'
 import { windowManager, Window } from 'node-window-manager'
 import mouseEvents from 'mouse-hooks'
-import { extend }  from 'lodash'
-import { existsSync, readFileSync, writeFileSync } from 'fs'
 
 import { ViewManager } from './view-manager'
-import { getPath } from '../shared/utils/paths'
 import { ProcessWindow } from './models/process-window'
 import { TOOLBAR_HEIGHT } from '../renderer/app/constants'
 import { KeyboardMixin } from '../../keyboard/keyboardMixin'
 import { watchForInactivity } from '../../inactivity/window'
 import { buildPreloadPath } from '../../common/preload'
+
 const containsPoint = (bounds: any, point: any) => {
   return (
     point.x >= bounds.x &&
@@ -48,57 +46,21 @@ export class AppWindow extends KeyboardMixin(BrowserWindow) {
   public interval: number | null = null
 
   constructor(options: WexondOptions, parent?: BrowserWindow, defaultBrowserWindow: BrowserWindowConstructorOptions = {}) {
-    super(extend({
+    super({
+      ...defaultBrowserWindow,
       frame: process.env.ENV === 'dev' || platform() === 'darwin',
       show: false,
       parent,
+      fullscreen: false,
       webPreferences: {
         plugins: true,
         nodeIntegration: true,
         contextIsolation: false,
+        enableRemoteModule: true, // TODO: FLOW-8215
         experimentalFeatures: true,
         preload: buildPreloadPath('inactivity-preload.js'),
       },
       icon: resolve(app.getAppPath(), 'static/app-icons/icon-wexond.png'),
-    }, defaultBrowserWindow))
-
-    const windowDataPath = getPath('window-data.json')
-
-    let windowState: any = {}
-
-    if (existsSync(windowDataPath)) {
-      try {
-        // Read the last window state from file.
-        windowState = JSON.parse(readFileSync(windowDataPath, 'utf8'))
-      } catch (e) {
-        writeFileSync(windowDataPath, JSON.stringify({}))
-      }
-    }
-
-    // Merge bounds from the last window state to the current window options.
-    if (windowState) {
-      // this.setBounds({ ...windowState.bounds });
-    }
-
-    if (windowState) {
-      if (windowState.maximized) {
-        this.maximize()
-      }
-      if (windowState.fullscreen) {
-        this.setFullScreen(true)
-      }
-    }
-
-    // Update window bounds on resize and on move when window is not maximized.
-    this.on('resize', () => {
-      if (!this.isMaximized()) {
-        windowState.bounds = this.getBounds()
-      }
-    })
-    this.on('move', () => {
-      if (!this.isMaximized()) {
-        windowState.bounds = this.getBounds()
-      }
     })
 
     const resize = () => {
@@ -109,13 +71,6 @@ export class AppWindow extends KeyboardMixin(BrowserWindow) {
     this.on('maximize', resize)
     this.on('restore', resize)
     this.on('unmaximize', resize)
-
-    // Save current window state to file.
-    this.on('close', () => {
-      windowState.maximized = this.isMaximized()
-      windowState.fullscreen = this.isFullScreen()
-      writeFileSync(windowDataPath, JSON.stringify(windowState))
-    })
 
     let urlString: string
     if (process.env.ENV === 'dev') {
@@ -161,7 +116,7 @@ export class AppWindow extends KeyboardMixin(BrowserWindow) {
     })
 
     this.on('scroll-touch-end', () => {
-      this.viewManager.selected.webContents.send('scroll-touch-end')
+      this.viewManager.selected?.webContents.send('scroll-touch-end')
       this.webContents.send('scroll-touch-end')
     })
 
@@ -255,8 +210,6 @@ export class AppWindow extends KeyboardMixin(BrowserWindow) {
             this.isUpdatingContentBounds = true
   
             clearInterval(this.interval)
-  
-            const sf = windowManager.getScaleFactor(this.window.getMonitor())
   
             this.selectedWindow.lastBounds = bounds
   

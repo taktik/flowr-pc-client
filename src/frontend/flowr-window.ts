@@ -2,6 +2,12 @@ import { BrowserWindow, BrowserWindowConstructorOptions } from 'electron'
 import { Store } from './src/store'
 import { Player } from './src/player'
 import { KeyboardMixin } from '../keyboard/keyboardMixin'
+import { IFlowrStore } from './src/interfaces/flowrStore'
+import { FullScreenManager } from '../common/fullscreen'
+
+function toRatio(width: number, height: number) {
+  return (value: number) => Math.floor((value - width) * height / width)
+}
 
 export class FlowrWindow extends KeyboardMixin(BrowserWindow) {
 
@@ -12,40 +18,32 @@ export class FlowrWindow extends KeyboardMixin(BrowserWindow) {
     return this.store.get('phoneServer')
   }
 
-  constructor(private store: Store, options?: BrowserWindowConstructorOptions) {
+  constructor(private store: Store<IFlowrStore>, options?: BrowserWindowConstructorOptions) {
     super(options)
     this.player = new Player(this.store)
 
     this.on('close', () => {
       this.player.close()
     })
-    this.on('maximize',  () => {
-      this.store.set('isMaximized', true)
-    })
 
     this.on('unmaximize', () => {
-      this.store.set('isMaximized', false)
-      const winBounds = this.store.get('windowBounds')
-      const width =  parseInt(winBounds.width, 10)
-      const height = (width - 16) * 9 / 16
+      const width = this.store.get('windowBounds').width
+      const height = toRatio(16, 9)(width)
 
-      this.setSize(winBounds.width, height + 40)
+      this.setSize(width, height + 40)
     })
 
     this.on('resize', () => {
-
       if (this.resizeTimeout) {
         clearTimeout(this.resizeTimeout)
       }
       this.resizeTimeout = setTimeout(() => {
-        const size = this.getSize()
-        const width = size[0]
-        let height = size[1]
-        if (!store.get('isMaximized')) {
-          height =  Math.floor((size[0] - 16) * 9 / 16)
+        if (!this.isMaximized() && !FullScreenManager.isFullScreen(this)) {
+          const size = this.getSize()
+          const width = size[0]
+          const height = toRatio(16, 9)(width)
           this.setSize(width, height + 40)
           store.set('windowBounds', { width, height })
-
         }
       }, 150)
     })

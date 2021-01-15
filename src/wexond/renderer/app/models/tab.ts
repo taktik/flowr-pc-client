@@ -1,6 +1,6 @@
 import { observable, computed, action } from 'mobx'
 import * as React from 'react'
-import { ipcRenderer } from 'electron'
+import { ipcRenderer, IpcRendererEvent } from 'electron'
 import Vibrant = require('node-vibrant/lib/index')
 import store from '~/renderer/app/store'
 import {
@@ -189,10 +189,7 @@ export class Tab {
     ipcRenderer.on(
       `load-commit-${this.id}`,
       (
-        e: any,
-        event: any,
-        url: string,
-        isInPlace: boolean,
+        e: IpcRendererEvent,
         isMainFrame: boolean,
       ) => {
         if (isMainFrame) {
