@@ -2,8 +2,8 @@ import { BrowserWindow } from 'electron'
 import { IFullScreenManager } from './IFullscreenManager'
 
 export class DarwinFullScreen implements IFullScreenManager{
-  shouldBeDefaultFullScreen: false
-  fullscreenable: false
+  shouldBeDefaultFullScreen = false
+  fullscreenable = false
 
   applyDefaultActionOnWindow(browserWindow: BrowserWindow): void {
     this.setFullScreen(browserWindow, true)

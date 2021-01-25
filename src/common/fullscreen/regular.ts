@@ -2,8 +2,8 @@ import { BrowserWindow } from 'electron'
 import { IFullScreenManager } from './IFullscreenManager'
 
 export class RegularFullScreen implements IFullScreenManager {
-  shouldBeDefaultFullScreen: true
-  fullscreenable: true
+  shouldBeDefaultFullScreen = true
+  fullscreenable = true
 
   applyDefaultActionOnWindow(browserWindow: BrowserWindow): void {
     /* do nothing, fullscreen is the default */
