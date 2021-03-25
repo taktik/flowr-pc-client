@@ -25,7 +25,10 @@ export const DEFAULT_FRONTEND_STORE: IFlowrStore = {
   extUrl: '',
   isKiosk: false,
   deinterlacing: false,
-  enableVirtualKeyboard: false,
+  keyboardConfig: {
+    keyboard: '',
+    externalKeyboardURL: 'http://localhost:9000/keyboard',
+  },
 }
 export async function initFlowrConfig(data: object) {
   await initConfigData(join(FlowrDataDir, `${FRONTEND_CONFIG_NAME}.json`), data)
@@ -153,7 +156,7 @@ export async function createFlowrWindow(flowrStore: Store<IFlowrStore>): Promise
         extUrl: flowrStore.get('extUrl'),
         isKiosk: flowrStore.get('isKiosk'),
         clearAppDataOnStart: flowrStore.get('clearAppDataOnStart'),
-        enableVirtualKeyboard: flowrStore.get('enableVirtualKeyboard'),
+        keyboardConfig: flowrStore.get('keyboardConfig'),
       }
       // no need to expose the complete config
       if (storedConfig && storedConfig.ozoneApi) {
@@ -239,8 +242,8 @@ export async function createFlowrWindow(flowrStore: Store<IFlowrStore>): Promise
       app.relaunch()
       app.quit()
     },
-    setEnableVirtualKeyboard: (evt: IpcMainEvent, enableVirtualKeyboard: boolean) => {
-      flowrStore.set('enableVirtualKeyboard', enableVirtualKeyboard)
+    setKeyboardConfig: (evt: IpcMainEvent, keyboardConfig: IFlowrStore['keyboardConfig']) => {
+      flowrStore.set('keyboardConfig', keyboardConfig)
       app.relaunch()
       app.quit()
     },

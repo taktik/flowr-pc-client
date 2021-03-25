@@ -27,6 +27,7 @@ async function main() {
   app.commandLine.appendSwitch('widevine-cdm-path', resolve('/Applications/Google Chrome.app/Contents/Versions/74.0.3729.169/Google Chrome Framework.framework/Versions/A/Libraries/WidevineCdm/_platform_specific/mac_x64'))
   // The version of plugin can be got from `chrome://components` page in Chrome.
   app.commandLine.appendSwitch('widevine-cdm-version', '4.10.1303.2')
+  app.commandLine.appendSwitch('enable-speech-dispatcher')
   const userAppData = resolve(homedir(), '.flowr-electron')
 
   app.setPath('userData', userAppData)
@@ -90,7 +91,7 @@ async function main() {
 
       const wexondOptions = {
         ...options,
-        enableVirtualKeyboard: flowrStore.get('enableVirtualKeyboard'),
+        enableVirtualKeyboard: !!flowrStore.get('keyboardConfig').keyboard,
       }
 
       browserWindow = await createWexondWindow(wexondOptions, flowrWindow || undefined, buildBrowserWindowConfig(flowrStore, {}))

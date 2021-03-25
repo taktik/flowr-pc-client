@@ -20,6 +20,18 @@
 	#wrongurl.hidden {
 		display: none;
 	}
+
+	.keyboard-settings {
+		display: flex;
+		flex-direction: column;
+		padding-top: 3px;
+		margin-bottom: 3px;
+		padding-bottom: 3px;
+	}
+
+	.keyboard-settings > div {
+		margin: 5px;
+	}
 	</style>
 </head>
 <body>
@@ -56,8 +68,30 @@
 <h3>Applications</h3>
 <label>Clear app data on start</label> <input type="checkbox" id="clearAppDataOnStart" onclick='toggleClearAppDataCheckbox()'>
 
+<hr>
+
 <h3>Virtual keyboard</h3>
-<label>Enable virtual keyboard</label> <input type="checkbox" id="enableVirtualKeyboard" onclick='toggleVirtualKeyboardCheckbox()'>
+<div class="keyboard-settings">
+	<div>
+		<input type="radio" id="noneRadioElement" name="keyboard" value="" checked onclick="updateKeyboardConfigLayout(this)">
+		<label for="none">None</label>
+	</div>
+	
+	<div>
+		<input type="radio" id="embeddedRadioElement" name="keyboard" value="embedded" onclick="updateKeyboardConfigLayout(this)">
+		<label for="embedded">Embedded</label>
+	</div>
+	
+	<div>
+		<input type="radio" id="externalRadioElement" name="keyboard" value="external" onclick="updateKeyboardConfigLayout(this)">
+		<label for="external">External</label>
+		<input type="text" id="externalKeyboardUrl" placeholder="http://localhost:9000/keyboard">
+	</div>
+
+	<div>
+		<button onclick="saveKeyboardConfig()">Save keyboard settings</button>
+	</div>
+</div>
 
 <hr>
 <h3>Debug</h3>
@@ -73,7 +107,17 @@
 	let isKiosk = false
 	let isLaunchedUrlCorrect = true
 	let clearAppDataOnStart = false
-	let enableVirtualKeyboard = false
+
+	let keyboardConfig = {
+		keyboard: '',
+		externalKeyboardURL: 'http://localhost:9000/keyboard'
+	}
+
+	const radioElements = {
+		embedded: document.getElementById('embeddedRadioElement'),
+		external: document.getElementById('externalRadioElement'),
+		none: document.getElementById('noneRadioElement'),
+	}
 
 	ipc.removeAllListeners('receiveConfig')
 
@@ -85,7 +129,7 @@
 		externalUrl = data.extUrl || ''
 		isKiosk = !!data.isKiosk
 		isLaunchedUrlCorrect = !!data.isLaunchedUrlCorrect
-		enableVirtualKeyboard = !!data.enableVirtualKeyboard
+		keyboardConfig = data.keyboardConfig || { keyboard: '', externalKeyboardURL: 'http://localhost:9000/keyboard' }
 		console.log('data: ', data)
 		init()
 	})
@@ -118,7 +162,22 @@
 		document.getElementById('activateDeinterlacing').checked = isDeinterlacingActivated
 		document.getElementById('activateDebug').checked = isDebugMode
 		document.getElementById('clearAppDataOnStart').checked = clearAppDataOnStart
-		document.getElementById('enableVirtualKeyboard').checked = enableVirtualKeyboard
+
+		// virtual keyboard
+			document.getElementById('externalKeyboardUrl').value = keyboardConfig.externalKeyboardURL
+			enableOrDisableKeyboardURLInput(keyboardConfig.keyboard)
+
+			switch (keyboardConfig.keyboard) {
+				case 'embedded':
+					radioElements.embedded.setAttribute('checked', 'checked')
+					break
+				case 'external':
+					radioElements.external.setAttribute('checked', 'checked')
+					break
+				default:
+					radioElements.none.setAttribute('checked', 'checked')
+			}
+		//
 
 		if (!isLaunchedUrlCorrect) {
 			invalidUrl()
@@ -153,8 +212,27 @@
 		ipc.send('setClearAppDataOnStart', document.getElementById('clearAppDataOnStart').checked)
 	}
 
-	function toggleVirtualKeyboardCheckbox() {
-		ipc.send('setEnableVirtualKeyboard', document.getElementById('enableVirtualKeyboard').checked)
+	function enableOrDisableKeyboardURLInput(selected) {
+		const externalKeyboardURLInput = document.getElementById('externalKeyboardUrl')
+		if (selected === 'external') {
+			externalKeyboardURLInput.removeAttribute('disabled')
+		} else {
+			externalKeyboardURLInput.setAttribute('disabled', 'disabled')
+		}
+	}
+
+	function updateKeyboardConfigLayout(el) {
+		enableOrDisableKeyboardURLInput(el.value)
+	}
+
+	function saveKeyboardConfig() {
+		const checkedKeyboardElement = Object.values(radioElements).find(el => el.checked)
+		const externalKeyboardURLInput = document.getElementById('externalKeyboardUrl')
+		const keyboardConfigToSave = {
+			keyboard: (checkedKeyboardElement && checkedKeyboardElement.value) || '',
+			externalKeyboardURL: externalKeyboardURLInput.value,
+		}
+		ipc.send('setKeyboardConfig', keyboardConfigToSave)
 	}
 
 	function invalidUrl() {

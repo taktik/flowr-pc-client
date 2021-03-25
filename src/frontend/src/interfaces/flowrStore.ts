@@ -12,7 +12,11 @@ export interface IFlowrStore {
   deinterlacing: boolean
   flowrConfig?: IFlowrConfig
   player?: IPlayerStore
-  enableVirtualKeyboard: boolean
   useRealMacAddress?: boolean
   phoneServer?: string
+  keyboardConfig: {
+    keyboard: 'embedded' | 'external' | '',
+    externalKeyboardURL: string,
+    embeddedKeyboardLayout?: string,
+  }
 }

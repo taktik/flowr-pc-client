@@ -1,4 +1,5 @@
 import { BrowserWindow } from 'electron'
+import { request } from 'http'
 import { KeyboardWindow } from '../applications/keyboard/keyboardWindow'
 import { IFlowrStore } from '../frontend/src/interfaces/flowrStore'
 import { Store } from '../frontend/src/store'
@@ -15,17 +16,21 @@ class Keyboard {
      * This is to circumvent an issue on Windows when creating this window later would put it behind every other window along with its parent
      * If the real source of this issue is found those lines can be deleted (to avoid creating a potentially unused window)
      */
-    if (this.isEnabled) {
+    if (this.isEnabled && !this.isExternal) {
       this.createKeyboard()
     }
   }
 
   get isEnabled(): boolean {
-    return !!this._flowrStore?.get('enableVirtualKeyboard')
+    return !!this._flowrStore?.get('keyboardConfig').keyboard
+  }
+
+  get isExternal(): boolean {
+    return this._flowrStore?.get('keyboardConfig').keyboard === 'external'
   }
 
   private get shouldCreateNewKeyboardWindow() {
-    return !this.keyboardWindow || this.keyboardWindow.isDestroyed()
+    return !this.isExternal && (!this.keyboardWindow || this.keyboardWindow.isDestroyed())
   }
 
   createKeyboard(parent?: BrowserWindow): void {
@@ -38,6 +43,10 @@ class Keyboard {
     if (!this.isEnabled) {
       throw Error('Keyboard is not enabled.')
     }
+    if (this.isExternal) {
+      request(`${this._flowrStore?.get('keyboardConfig').externalKeyboardURL}/open`, { method: 'GET' })
+      return
+    }
     if (this.shouldCreateNewKeyboardWindow) {
       this.createKeyboard(parent)
     } else {
@@ -47,12 +56,20 @@ class Keyboard {
   }
 
   close() {
+    if (this.isExternal) {
+      request(`${this._flowrStore?.get('keyboardConfig').externalKeyboardURL}/close`, { method: 'GET' })
+      return
+    }
     this.keyboardWindow?.hide()
   }
 
   toggle(parent: BrowserWindow) {
     if (!this.isEnabled) {
       throw Error('Keyboard is not enabled.')
+    }
+    if (this.isExternal) {
+      request(`${this._flowrStore?.get('keyboardConfig').externalKeyboardURL}/toggle`, { method: 'GET' })
+      return
     }
     if (this.shouldCreateNewKeyboardWindow) {
       this.open(parent)
