@@ -33,6 +33,21 @@ class Keyboard {
     return !this.isExternal && (!this.keyboardWindow || this.keyboardWindow.isDestroyed())
   }
 
+  private externalKeyboardRequest(endPoint: string): Promise<any> {
+    return new Promise((resolve, reject) => {
+      const keyboardRequest = request(
+        `${this._flowrStore?.get('keyboardConfig').externalKeyboardURL}/${endPoint}`,
+        { method: 'GET' },
+        (res) => {
+          res.on('end', resolve)
+        },
+      )
+
+      keyboardRequest.on('error', reject)
+      keyboardRequest.end()
+    })
+  }
+
   createKeyboard(parent?: BrowserWindow): void {
     const keyboardWindow = new KeyboardWindow(parent)
     keyboardWindow.on('close', () => this.keyboardWindow = undefined)
@@ -44,7 +59,8 @@ class Keyboard {
       throw Error('Keyboard is not enabled.')
     }
     if (this.isExternal) {
-      request(`${this._flowrStore?.get('keyboardConfig').externalKeyboardURL}/open`, { method: 'GET' })
+      this.externalKeyboardRequest('open')
+        .catch(console.error)
       return
     }
     if (this.shouldCreateNewKeyboardWindow) {
@@ -57,7 +73,8 @@ class Keyboard {
 
   close() {
     if (this.isExternal) {
-      request(`${this._flowrStore?.get('keyboardConfig').externalKeyboardURL}/close`, { method: 'GET' })
+      this.externalKeyboardRequest('close')
+        .catch(console.error)
       return
     }
     this.keyboardWindow?.hide()
@@ -68,7 +85,8 @@ class Keyboard {
       throw Error('Keyboard is not enabled.')
     }
     if (this.isExternal) {
-      request(`${this._flowrStore?.get('keyboardConfig').externalKeyboardURL}/toggle`, { method: 'GET' })
+      this.externalKeyboardRequest('toggle')
+        .catch(console.error)
       return
     }
     if (this.shouldCreateNewKeyboardWindow) {
