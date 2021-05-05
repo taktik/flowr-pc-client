@@ -56,6 +56,38 @@ async function main() {
     log.error(error)
   })
 
+  const openBrowserWindow = async (
+    flowrStore: Store<IFlowrStore>,
+    event: Event,
+    options: any,
+  ): Promise<BrowserWindow> => {
+
+    browserWindow?.close()
+
+    const wexondOptions = {
+      ...options,
+      enableVirtualKeyboard: flowrStore.get('enableVirtualKeyboard'),
+    }
+
+    browserWindow = await createWexondWindow(wexondOptions, flowrWindow || undefined, buildBrowserWindowConfig(flowrStore, {}))
+    FullScreenManager.applySameWindowState(flowrWindow, browserWindow)
+    applicationManager.browserWindow = browserWindow
+
+    flowrWindow.webContents.setAudioMuted(true)
+    browserWindow.webContents.focus()
+
+    flowrWindow?.hide()
+
+    browserWindow.on('close', () => {
+      FullScreenManager.applySameWindowState(browserWindow, flowrWindow)
+      browserWindow = null
+      flowrWindow?.webContents.setAudioMuted(false)
+      flowrWindow?.show()
+    })
+
+    return browserWindow
+  }
+
   async function onReady() {
     await clearBrowsingData()
     const flowrStore = initFlowrStore()
@@ -85,30 +117,8 @@ async function main() {
       }
     })
 
-    ipcMain.on('open-browser', async (event: Event, options: any) => {
-      browserWindow?.close()
+    ipcMain.on('open-browser', async (event, options) => await openBrowserWindow(flowrStore, event, options))
 
-      const wexondOptions = {
-        ...options,
-        enableVirtualKeyboard: flowrStore.get('enableVirtualKeyboard'),
-      }
-
-      browserWindow = await createWexondWindow(wexondOptions, flowrWindow || undefined, buildBrowserWindowConfig(flowrStore, {}))
-      FullScreenManager.applySameWindowState(flowrWindow, browserWindow)
-      applicationManager.browserWindow = browserWindow
-
-      flowrWindow.webContents.setAudioMuted(true)
-      browserWindow.webContents.focus()
-
-      flowrWindow?.hide()
-
-      browserWindow.on('close', () => {
-        FullScreenManager.applySameWindowState(browserWindow, flowrWindow)
-        browserWindow = null
-        flowrWindow?.webContents.setAudioMuted(false)
-        flowrWindow?.show()
-      })
-    })
     ipcMain.on('close-browser', () => {
       if (browserWindow !== null) {
         browserWindow.close()
@@ -154,9 +164,22 @@ async function main() {
       flowrWindow = await createFlowrWindow(store)
       FullScreenManager.applyDefaultActionOnWindow(flowrWindow)
       applicationManager.flowrWindow = flowrWindow
+
       flowrWindow.on('close', () => {
         flowrWindow = null
       })
+
+      flowrWindow.webContents.on('new-window', async (event, url) => {
+        event.preventDefault()
+
+        await openBrowserWindow(store, event, {
+          clearBrowsingDataAtClose: false,
+          openUrl: url,
+          maxTab : 1,
+          enableVirtualKeyboard: true,
+        })
+      })
+
       ipcMain.on('flowrLanguageChanged', (e: Event, lang: string) => applicationManager.languageChanged(lang))
     } catch (e) {
       console.error('Error in init', e)
