@@ -175,8 +175,7 @@ async function main() {
         await openBrowserWindow(store, event, {
           clearBrowsingDataAtClose: false,
           openUrl: url,
-          maxTab : 1,
-          enableVirtualKeyboard: true,
+          maxTab : 0,
         })
       })
 
