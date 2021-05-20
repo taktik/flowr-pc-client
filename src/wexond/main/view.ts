@@ -25,6 +25,7 @@ export class View extends BrowserView {
         additionalArguments: [`--tab-id=${id}`],
         contextIsolation: true,
         partition: 'persist:view',
+        nativeWindowOpen: true,
         plugins: true,
       },
     })
