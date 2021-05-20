@@ -71,7 +71,7 @@ export class Player {
     const shouldPersist = !storeManager.exists('player')
 
     if (storeManager.exists('player')) {
-      const playerConfigMerged = mergeWith({}, this.flowrStore.data.player, DEFAULT_PLAYER_STORE, playerConfig, (a, b) => b === null || b === '' ? a : undefined)
+      const playerConfigMerged = mergeWith({}, DEFAULT_PLAYER_STORE, this.flowrStore.data.player, playerConfig, (a, b) => b === null || b === '' ? a : undefined)
       this.store.bulkSet(playerConfigMerged)
     }
 

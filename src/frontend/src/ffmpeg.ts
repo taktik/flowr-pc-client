@@ -38,13 +38,20 @@ function handleError(
       playerError = PlayerErrors.CONVERSION
     } else if (message.includes('Stream specifier')) {
       playerError = PlayerErrors.ERRONEOUS_STREAM
-    } else if (message.includes('SIGKILL')) {
+    } else if (message.includes('SIGKILL') || message.includes('SIGTERM')) {
       playerError = PlayerErrors.TERMINATED
     } else {
       playerError = PlayerErrors.UNKNOWN
     }
     callback(new PlayerError(message, playerError))
   }
+}
+
+type FfmpegPipelinesParams = {
+  input: Readable,
+  audioPid?: number,
+  subtitlesPid?: number,
+  errorHandler(error: PlayerError): void,
 }
 
 export class FlowrFfmpeg {
@@ -118,6 +125,47 @@ export class FlowrFfmpeg {
       .format('mp3')
       .on('start', commandLine => {
         console.log('Spawned Ffmpeg with command:', commandLine)
+      })
+      .on('error', handleError(errorHandler))
+  }
+
+  getVideoPipelineWithSubtitles({
+    input,
+    audioPid,
+    subtitlesPid,
+    errorHandler,
+  }: FfmpegPipelinesParams): Ffmpeg.FfmpegCommand {
+    const audioStreamSelector = audioPid ? `i:${audioPid}` : '0:a:0'
+    const ffmpegCmd = Ffmpeg(input)
+      .inputOptions('-probesize 1000k')
+      .inputOptions('-flags low_delay')
+      .outputOption('-preset ultrafast')
+      .outputOption('-tune zerolatency')
+      .outputOption('-g 30')
+      .outputOption('-r 30')
+      .outputOption(`-map ${audioStreamSelector}?`)
+
+    if (subtitlesPid) {
+      ffmpegCmd
+        .outputOption(`-filter_complex [0:v][i:${subtitlesPid}]overlay[v]`)
+        .outputOption('-map [v]')
+    } else {
+      ffmpegCmd
+        .outputOption('-map 0:v')
+        .outputOption('-c:v copy')
+    }
+
+    if (process.platform !== 'darwin') {
+      ffmpegCmd.outputOption('-flush_packets -1')
+    }
+
+    return ffmpegCmd
+      .format('mp4')
+      .outputOption(
+        '-movflags empty_moov+frag_keyframe+default_base_moof+disable_chpl',
+      )
+      .on('start', commandLine => {
+        console.log('Spawned Ffmpeg with command: ', commandLine)
       })
       .on('error', handleError(errorHandler))
   }

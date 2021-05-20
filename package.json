@@ -35,9 +35,9 @@
     "lint": "tslint \"src/**/*.ts*\" --exclude \"src/wexond/**/*.ts*\" --project tsconfig.json",
     "lint-fix": "prettier --write \"src/**/*.ts*\" && tslint \"src/**/*.ts*\" --fix",
     "install-app-deps": "electron-builder install-app-deps",
-    "install-widevine": "npm install castlabs/electron-releases#v10.1.4-wvvmp --no-save",
-    "copy-header": "cp -r $HOME/.electron-gyp/10.1.4 $HOME/.electron-gyp/10.1.4-wvvmp",
-    "copy-header-win": "cp -r %HOME%/.electron-gyp/10.1.4 %HOME%/.electron-gyp/10.1.4-wvvmp"
+    "install-widevine": "npm install castlabs/electron-releases#v11.1.1-wvvmp --no-save",
+    "copy-header": "cp -r $HOME/.electron-gyp/11.1.1 $HOME/.electron-gyp/11.1.1-wvvmp",
+    "copy-header-win": "cp -r %HOME%/.electron-gyp/11.1.1 %HOME%/.electron-gyp/11.1.1-wvvmp"
   },
   "pre-commit": [
     "lint-fix"
@@ -64,7 +64,7 @@
     "copy-webpack-plugin": "6.2.0",
     "cross-env": "5.2.0",
     "css-loader": "4.3.0",
-    "electron": "11.0.0-beta.8",
+    "electron": "11.1.1",
     "electron-builder": "22.9.1",
     "file-loader": "6.1.0",
     "fuse-box": "3.7.1",
@@ -93,8 +93,9 @@
     "@fortawesome/react-fontawesome": "0.1.4",
     "@taktik/buffers": "1.0.4",
     "@taktik/flowr-common-js": "1.0.5",
-    "@taktik/ts-decryptor": "1.0.8",
-    "@taktik/udp-streamer": "1.0.8",
+    "@taktik/mux.js": "5.10.0",
+    "@taktik/ts-decryptor": "1.0.10",
+    "@taktik/udp-streamer": "1.0.9",
     "axios": "0.18.0",
     "crypto-random-string": "3.1.0",
     "deep-extend": "0.6.0",

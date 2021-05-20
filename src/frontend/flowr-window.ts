@@ -1,7 +1,9 @@
 import { BrowserWindow, BrowserWindowConstructorOptions } from 'electron'
 import { Store } from './src/store'
-import { Player } from './src/player'
+// import { Player } from './src/player'
+import { Player } from './src/playerNew'
 import { KeyboardMixin } from '../keyboard/keyboardMixin'
+import { IFlowrStore } from './src/interfaces/flowrStore'
 
 export class FlowrWindow extends KeyboardMixin(BrowserWindow) {
 
@@ -12,21 +14,21 @@ export class FlowrWindow extends KeyboardMixin(BrowserWindow) {
     return this.store.get('phoneServer')
   }
 
-  constructor(private store: Store, options?: BrowserWindowConstructorOptions) {
+  constructor(private store: Store<IFlowrStore>, options?: BrowserWindowConstructorOptions) {
     super(options)
     this.player = new Player(this.store)
 
     this.on('close', () => {
       this.player.close()
     })
-    this.on('maximize',  () => {
+    this.on('maximize', () => {
       this.store.set('isMaximized', true)
     })
 
     this.on('unmaximize', () => {
       this.store.set('isMaximized', false)
       const winBounds = this.store.get('windowBounds')
-      const width =  parseInt(winBounds.width, 10)
+      const width = typeof winBounds.width === 'number' ? winBounds.width : parseInt(winBounds.width, 10)
       const height = (width - 16) * 9 / 16
 
       this.setSize(winBounds.width, height + 40)

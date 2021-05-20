@@ -11,7 +11,7 @@ export default function (flowrStore: Store): BrowserWindowConstructorOptions {
     minWidth: 430,
     minHeight: 270,
     title: 'FlowR',
-    fullscreen: true,
+    fullscreen: false,
     kiosk,
     titleBarStyle: 'hiddenInset',
     alwaysOnTop: false,

@@ -13,4 +13,5 @@ export interface IFlowrStore {
   flowrConfig?: IFlowrConfig
   player?: IPlayerStore
   enableVirtualKeyboard: boolean
+  phoneServer?: string
 }
