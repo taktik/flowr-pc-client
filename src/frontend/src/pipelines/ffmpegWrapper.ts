@@ -123,9 +123,8 @@ class FfmpegWrapper implements IPipelineTail {
 
   retrieveMetadata(): Promise<TrackInfo> {
     return new Promise((resolve, reject) => {
-      const input = this.dispatcher.pipe(new PassThrough({ autoDestroy: false }))
-      const stream = new TrackInfoStream()
-      input.pipe(stream)
+      const stream = new TrackInfoStream(true)
+      const input = this.dispatcher.pipe(stream)
 
       const dataCb = (trackInfo: TrackInfo) => {
         this.streamer.sendTrackInfo(trackInfo)

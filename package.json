@@ -1,6 +1,6 @@
 {
   "name": "flowr-desktop",
-  "version": "1.2.8",
+  "version": "1.3.0-beta",
   "author": {
     "email": "info@taktik.com",
     "name": "Taktik"
@@ -93,7 +93,7 @@
     "@fortawesome/react-fontawesome": "0.1.4",
     "@taktik/buffers": "1.0.4",
     "@taktik/flowr-common-js": "1.0.5",
-    "@taktik/mux.js": "5.10.0",
+    "@taktik/mux.js": "5.10.2",
     "@taktik/ts-decryptor": "1.0.10",
     "@taktik/udp-streamer": "1.0.9",
     "axios": "0.18.0",
