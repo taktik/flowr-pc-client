@@ -145,6 +145,9 @@ class FfmpegWrapper implements IPipelineTail {
   }
 
   setAudioTrackFromPid(pid: number): void {
+    if (!this.currentStream) {
+      return
+    }
     const { input, audioPid, subtitlesPid } = this.currentStream
 
     if (pid !== audioPid) {
@@ -154,6 +157,9 @@ class FfmpegWrapper implements IPipelineTail {
   }
 
   setSubtitlesFromPid(pid: number | undefined) {
+    if (!this.currentStream) {
+      return
+    }
     const { input, audioPid, subtitlesPid } = this.currentStream
 
     if (pid !== subtitlesPid) {

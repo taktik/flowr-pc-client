@@ -1,4 +1,5 @@
 
+import type { IpcRenderer } from 'electron'
 import { debounce } from 'lodash'
 import { VirtualKeyboardEvent } from '../../keyboard/events'
 
@@ -6,22 +7,18 @@ declare global {
   namespace NodeJS {
     interface Global {
       nodeRequire: any
-      nodeProcess: any
-      process: Process // ensure compatibility with flow < 5.2.6
-      ipc: any // ensure compatibility with flow < 5.2.6
+      ipc: IpcRenderer
     }
   }
 }
 
 const nodeRequire: {[key: string]: any} = {
-  electron: require('electron'),
   fs: require('fs'),
   os: require('os'),
   path: require('path'),
 }
-const nodeProcess = process
 
-const ipcRenderer = nodeRequire['electron'].ipcRenderer
+const ipcRenderer = require('electron').ipcRenderer
 const hiddenMenuCode = 'configtaktik'
 
 let codeClearingTimeout: number
@@ -84,14 +81,12 @@ process.once('loaded', () => {
     const requiredModule = nodeRequire[moduleName]
 
     if (!requiredModule) {
-      throw Error(`Cannot find module ${moduleName}. It must be explicitely exported from the client.`)
+      throw Error(`Cannot find module ${moduleName}. It must be explicitely exported from the desktop client.`)
     }
 
     return requiredModule
   }
-  global.nodeProcess = nodeProcess
-  global.process = nodeProcess // ensure compatibility with flow < 5.2.6
-  global.ipc = ipcRenderer // ensure compatibility with flow < 5.2.6
+  global.ipc = ipcRenderer
 })
 
 export {}

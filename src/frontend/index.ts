@@ -66,7 +66,6 @@ export async function createFlowrWindow(flowrStore: Store<IFlowrStore>): Promise
       contextIsolation: false,
       partition: 'persist:flowr', // needed to display webcam image
       preload: buildPreloadPath('exportNode.js'),
-      enableRemoteModule: true, // TODO: FLOW-8215
     },
   })
 
@@ -144,7 +143,7 @@ export async function createFlowrWindow(flowrStore: Store<IFlowrStore>): Promise
       clearInterval(reloadTimeout)
       isLaunchedUrlCorrect = true
     },
-    getAppConfig: (evt: any) => {
+    getAppConfig: (evt: IpcMainEvent) => {
       const storedConfig = flowrStore.get('flowrConfig')
       const config: any = {
         debugMode: isDebugMode,
@@ -184,15 +183,15 @@ export async function createFlowrWindow(flowrStore: Store<IFlowrStore>): Promise
 
       evt.sender.send('receiveConfig', config)
     },
-    getMacAddress: async (evt: any) => {
+    getMacAddress: async (evt: IpcMainEvent) => {
       const activeMacAddress = await getActiveMacAddress()
       evt.sender.send('receiveMacAddress', activeMacAddress)
     },
-    getActiveMacAddress: async (evt: any) => {
+    getActiveMacAddress: async (evt: IpcMainEvent) => {
       const activeMacAddress = await getActiveMacAddress()
       evt.sender.send('receiveActiveMacAddress', activeMacAddress)
     },
-    getAllMacAddresses: async (evt: any) => {
+    getAllMacAddresses: async (evt: IpcMainEvent) => {
       try {
         const allMacAddresses = await getAllMacAddresses()
         evt.sender.send('receiveAllMacAddresses', allMacAddresses)
@@ -200,7 +199,7 @@ export async function createFlowrWindow(flowrStore: Store<IFlowrStore>): Promise
         evt.sender.send('receiveAllMacAddresses', [])
       }
     },
-    getIpAddress: async (evt: any) => {
+    getIpAddress: async (evt: IpcMainEvent) => {
       try {
         const ipAddress = await getIpAddress()
         evt.sender.send('receiveIpAddress', ipAddress)
@@ -208,14 +207,14 @@ export async function createFlowrWindow(flowrStore: Store<IFlowrStore>): Promise
         evt.sender.send('receiveIpAddress', '127.0.0.1')
       }
     },
-    updateAppConfig: (evt: any, data: any) => {
+    updateAppConfig: (evt: IpcMainEvent, data: any) => {
       const currentConfig = flowrStore.get('flowrConfig')
       const newConfig = deepExtend(currentConfig, data)
       flowrStore.set('flowrConfig', newConfig)
       app.relaunch()
       app.quit()
     },
-    setDebugMode: (evt: any, debugMode: boolean) => {
+    setDebugMode: (evt: IpcMainEvent, debugMode: boolean) => {
       isDebugMode = debugMode
       if (isDebugMode) {
         mainWindow.webContents.openDevTools()
@@ -223,18 +222,18 @@ export async function createFlowrWindow(flowrStore: Store<IFlowrStore>): Promise
         mainWindow.webContents.closeDevTools()
       }
     },
-    setDeinterlacingMode: (evt: any, deinterlacingMode: any) => {
+    setDeinterlacingMode: (evt: IpcMainEvent, deinterlacingMode: any) => {
       flowrStore.set('deinterlacing', deinterlacingMode)
     },
-    setClearAppDataOnStart: (evt: any, clearAppDataOnStart: any) => {
+    setClearAppDataOnStart: (evt: IpcMainEvent, clearAppDataOnStart: any) => {
       flowrStore.set('clearAppDataOnStart', clearAppDataOnStart)
     },
-    setKioskMode: (evt: any, isKiosk: boolean) => {
+    setKioskMode: (evt: IpcMainEvent, isKiosk: boolean) => {
       flowrStore.set('isKiosk', isKiosk)
       app.relaunch()
       app.quit()
     },
-    setExtUrl: (evt: any, newExtURl: string) => {
+    setExtUrl: (evt: IpcMainEvent, newExtURl: string) => {
       flowrStore.set('extUrl', newExtURl)
       app.relaunch()
       app.quit()
@@ -243,6 +242,19 @@ export async function createFlowrWindow(flowrStore: Store<IFlowrStore>): Promise
       flowrStore.set('enableVirtualKeyboard', enableVirtualKeyboard)
       app.relaunch()
       app.quit()
+    },
+    getClientMetadata: (evt: IpcMainEvent) => {
+      evt.sender.send('receiveClientMetadata', {
+        name: app.getName(),
+        version: app.getVersion(),
+        electronVersion: process.versions.electron,
+        platform: process.platform,
+        arch: process.arch,
+      })
+    },
+    captureScreen: async (evt: IpcMainEvent) => {
+      const image = await mainWindow.capturePage()
+      evt.sender.send('receiveScreenCapture', image.toDataURL())
     },
     openConfigMode: displayHiddenMenu,
   }
