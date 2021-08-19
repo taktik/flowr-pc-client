@@ -61,17 +61,16 @@ export class Player {
     if (!this.playPipelineHeadOutput) {
       return
     }
-
-    this.playPipelineTail = (this.store.get('pipeline').use === PipelineType.FFMPEG || subtitlesPid)
-      ? this.ffmpegWrapper
-      : this.transmuxer
-
+    const confPipeline = this.store.get('pipeline').use
+    const useFfmpeg = (confPipeline === PipelineType.FFMPEG) || subtitlesPid
+    console.log(`--------- USING FFMPEG PIPELINE: ${useFfmpeg} (pipeline from conf: ${confPipeline}, subtitles pid: ${subtitlesPid}) ---------`)
+    this.playPipelineTail = useFfmpeg ? this.ffmpegWrapper : this.transmuxer
     this.playPipelineTail.sender = sender
     this.playPipelineTail.play(this.playPipelineHeadOutput, audioPid, subtitlesPid)
   }
 
   async play({ sender }: IpcMainEvent, { url, audioPid, subtitlesPid }: any) {
-    console.log('--------- PLAY', url)
+    console.log('--------- PLAY', url, '---------')
     // First of all, check if pipeline is set
     if (!this.playPipelineHead) {
       this.setupPipeline()
@@ -108,7 +107,7 @@ export class Player {
   }
 
   async stop() {
-    console.log('------ STOPPING')
+    console.log('--------- STOPPING ---------')
     if (this.replayOnErrorTimeout) {
       clearTimeout(this.replayOnErrorTimeout)
     }
@@ -116,7 +115,7 @@ export class Player {
     await this.playPipelineHead?.clear()
 
     this.clearPipelineTail()
-    console.log('------ STOPPED _-------')
+    console.log('--------- STOPPED ---------')
   }
 
   async replay(evt: IpcMainEvent, url: string) {
@@ -137,7 +136,7 @@ export class Player {
     if (!this.playPipelineHeadOutput && this.playPipelineTail) {
       return
     }
-    console.log('------ SETTING SUBTITLE PID', subtitlesPid)
+    console.log('--------- SETTING SUBTITLE PID', subtitlesPid, '---------')
     if (this.playPipelineTail === this.transmuxer) {
       // Switch to FFMPEG
       this.clearPipelineTail()
