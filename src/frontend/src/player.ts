@@ -68,16 +68,8 @@ export class Player {
   }
 
   initStore(playerConfig: IPlayerStore): void {
-    const shouldPersist = !storeManager.exists('player')
-
-    if (storeManager.exists('player')) {
-      const playerConfigMerged = mergeWith({}, DEFAULT_PLAYER_STORE, this.flowrStore.data.player, playerConfig, (a, b) => b === null || b === '' ? a : undefined)
-      this.store.bulkSet(playerConfigMerged)
-    }
-
-    if (shouldPersist) {
-      this.store.persist()
-    }
+    const playerConfigMerged = mergeWith({}, DEFAULT_PLAYER_STORE, this.store.data, playerConfig, (a, b) => b === null || b === '' ? a : undefined)
+    this.store.bulkSet(playerConfigMerged)
   }
 
   updateChannelData(streams: ICurrentStreams) {

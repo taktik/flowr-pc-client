@@ -80,7 +80,7 @@ async function main() {
       delete currentFlowrStore.player
       if (desktopConfig) {
         const userPreferencesMerged = mergeWith({}, DEFAULT_FRONTEND_STORE, currentFlowrStore, desktopConfig.userPreferences, (a, b) => b === null || b === '' ? a : undefined)
-        flowrStore.bulkSet(userPreferencesMerged)
+        flowrWindow.initStore(userPreferencesMerged)
         flowrWindow.player.initStore(desktopConfig.player)
       }
     })

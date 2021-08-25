@@ -11,6 +11,8 @@ import defaultBrowserWindowOptions from './defaultBrowserWindowOptions'
 import { IFlowrStore } from './src/interfaces/flowrStore'
 import { buildPreloadPath } from '../common/preload'
 import { FullScreenManager } from '../common/fullscreen'
+import { initializeLogging } from './src/logging'
+import { LogSeverity } from './src/logging/types'
 
 const deepExtend = require('deep-extend')
 const FlowrDataDir = resolve(homedir(), '.flowr')
@@ -26,6 +28,7 @@ export const DEFAULT_FRONTEND_STORE: IFlowrStore = {
   isKiosk: false,
   deinterlacing: false,
   enableVirtualKeyboard: false,
+  logLevel: LogSeverity.INFO,
 }
 export async function initFlowrConfig(data: object) {
   await initConfigData(join(FlowrDataDir, `${FRONTEND_CONFIG_NAME}.json`), data)
@@ -91,6 +94,8 @@ export async function createFlowrWindow(flowrStore: Store<IFlowrStore>): Promise
     mainWindow.webContents.openDevTools()
     isDebugMode = true
   }
+
+  initializeLogging(mainWindow.webContents)
 
   function displayHiddenMenu(): void {
     const flowrUrl = flowrStore.get('extUrl') || buildFileUrl('config.html')

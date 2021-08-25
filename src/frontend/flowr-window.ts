@@ -5,6 +5,8 @@ import { Player } from './src/playerNew'
 import { KeyboardMixin } from '../keyboard/keyboardMixin'
 import { IFlowrStore } from './src/interfaces/flowrStore'
 import { FullScreenManager } from '../common/fullscreen'
+import { setLevel } from './src/logging/loggers'
+import { LogSeverity } from './src/logging/types'
 
 function toRatio(width: number, height: number) {
   return (value: number) => Math.floor((value - width) * height / width)
@@ -21,7 +23,7 @@ export class FlowrWindow extends KeyboardMixin(BrowserWindow) {
 
   constructor(private store: Store<IFlowrStore>, options?: BrowserWindowConstructorOptions) {
     super(options)
-    this.player = new Player(this.store)
+    this.player = new Player()
 
     this.on('close', () => {
       this.player.close()
@@ -50,4 +52,8 @@ export class FlowrWindow extends KeyboardMixin(BrowserWindow) {
     })
   }
 
+  initStore(desktopConfig: IFlowrStore): void {
+    this.store.bulkSet(desktopConfig)
+    setLevel(desktopConfig.logLevel ?? LogSeverity.INFO)
+  }
 }

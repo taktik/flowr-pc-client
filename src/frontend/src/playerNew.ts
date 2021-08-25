@@ -1,6 +1,5 @@
 import { ipcMain, IpcMainEvent, WebContents } from 'electron'
 import { mergeWith } from 'lodash'
-import { IFlowrStore } from './interfaces/flowrStore'
 import { IPlayerStore, PipelineType } from './interfaces/playerStore'
 import { Store } from './store'
 import { storeManager } from '../../launcher'
@@ -11,6 +10,9 @@ import { FfmpegWrapper } from './pipelines/ffmpegWrapper'
 import { Readable } from 'stream'
 import { UdpStreamerError, UdpStreamerErrors } from '@taktik/udp-streamer'
 import { IPipelineTail } from './interfaces/playerPipeline'
+import { getLogger } from './logging/loggers'
+
+const log = getLogger('Player')
 
 export class Player {
   private readonly _ipcEvents: {[key: string]: (...args: any[]) => void}
@@ -23,7 +25,7 @@ export class Player {
   private ffmpegWrapper?: FfmpegWrapper
   private playPipelineTail?: IPipelineTail
 
-  constructor(private flowrStore: Store<IFlowrStore>) {
+  constructor() {
     this._ipcEvents = {
       closestream: this.stop.bind(this),
       getSubtitleStreams: () => {},
@@ -37,18 +39,12 @@ export class Player {
   }
 
   initStore(playerConfig: IPlayerStore): void {
-    const shouldPersist = !storeManager.exists('player')
+    const playerConfigMerged = mergeWith({}, DEFAULT_PLAYER_STORE, this.store.data, playerConfig, (a, b) => b === null || b === '' ? a : undefined)
+    this.store.bulkSet(playerConfigMerged)
 
-    if (storeManager.exists('player')) {
-      const playerConfigMerged = mergeWith({}, this.flowrStore.data.player, DEFAULT_PLAYER_STORE, playerConfig, (a, b) => b === null || b === '' ? a : undefined)
-      this.store.bulkSet(playerConfigMerged)
+    if (!this.playPipelineHead || !this.transmuxer || !this.ffmpegWrapper) {
+      this.setupPipeline()
     }
-
-    if (shouldPersist) {
-      this.store.persist()
-    }
-
-    this.setupPipeline()
   }
 
   setupPipeline() {
@@ -62,15 +58,15 @@ export class Player {
       return
     }
     const confPipeline = this.store.get('pipeline').use
-    const useFfmpeg = (confPipeline === PipelineType.FFMPEG) || subtitlesPid
-    console.log(`--------- USING FFMPEG PIPELINE: ${useFfmpeg} (pipeline from conf: ${confPipeline}, subtitles pid: ${subtitlesPid}) ---------`)
+    const useFfmpeg = (confPipeline === PipelineType.FFMPEG) || !!subtitlesPid
+    log.info(`--------- USING FFMPEG PIPELINE: ${useFfmpeg} (pipeline from conf: ${confPipeline}, subtitles pid: ${subtitlesPid}) ---------`)
     this.playPipelineTail = useFfmpeg ? this.ffmpegWrapper : this.transmuxer
     this.playPipelineTail.sender = sender
     this.playPipelineTail.play(this.playPipelineHeadOutput, audioPid, subtitlesPid)
   }
 
   async play({ sender }: IpcMainEvent, { url, audioPid, subtitlesPid }: any) {
-    console.log('--------- PLAY', url, '---------')
+    log.info('--------- PLAY', url, '---------')
     // First of all, check if pipeline is set
     if (!this.playPipelineHead) {
       this.setupPipeline()
@@ -107,7 +103,7 @@ export class Player {
   }
 
   async stop() {
-    console.log('--------- STOPPING ---------')
+    log.info('--------- STOPPING ---------')
     if (this.replayOnErrorTimeout) {
       clearTimeout(this.replayOnErrorTimeout)
     }
@@ -115,7 +111,7 @@ export class Player {
     await this.playPipelineHead?.clear()
 
     this.clearPipelineTail()
-    console.log('--------- STOPPED ---------')
+    log.info('--------- STOPPED ---------')
   }
 
   async replay(evt: IpcMainEvent, url: string) {
@@ -136,7 +132,7 @@ export class Player {
     if (!this.playPipelineHeadOutput && this.playPipelineTail) {
       return
     }
-    console.log('--------- SETTING SUBTITLE PID', subtitlesPid, '---------')
+    log.info('--------- SETTING SUBTITLE PID', subtitlesPid, '---------')
     if (this.playPipelineTail === this.transmuxer) {
       // Switch to FFMPEG
       this.clearPipelineTail()
