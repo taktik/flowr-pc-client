@@ -22,5 +22,5 @@
       "~/*": ["./src/wexond/*"]
     }
   },
-  "include": ["./src/**/*.ts", "./src/**/*.tsx"]
+  "include": ["./src/**/*.ts", "./src/**/*.tsx", "./*.js"]
 }

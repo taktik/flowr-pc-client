@@ -1,4 +1,4 @@
-module.exports = {
+export default {
   appId: 'org.taktik.flowr.pcClient',
   productName: 'flowr-desktop',
   artifactName: '${productName}-${version}-${os}-${arch}.${ext}',
@@ -40,5 +40,8 @@ module.exports = {
   },
   mac: {
     category: 'public.app-category.navigation'
+  },
+  electronDownload: {
+    mirror: 'http://localhost:5000/'
   }
 }
