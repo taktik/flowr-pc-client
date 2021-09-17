@@ -1,53 +1,24 @@
-import { ipcMain, IpcMainEvent, WebContents } from 'electron'
-import { mergeWith } from 'lodash'
-import { IPlayerStore, PipelineType } from './interfaces/playerStore'
-import { Store } from './store'
-import { storeManager } from '../../launcher'
-import { DEFAULT_PLAYER_STORE } from './playerStore'
+import { IpcMainEvent, WebContents } from 'electron'
+import { IPlayerStore, PipelineType } from '../interfaces/playerStore'
 import { TransmuxerWrapper } from './transmuxer'
 import { MainPipeline } from './pipelines/main'
 import { FfmpegWrapper } from './pipelines/ffmpegWrapper'
 import { Readable } from 'stream'
 import { UdpStreamerError, UdpStreamerErrors } from '@taktik/udp-streamer'
-import { IPipelineTail } from './interfaces/playerPipeline'
-import { getLogger } from './logging/loggers'
+import { IPipelineTail } from '../interfaces/playerPipeline'
+import { AbstractPlayer, PlayProps } from './abstractPlayer'
 
-const log = getLogger('Player')
-
-export class Player {
-  private readonly _ipcEvents: {[key: string]: (...args: any[]) => void}
-  private store: Store<IPlayerStore> = storeManager.createStore<IPlayerStore>('player', DEFAULT_PLAYER_STORE)
+export class Player extends AbstractPlayer {
   private replayOnErrorTimeout: number | null = null
 
-  private playPipelineHead?: MainPipeline
+  private playPipelineHead: MainPipeline
   private playPipelineHeadOutput?: Readable
-  private transmuxer?: TransmuxerWrapper
-  private ffmpegWrapper?: FfmpegWrapper
+  private transmuxer: TransmuxerWrapper
+  private ffmpegWrapper: FfmpegWrapper
   private playPipelineTail?: IPipelineTail
 
-  constructor() {
-    this._ipcEvents = {
-      closestream: this.stop.bind(this),
-      getSubtitleStreams: () => {},
-      setsubtitlestream: () => {},
-      openurl: this.play.bind(this),
-      FlowrIsInitializing: this.stop.bind(this),
-      setAudioPid: this.setAudioTrackFromPid.bind(this),
-      setSubtitlesPid: this.setSubtitlesFromPid.bind(this),
-    }
-    Object.entries(this._ipcEvents).forEach(event => ipcMain.on(event[0], event[1]))
-  }
-
-  initStore(playerConfig: IPlayerStore): void {
-    const playerConfigMerged = mergeWith({}, DEFAULT_PLAYER_STORE, this.store.data, playerConfig, (a, b) => b === null || b === '' ? a : undefined)
-    this.store.bulkSet(playerConfigMerged)
-
-    if (!this.playPipelineHead || !this.transmuxer || !this.ffmpegWrapper) {
-      this.setupPipeline()
-    }
-  }
-
-  setupPipeline() {
+  constructor(playerConfig: IPlayerStore) {
+    super(playerConfig)
     this.playPipelineHead = new MainPipeline(this.store)
     this.transmuxer = new TransmuxerWrapper()
     this.ffmpegWrapper = new FfmpegWrapper(this.store)
@@ -59,18 +30,14 @@ export class Player {
     }
     const confPipeline = this.store.get('pipeline').use
     const useFfmpeg = (confPipeline === PipelineType.FFMPEG) || !!subtitlesPid
-    log.info(`--------- USING FFMPEG PIPELINE: ${useFfmpeg} (pipeline from conf: ${confPipeline}, subtitles pid: ${subtitlesPid}) ---------`)
+    this.log.info(`--------- USING FFMPEG PIPELINE: ${useFfmpeg} (pipeline from conf: ${confPipeline}, subtitles pid: ${subtitlesPid}) ---------`)
     this.playPipelineTail = useFfmpeg ? this.ffmpegWrapper : this.transmuxer
     this.playPipelineTail.sender = sender
     this.playPipelineTail.play(this.playPipelineHeadOutput, audioPid, subtitlesPid)
   }
 
-  async play({ sender }: IpcMainEvent, { url, audioPid, subtitlesPid }: any) {
-    log.info('--------- PLAY', url, '---------')
-    // First of all, check if pipeline is set
-    if (!this.playPipelineHead) {
-      this.setupPipeline()
-    }
+  async play({ sender }: IpcMainEvent, { url, audioPid, subtitlesPid }: PlayProps) {
+    this.log.info('--------- PLAY', url, '---------')
 
     if (this.replayOnErrorTimeout) {
       clearTimeout(this.replayOnErrorTimeout)
@@ -103,7 +70,7 @@ export class Player {
   }
 
   async stop() {
-    log.info('--------- STOPPING ---------')
+    this.log.info('--------- STOPPING ---------')
     if (this.replayOnErrorTimeout) {
       clearTimeout(this.replayOnErrorTimeout)
     }
@@ -111,28 +78,18 @@ export class Player {
     await this.playPipelineHead?.clear()
 
     this.clearPipelineTail()
-    log.info('--------- STOPPED ---------')
+    this.log.info('--------- STOPPED ---------')
   }
 
-  async replay(evt: IpcMainEvent, url: string) {
-    await this.stop()
-    await this.play(evt, url)
-  }
-
-  close() {
-    this.stop()
-    Object.entries(this._ipcEvents).forEach(event => ipcMain.removeListener(event[0], event[1]))
-  }
-
-  setAudioTrackFromPid(_: any, pid: number) {
+  setAudioTrack(_: any, pid: number) {
     this.playPipelineTail?.setAudioTrackFromPid(pid)
   }
 
-  setSubtitlesFromPid({ sender }: IpcMainEvent, { audioPid, subtitlesPid }: any) {
+  setSubtitles({ sender }: IpcMainEvent, { audioPid, subtitlesPid }: any) {
     if (!this.playPipelineHeadOutput && this.playPipelineTail) {
       return
     }
-    log.info('--------- SETTING SUBTITLE PID', subtitlesPid, '---------')
+    this.log.info('--------- SETTING SUBTITLE PID', subtitlesPid, '---------')
     if (this.playPipelineTail === this.transmuxer) {
       // Switch to FFMPEG
       this.clearPipelineTail()

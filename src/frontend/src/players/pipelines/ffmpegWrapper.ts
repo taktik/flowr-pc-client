@@ -1,13 +1,13 @@
 import { Duplex, PassThrough, Readable } from 'stream'
 import { FlowrFfmpeg } from '../ffmpeg'
 import { IpcStreamer } from '../ipcStreamer'
-import { Store } from '../store'
-import { IPlayerStore } from '../interfaces/playerStore'
+import { Store } from '../../store'
+import { IPlayerStore } from '../../interfaces/playerStore'
 import { WebContents } from 'electron'
 import { PlayerError, PlayerErrors } from '../playerError'
 import { FfmpegCommand } from 'fluent-ffmpeg'
 import { Dispatcher } from '../dispatcher'
-import { IPipelineTail } from '../interfaces/playerPipeline'
+import { IPipelineTail } from '../../interfaces/playerPipeline'
 import { TrackInfo, TrackInfoStream } from '@taktik/mux.js'
 
 // TODO: Error management policy (how many retries before giving up, which errors to throw, etc...)

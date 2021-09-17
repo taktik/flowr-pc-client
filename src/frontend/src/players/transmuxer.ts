@@ -1,7 +1,7 @@
 import { IOutputTrack, mp4 } from '@taktik/mux.js'
 import { WebContents } from 'electron'
 import { Writable, TransformCallback, Readable } from 'stream'
-import { IPipelineTail } from './interfaces/playerPipeline'
+import { IPipelineTail } from '../interfaces/playerPipeline'
 
 export class TransmuxerWrapper extends Writable implements IPipelineTail {
   private _transmuxer = new mp4.Transmuxer({

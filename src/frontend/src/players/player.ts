@@ -1,25 +1,25 @@
-import { Store } from './store'
+import { Store } from '../store'
 import { ipcMain, IpcMainEvent } from 'electron'
 import { IpcStreamer } from './ipcStreamer'
 import { ITsDecryptorConfig, TsDecryptor } from '@taktik/ts-decryptor'
 import { UdpStreamer, UdpStreamerError, UdpStreamerErrors } from '@taktik/udp-streamer'
-import { ICurrentStreams } from './interfaces/currentStreams'
-import { IStreamTrack } from './interfaces/streamTrack'
+import { ICurrentStreams } from '../interfaces/currentStreams'
+import { IStreamTrack } from '../interfaces/streamTrack'
 import { FfmpegCommand } from 'fluent-ffmpeg'
 import { PlayerError, PlayerErrors } from './playerError'
 import { FlowrFfmpeg } from './ffmpeg'
 import { Readable, Writable, Stream, PassThrough } from 'stream'
-import { IDecryption } from './interfaces/storedDecryption'
+import { IDecryption } from '../interfaces/storedDecryption'
 import Ffmpeg = require('fluent-ffmpeg')
-import { IPlayerStreams } from './interfaces/playerPipeline'
-import { IPlayerStore } from './interfaces/playerStore'
+import { IPlayerStreams } from '../interfaces/playerPipeline'
+import { IPlayerStore } from '../interfaces/playerStore'
 import { DEFAULT_PLAYER_STORE } from './playerStore'
-import { IStreamerConfig } from './interfaces/ipcStreamerConfig'
+import { IStreamerConfig } from '../interfaces/ipcStreamerConfig'
 import { ICircularBufferConfig } from '@taktik/buffers'
 import { Dispatcher } from './dispatcher'
 import { ChildProcess } from 'child_process'
-import { storeManager } from '../../launcher'
-import { IFlowrStore } from './interfaces/flowrStore'
+import { storeManager } from '../../../launcher'
+import { IFlowrStore } from '../interfaces/flowrStore'
 import { mergeWith } from 'lodash'
 export class Player {
   private streams?: IPlayerStreams
@@ -52,6 +52,7 @@ export class Player {
   }
 
   constructor(private flowrStore: Store<IFlowrStore>) {
+    /* eslint-disable @typescript-eslint/no-unsafe-assignment */
     this._ipcEvents = {
       closestream: this.closestream.bind(this),
       pausestream: this.pausestream.bind(this),
@@ -64,6 +65,7 @@ export class Player {
       openurl: this.openUrl.bind(this),
       FlowrIsInitializing: this.stop.bind(this),
     }
+    /* eslint-enable @typescript-eslint/no-unsafe-assignment */
     Object.entries(this._ipcEvents).forEach(event => ipcMain.on(event[0], event[1]))
   }
 
@@ -203,9 +205,9 @@ export class Player {
     }
   }
 
-  stop(shouldFlush: boolean = false, ffmpegIsDead: boolean = false): Promise<void> {
+  stop(shouldFlush = false, ffmpegIsDead = false): Promise<void> {
     return this.stopping = this.stopping
-      .then(() => new Promise(async resolve => {
+      .then(async () => {
         try {
           this.ffprobeProcess?.kill('SIGKILL')
           if (this.replayOnErrorTimeout) {
@@ -222,13 +224,11 @@ export class Player {
           this.streamer?.clear(shouldFlush)
         } catch (e) {
           console.error('An error occurred while stopping:', e)
-        } finally {
-          resolve()
         }
-      }))
+      })
   }
 
-  async terminateStreams(streams: IPlayerStreams, ffmpegIsDead: boolean = false): Promise<void> {
+  async terminateStreams(streams: IPlayerStreams, ffmpegIsDead = false): Promise<void> {
     if (streams.input instanceof Stream) {
       await this.destroyStream(streams.input)
     }

@@ -5,6 +5,7 @@ import { Readable } from 'stream'
 import { resolve } from 'path'
 import { app } from 'electron'
 import { PlayerError, PlayerErrors } from './playerError'
+import { getLogger } from '../logging/loggers'
 
 function appendCmdWithoutSubtitle(
   ffmpegCmd: Ffmpeg.FfmpegCommand,
@@ -24,7 +25,7 @@ function appendCmdWithSubtitle(
   subtitleStream: number,
 ): void {
   // TODO: how to add yadif to -filter_complex ? Currently, we don't find a way to do interlacing + subtitles
-  const filterComplex: string = `-filter_complex [0:v][0:${subtitleStream}]overlay[v]`
+  const filterComplex = `-filter_complex [0:v][0:${subtitleStream}]overlay[v]`
   ffmpegCmd.outputOptions([filterComplex, '-map [v]', `-map 0:${audioStream}?`])
 }
 
@@ -32,7 +33,7 @@ function handleError(
   callback: (error: PlayerError) => void,
 ): (err: Error, stdout: string, stderr: string | undefined) => void {
   return (err, stdout, stderr) => {
-    const message = `_________err ${new Date()}: ${err}, ${stdout} ${stderr}`
+    const message = `_________err ${new Date().toISOString()}: ${err.message}, ${stdout} ${stderr}`
     let playerError: PlayerErrors
     if (message.includes('Conversion failed')) {
       playerError = PlayerErrors.CONVERSION
@@ -54,6 +55,8 @@ type FfmpegPipelinesParams = {
   errorHandler(error: PlayerError): void,
 }
 
+const log = getLogger('FlowrFfmpeg')
+
 export class FlowrFfmpeg {
   constructor() {
     Ffmpeg.setFfmpegPath(resolve(app.getAppPath(), ffmpegPath))
@@ -70,8 +73,8 @@ export class FlowrFfmpeg {
   getVideoMpegtsPipeline(
     input: string | Readable,
     videoStream: number,
-    audioStream: number = -1,
-    subtitleStream: number = -1,
+    audioStream = -1,
+    subtitleStream = -1,
     isDeinterlacingEnabled: boolean,
     errorHandler: (error: PlayerError) => void,
   ): Ffmpeg.FfmpegCommand {
@@ -89,10 +92,10 @@ export class FlowrFfmpeg {
       .outputOptions('-r 30')
 
     if (subtitleStream && subtitleStream > -1) {
-      console.log('-------- appendCmdWithSubtitle')
+      log.info('-------- appendCmdWithSubtitle')
       appendCmdWithSubtitle(ffmpegCmd, audioStream, subtitleStream)
     } else {
-      console.log('-------- appendCmdWithoutSubtitle')
+      log.info('-------- appendCmdWithoutSubtitle')
       appendCmdWithoutSubtitle(
         ffmpegCmd,
         videoStream,
@@ -112,7 +115,7 @@ export class FlowrFfmpeg {
       .outputOption('-frag_duration 2200000')
       .outputOption('-c:v copy')
       .on('start', commandLine => {
-        console.log('Spawned Ffmpeg with command: ', commandLine)
+        log.info('Spawned Ffmpeg with command: ', commandLine)
       })
       .on('error', handleError(errorHandler))
   }
@@ -124,7 +127,7 @@ export class FlowrFfmpeg {
     return Ffmpeg(input)
       .format('mp3')
       .on('start', commandLine => {
-        console.log('Spawned Ffmpeg with command:', commandLine)
+        log.info('Spawned Ffmpeg with command:', commandLine)
       })
       .on('error', handleError(errorHandler))
   }
@@ -165,7 +168,7 @@ export class FlowrFfmpeg {
         '-movflags empty_moov+frag_keyframe+default_base_moof+disable_chpl',
       )
       .on('start', commandLine => {
-        console.log('Spawned Ffmpeg with command: ', commandLine)
+        log.info('Spawned Ffmpeg with command: ', commandLine)
       })
       .on('error', handleError(errorHandler))
   }

@@ -6,6 +6,7 @@ import { ICircularBufferConfig } from '@taktik/buffers'
 export enum PipelineType {
   FFMPEG = 'ffmpeg',
   TRANSMUX = 'transmux',
+  VLC = 'vlc',
 }
 export interface IPlayerStore {
   version: string
@@ -14,6 +15,9 @@ export interface IPlayerStore {
   tsDecryptor: ITsDecryptorConfig
   udpStreamer: ICircularBufferConfig
   pipeline: {
-    use: PipelineType,
+    use: PipelineType
+    metadata: {
+      applicationPath?: string
+    }
   }
 }

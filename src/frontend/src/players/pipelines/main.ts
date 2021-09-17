@@ -1,9 +1,9 @@
 import { TsDecryptor } from '@taktik/ts-decryptor'
 import { UdpStreamer } from '@taktik/udp-streamer'
 import { Readable, Writable } from 'stream'
-import { IPlayerStore } from '../interfaces/playerStore'
+import { IPlayerStore } from '../../interfaces/playerStore'
+import { Store } from '../../store'
 import { IntervalStream } from '../intervalStream'
-import { Store } from '../store'
 
 interface IPipeline {
   clear(): Promise<void>

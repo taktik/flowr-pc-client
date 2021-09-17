@@ -1,6 +1,6 @@
 import { ReadMode } from '@taktik/buffers'
 import { app } from 'electron'
-import { IPlayerStore, PipelineType } from './interfaces/playerStore'
+import { IPlayerStore, PipelineType } from '../interfaces/playerStore'
 
 export const DEFAULT_PLAYER_STORE: IPlayerStore = {
   version: app.getVersion(),
@@ -12,6 +12,7 @@ export const DEFAULT_PLAYER_STORE: IPlayerStore = {
   },
   pipeline: {
     use: PipelineType.FFMPEG,
+    metadata: {}
   },
   decryption: { use: false }, // whether to use ts-decryptor
   tsDecryptor: {

@@ -1,12 +1,15 @@
 import { BrowserWindow, BrowserWindowConstructorOptions } from 'electron'
 import { Store } from './src/store'
 // import { Player } from './src/player'
-import { Player } from './src/playerNew'
+import { Player } from './src/players/playerNew'
 import { KeyboardMixin } from '../keyboard/keyboardMixin'
 import { IFlowrStore } from './src/interfaces/flowrStore'
 import { FullScreenManager } from '../common/fullscreen'
 import { setLevel } from './src/logging/loggers'
 import { LogSeverity } from './src/logging/types'
+import { IPlayer } from './src/players/abstractPlayer'
+import { IPlayerStore, PipelineType } from './src/interfaces/playerStore'
+import { VlcPlayer } from './src/players/vlc/player'
 
 function toRatio(width: number, height: number) {
   return (value: number) => Math.floor((value - width) * height / width)
@@ -14,8 +17,8 @@ function toRatio(width: number, height: number) {
 
 export class FlowrWindow extends KeyboardMixin(BrowserWindow) {
 
-  private resizeTimeout?: number
-  public player: Player
+  private resizeTimeout?: NodeJS.Timeout
+  public player?: IPlayer
 
   get phoneServerUrl(): string | undefined {
     return this.store.get('phoneServer')
@@ -23,11 +26,6 @@ export class FlowrWindow extends KeyboardMixin(BrowserWindow) {
 
   constructor(private store: Store<IFlowrStore>, options?: BrowserWindowConstructorOptions) {
     super(options)
-    this.player = new Player()
-
-    this.on('close', () => {
-      this.player.close()
-    })
 
     this.on('unmaximize', () => {
       const width = this.store.get('windowBounds').width
@@ -52,8 +50,17 @@ export class FlowrWindow extends KeyboardMixin(BrowserWindow) {
     })
   }
 
-  initStore(desktopConfig: IFlowrStore): void {
+  initStore(desktopConfig: IFlowrStore, playerConfig: IPlayerStore): void {
     this.store.bulkSet(desktopConfig)
     setLevel(desktopConfig.logLevel ?? LogSeverity.INFO)
+
+    if (!this.player) {
+      // TODO: be able to update player's config without restarting
+      const player = playerConfig.pipeline.use === PipelineType.VLC
+        ? new VlcPlayer(playerConfig)
+        : new Player(playerConfig)
+      this.on('close', () => player.close())
+      this.player = player
+    }
   }
 }
