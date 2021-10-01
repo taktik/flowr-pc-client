@@ -45,6 +45,12 @@ module.exports = {
 		'import/namespace': 'off',
 		'import/default': 'off',
 		'import/no-named-as-default-member': 'off',
+		"@typescript-eslint/unbound-method": [
+			"error",
+			{
+				"ignoreStatic": true
+			}
+		]
 	},
 	// Re-enabling of the disabled rules so they can happen only in .ts files
 	overrides: [

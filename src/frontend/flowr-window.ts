@@ -55,11 +55,10 @@ export class FlowrWindow extends KeyboardMixin(BrowserWindow) {
     setLevel(desktopConfig.logLevel ?? LogSeverity.INFO)
 
     if (!this.player) {
-      // TODO: be able to update player's config without restarting
       const player = playerConfig.pipeline.use === PipelineType.VLC
-        ? new VlcPlayer(playerConfig)
+        ? new VlcPlayer(this, playerConfig)
         : new Player(playerConfig)
-      this.on('close', () => player.close())
+      this.on('close', () => void player.close())
       this.player = player
     }
   }

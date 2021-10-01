@@ -5,7 +5,7 @@ import { createFlowrWindow, initFlowrConfig, buildBrowserWindowConfig, FRONTEND_
 import { createWexondWindow, setWexondLog } from '~/main'
 import { clearBrowsingData } from '~/main/clearBrowsingData'
 import { getMigrateUserPreferences } from './migration/fromFlowrClientToFlowrPcClient'
-import { FlowrWindow } from 'src/frontend/flowr-window'
+import type { FlowrWindow } from 'src/frontend/flowr-window'
 import { StoreManager, Store } from '../frontend/src/store'
 import { ApplicationManager } from '../application-manager/application-manager'
 import { IFlowrStore } from '../frontend/src/interfaces/flowrStore'
@@ -167,4 +167,4 @@ async function main() {
   }
 }
 
-main()
+void main()

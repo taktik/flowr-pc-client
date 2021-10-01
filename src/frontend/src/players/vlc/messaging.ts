@@ -1,12 +1,19 @@
 import type { ChildProcess } from 'child_process'
 import { EOL } from 'os'
-import { getLogger } from '../../logging/loggers'
 
 enum MessageType {
   VLC = 'vlc',
   LOG = 'log',
   ERROR = 'error',
   UNKNOWN = 'unknown',
+  ALIVE = 'alive',
+}
+
+enum VLCLogLevel {
+  DEBUG = 'Debug',
+  WARN = 'Warning',
+  ERROR = 'Error',
+  INFO = 'Info',
 }
 
 enum MessageDataType {
@@ -27,18 +34,21 @@ interface IMessageData {
 interface IMessage {
   type: MessageType
   data: IMessageData
+}
 
-  toJSON(): string
+interface LogMessage {
+  Timestamp: string
+  Level: VLCLogLevel
+  MessageTemplate: string
 }
 
 class Message implements IMessage {
-  static FromJSON(message: Buffer): Message {
-    const toString = message.toString()
+  static FromJSON(message: string): Message {
     try {
-      const deserialized = JSON.parse(toString)
-      return new Message(deserialized.type || MessageType.LOG, deserialized.data ?? { value: deserialized })
+      const deserialized = JSON.parse(message) as IMessage
+      return new Message(deserialized.type || MessageType.LOG, deserialized.data ?? { value: message })
     } catch (e) {
-      return new Message(MessageType.UNKNOWN, { value: toString })
+      return new Message(MessageType.UNKNOWN, { value: message })
     }
   }
 
@@ -55,23 +65,31 @@ class ProcessMessaging {
   private readonly listeners = new Set<MessageListener>()
   private readonly bufferedMessages: Message[] = []
 
-  constructor(private process: ChildProcess) {
+  constructor(private childProcess: ChildProcess) {
+    /* eslint-disable @typescript-eslint/no-unsafe-assignment */
     this.received = this.received.bind(this)
     this.sendFromBuffer = this.sendFromBuffer.bind(this)
-    process.stdout.on('data', this.received)
-    process.stdin.on('drain', this.sendFromBuffer)
+    /* eslint-enable @typescript-eslint/no-unsafe-assignment */
+    /* eslint-disable @typescript-eslint/unbound-method */
+    childProcess.stdout.on('data', this.received)
+    childProcess.stdin.on('drain', this.sendFromBuffer)
+    /* eslint-enable @typescript-eslint/unbound-method */
   }
 
   private received(data: Buffer) {
-    const parsed = Message.FromJSON(data)
-    this.listeners.forEach(listener => listener(parsed))
+    const parsed = data
+      .toString()
+      .split(EOL)
+      .filter(line => !!line) // filter empty lines
+      .map(Message.FromJSON)
+    this.listeners.forEach(listener => parsed.forEach(message => void listener(message)))
   }
 
   private sendFromBuffer() {
     const message = this.bufferedMessages.shift()
 
     if (message) {
-      if (!this.process.stdin.write(`${message}${EOL}`)) {
+      if (!this.childProcess.stdin.write(`${message.toJSON()}${EOL}`)) {
         this.bufferedMessages.unshift(message)
       }
     }
@@ -80,22 +98,24 @@ class ProcessMessaging {
   /**
    * Unregister every listener
    */
-  destroy() {
+  destroy(): void {
     this.listeners.clear()
-    process.stdout.off('data', this.received)
-    process.stdin.off('drain', this.sendFromBuffer)
+    /* eslint-disable @typescript-eslint/unbound-method */
+    this.childProcess.stdout.off('data', this.received)
+    this.childProcess.stdin.off('drain', this.sendFromBuffer)
+    /* eslint-enable @typescript-eslint/unbound-method */
   }
 
-  send(type: MessageType, data: IMessageData) {
+  send(type: MessageType, data: IMessageData): void {
     this.bufferedMessages.push(new Message(type, data))
     this.sendFromBuffer()
   }
 
-  addListener(listener: MessageListener) {
+  addListener(listener: MessageListener): void {
     this.listeners.add(listener)
   }
 
-  removeListener(listener: MessageListener) {
+  removeListener(listener: MessageListener): void {
     this.listeners.delete(listener)
   }
 }
@@ -103,7 +123,9 @@ class ProcessMessaging {
 export {
   IMessage,
   IMessageData,
+  LogMessage,
   MessageDataType,
   MessageType,
   ProcessMessaging,
+  VLCLogLevel,
 }

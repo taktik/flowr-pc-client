@@ -1,4 +1,6 @@
-export default {
+/* globals module */
+
+module.exports = {
   appId: 'org.taktik.flowr.pcClient',
   productName: 'flowr-desktop',
   artifactName: '${productName}-${version}-${os}-${arch}.${ext}',

@@ -114,7 +114,7 @@ class RootLogger extends AbstractLogger {
     let logger = this.loggers.get(namespace)
 
     if (!logger) {
-      // shallow clone the appenders: each child logger should be able to have its own
+      // shallow clone the appenders Set: each child logger should be able to have its own
       logger = new Logger(namespace, severity, new Set(this.appenders))
       this.loggers.set(namespace, logger)
     }
@@ -122,6 +122,7 @@ class RootLogger extends AbstractLogger {
   }
 }
 
+// eslint-disable-next-line @typescript-eslint/unbound-method
 export const {
   getLogger,
   addAppender,

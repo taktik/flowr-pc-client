@@ -8,6 +8,7 @@ export enum PipelineType {
   TRANSMUX = 'transmux',
   VLC = 'vlc',
 }
+
 export interface IPlayerStore {
   version: string
   decryption: IDecryption
@@ -18,6 +19,7 @@ export interface IPlayerStore {
     use: PipelineType
     metadata: {
       applicationPath?: string
+      keepAliveTimeout?: number
     }
   }
 }

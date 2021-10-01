@@ -3,7 +3,7 @@ import { ConsoleAppender } from './logging/appenders/console/consoleAppender'
 import { IpcLogAppender } from './logging/appenders/ipc/ipcLogAppender'
 import { addAppender } from './logging/loggers'
 
-export function initializeLogging(webContents: WebContents) {
+export function initializeLogging(webContents: WebContents): void {
   const ipcAppender = new IpcLogAppender(webContents)
   const consoleAppender = new ConsoleAppender()
 
