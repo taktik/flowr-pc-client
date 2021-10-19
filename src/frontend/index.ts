@@ -15,6 +15,7 @@ import { initializeLogging } from './src/logging'
 import { LogSeverity } from './src/logging/types'
 import * as deepExtend from 'deep-extend'
 import { IFlowrConfig } from './src/interfaces/flowrConfig'
+import { buildFileUrl } from '../application-manager/helpers'
 
 const FlowrDataDir = resolve(homedir(), '.flowr')
 
@@ -284,16 +285,6 @@ export async function createFlowrWindow(flowrStore: Store<IFlowrStore>): Promise
   }
   Object.entries(_ipcEvents).forEach(event => ipcMain.on(...event))
   mainWindow.on('close', () => Object.entries(_ipcEvents).forEach(event => ipcMain.removeListener(...event)))
-
-  function buildFileUrl(fileName: string): string {
-    let result: string
-    if (process.env.ENV === 'dev') {
-      result = `http://localhost:4444/${fileName}`
-    } else {
-      result = join('file://', app.getAppPath(), 'build', fileName)
-    }
-    return result
-  }
 
   async function getActiveMacAddress(): Promise<string> {
     if (flowrStore.get('useRealMacAddress')) {

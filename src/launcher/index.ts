@@ -84,6 +84,7 @@ async function main() {
       }
     })
 
+    // eslint-disable-next-line @typescript-eslint/no-misused-promises
     ipcMain.on('open-browser', async (event: Event, options: any) => {
       browserWindow?.close()
 
@@ -143,11 +144,7 @@ async function main() {
   })
 
   async function initFlowr(store: Store<IFlowrStore>) {
-    try {
-      await applicationManager.initLocalApps(!!store.get('clearAppDataOnStart'))
-    } catch (e) {
-      console.error('Failed to initialize apps', e)
-    }
+    applicationManager.flowrStore = store
 
     try {
       flowrWindow = await createFlowrWindow(store)

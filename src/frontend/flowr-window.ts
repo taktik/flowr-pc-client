@@ -1,6 +1,5 @@
 import { BrowserWindow, BrowserWindowConstructorOptions } from 'electron'
 import { Store } from './src/store'
-// import { Player } from './src/player'
 import { Player } from './src/players/playerNew'
 import { KeyboardMixin } from '../keyboard/keyboardMixin'
 import { IFlowrStore } from './src/interfaces/flowrStore'

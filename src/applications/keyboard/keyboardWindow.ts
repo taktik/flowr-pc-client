@@ -1,5 +1,5 @@
 import { BrowserWindow, ipcMain, IpcMainEvent, KeyboardInputEvent, screen, Rectangle, WebContents } from 'electron'
-import { buildApplicationPreloadPath, buildFileUrl } from '../../application-manager/helpers'
+import { buildApplicationPreloadPath, getApplicationIndexUrl } from '../../application-manager/helpers'
 
 function buildPositionFromParents(parentRectangle: Rectangle): Rectangle {
   const { width } = screen.getPrimaryDisplay().workAreaSize
@@ -39,7 +39,7 @@ export class KeyboardWindow extends BrowserWindow {
       },
       ...(parent ? buildPositionFromParents(parent.getBounds()) : {}),
     })
-    const url = buildFileUrl('keyboard')
+    const url = getApplicationIndexUrl('keyboard')
     this.loadURL(url)
 
     const ipcEvents = {

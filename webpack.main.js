@@ -1,3 +1,5 @@
+/* eslint-disable */
+
 const { CleanWebpackPlugin } = require('clean-webpack-plugin')
 const { getOptimization, webpackModule, resolve, Mode, output } = require('./webpack/utils')
 

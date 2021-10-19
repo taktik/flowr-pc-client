@@ -1,3 +1,5 @@
+/* eslint-disable */
+
 const TerserPlugin = require('terser-webpack-plugin')
 const path = require('path')
 const fs = require('fs')
@@ -81,7 +83,7 @@ const webpackModule = {
     rules: [
         {
             // If you see a file that ends in .ejs, just send it to the raw-loader.
-            test: /\.ejs$/,
+            test: /\.(ejs|html)$/,
             use: 'raw-loader',
         },
         {
