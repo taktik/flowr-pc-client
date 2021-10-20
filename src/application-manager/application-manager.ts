@@ -29,14 +29,10 @@ export interface FlowrApplicationWindow extends BrowserWindow {
   props?: {[key: string]: any}
 }
 
-interface ApplicationInitResults {
-  initialized: FlowrApplication[],
-  errors: ApplicationInitError[]
-}
-
-interface ApplicationInitError {
-  application: FlowrApplication
-  reason: string
+interface ApplicationInitializer {
+  packageJSON: ApplicationConfig
+  canOpen(this: void, capabilities?: {[key: string]: boolean}, props?: {[key: string]: any}): boolean
+  create(this: void, options: ApplicationOptions): FlowrApplicationWindow
 }
 
 interface FlowrApplicationInitializer {
@@ -128,8 +124,7 @@ export class ApplicationManager {
 
       this.logger.info('Registering app', name)
 
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
-      const { create, packageJSON, canOpen } = (await import(`../applications/${name}/index.ts`))
+      const { create, packageJSON, canOpen } = (await import(`../applications/${name}/index.ts`)) as ApplicationInitializer
       const preload = buildApplicationPreloadPath(name)
       const index = getApplicationIndexUrl(name)
       const store = storeManager.createStore<Record<string, any>>(name, {})
@@ -145,14 +140,11 @@ export class ApplicationManager {
       }
 
       this.applications[packageJSON.title] = {
-        // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
         create,
-        // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
         package: packageJSON,
         preload,
         index,
         store,
-        // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
         canOpen,
       }
       this.logger.info('Successfully registered app', name)
@@ -195,22 +187,26 @@ export class ApplicationManager {
 
   async processApplicationsConfigs(event: IpcMainEvent, applicationConfigs: ApplicationInitConfig[]): Promise<void> {
     const errors = []
-    const initialized = []
+    const initialized: FlowrApplication[] = []
+
+    const processConfig = (applicationName: string, config: ApplicationInitConfig) => {
+      this.applications[applicationName].capabilities = config.capabilities || {}
+      this.applications[applicationName].config = config.config || {}
+      initialized.push(config.application)
+    }
 
     for (const applicationConfig of applicationConfigs) {
       const applicationName = applicationConfig.application.name
 
       try {
         if (this.isRegistered(applicationName)) {
-          this.applications[applicationName].capabilities = applicationConfig.capabilities || {}
-          this.applications[applicationName].config = applicationConfig.config || {}
-          initialized.push(applicationConfig.application)
+          processConfig(applicationName, applicationConfig)
         } else {
           const appFolder = await this.findApp(applicationName)
   
           if (appFolder) {
             await this.registerApp(appFolder)
-            initialized.push(applicationConfig.application)
+            processConfig(applicationName, applicationConfig)
           } else {
             const reason = `Cannot open application ${applicationName}, it is not available.`
             errors.push({ application: applicationConfig.application, reason })
