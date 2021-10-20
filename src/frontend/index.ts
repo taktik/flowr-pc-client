@@ -86,7 +86,11 @@ export async function createFlowrWindow(flowrStore: Store<IFlowrStore>): Promise
 
   function loadFlowr(flowrURL: string): void {
     mainWindow.loadURL(flowrURL)
-      .catch((e: Error) => {
+      .catch((e: Error & { code: string }) => {
+        if (e.code === 'ERR_ABORTED') {
+          // ignore => it means the page changed its hash in the meantime
+          return
+        }
         console.warn('Error loading flowr window', e)
         lastError = e.message
         loadConfigPage()
