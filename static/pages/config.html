@@ -12,12 +12,11 @@
 		width: 300px;
 	}
 
-	#wrongurl {
+	.error {
 		color: red;
-		display: inline;
 	}
 
-	#wrongurl.hidden {
+	.hidden {
 		display: none;
 	}
 	</style>
@@ -29,9 +28,10 @@
 <div id="userAgent"></div>
 <hr>
 
+<p id="last-error" class="error hidden"></p>
 
 <h3>External Config</h3>
-<div class='config-label'>Url to flowr :</div> <input type="text" id="extUrl" onchange='resetInvalidUrl()'>&emsp;<span id="wrongurl" class="hidden"> Invalid url*</span><br>
+<div class='config-label'>Url to flowr :</div> <input type="text" id="extUrl" onchange='resetInvalidUrl()'>&emsp;<span id="wrongurl" class="error hidden"> Invalid url*</span><br>
 <button id="validateURL" onclick="validateExtUrl()">Validate</button>
 <button id="reinit" onclick="init()">Reinit</button>
 <br>
@@ -74,6 +74,7 @@
 	let isLaunchedUrlCorrect = true
 	let clearAppDataOnStart = false
 	let enableVirtualKeyboard = false
+	let lastError = ''
 
 	ipc.removeAllListeners('receiveConfig')
 
@@ -86,6 +87,7 @@
 		isKiosk = !!data.isKiosk
 		isLaunchedUrlCorrect = !!data.isLaunchedUrlCorrect
 		enableVirtualKeyboard = !!data.enableVirtualKeyboard
+		lastError = data.lastError || ''
 		console.log('data: ', data)
 		init()
 	})
@@ -122,6 +124,12 @@
 
 		if (!isLaunchedUrlCorrect) {
 			invalidUrl()
+		}
+
+		if (lastError) {
+			const lastErrorEl = document.getElementById('last-error')
+			lastErrorEl.innerText = lastError
+			lastErrorEl.classList.remove('hidden')
 		}
 	}
 

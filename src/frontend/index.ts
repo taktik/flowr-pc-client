@@ -33,12 +33,10 @@ export async function initFlowrConfig(data: object) {
 const DEVICE_DETAIL_PATH = join(FlowrDataDir, 'device.json')
 const devicesDetailsHelper = new DeviceDetailHelper(DEVICE_DETAIL_PATH)
 
-const RELOAD_INTERVAL = 120000 // 2min
-
 let isDebugMode: boolean
 let isHiddenMenuDisplayed = false
 let isLaunchedUrlCorrect = true
-let reloadTimeout: number | undefined
+let lastError = ''
 
 export function buildBrowserWindowConfig(flowrStore: Store<IFlowrStore>, options: BrowserWindowConstructorOptions): BrowserWindowConstructorOptions {
   return extend(options, defaultBrowserWindowOptions(flowrStore))
@@ -50,13 +48,13 @@ export async function createFlowrWindow(flowrStore: Store<IFlowrStore>): Promise
   const defaultUrl = buildFileUrl('config.html')
   const kiosk = flowrStore.get('isKiosk') || false
   const flowrUrl = flowrStore.get('extUrl')
-  let url: URL
+  let firstUrl: URL
   try {
-    url = new URL(flowrUrl)
+    firstUrl = new URL(flowrUrl)
   } catch (e) {
     isLaunchedUrlCorrect = false
     console.error(`Invalid FlowR URL: ${flowrUrl}. Display config page.`)
-    url = new URL(defaultUrl)
+    firstUrl = new URL(defaultUrl)
   }
   // Create the browser window.
   const opts = buildBrowserWindowConfig(flowrStore, {
@@ -72,6 +70,26 @@ export async function createFlowrWindow(flowrStore: Store<IFlowrStore>): Promise
 
   const mainWindow = new FlowrWindow(flowrStore, opts)
 
+  function loadConfigPage() {
+    mainWindow.loadURL(defaultUrl)
+      .catch(e => {
+        console.error('Failed to load default configuration page.... sorry but can\'t do anything else for you', e)
+      })
+  }
+
+  function loadFlowr(flowrURL: string): void {
+    mainWindow.loadURL(flowrURL)
+      .catch((e: Error & { code: string }) => {
+        if (e.code === 'ERR_ABORTED') {
+          // ignore => it means the page changed its hash in the meantime
+          return
+        }
+        console.warn('Error loading flowr window', e)
+        lastError = e.message
+        loadConfigPage()
+      })
+  }
+
   if (kiosk) {
     // No menu is kiosk mode
     const appMenu = Menu.buildFromTemplate([])
@@ -83,9 +101,8 @@ export async function createFlowrWindow(flowrStore: Store<IFlowrStore>): Promise
   // mainWindow.setAlwaysOnTop(true, 'floating', 0)
 
   // set mac address in the URL te ensure backward compatibility with Flowr 5.1
-  url.searchParams.set('mac', mac)
-  mainWindow.loadURL(url.href)
-  reloadTimeout = setInterval(reload, RELOAD_INTERVAL)
+  firstUrl.searchParams.set('mac', mac)
+  loadFlowr(firstUrl.href)
 
   // Open the DevTools.
   if (process.env.ENV === 'dev') {
@@ -94,7 +111,7 @@ export async function createFlowrWindow(flowrStore: Store<IFlowrStore>): Promise
   }
 
   function displayHiddenMenu(): void {
-    const flowrUrl = flowrStore.get('extUrl') || buildFileUrl('config.html')
+    const flowrUrl = flowrStore.get('extUrl') || defaultUrl
     const template: any = [
       {
         label: 'Menu',
@@ -102,8 +119,7 @@ export async function createFlowrWindow(flowrStore: Store<IFlowrStore>): Promise
           {
             label: 'Config',
             click() {
-              const formattedPath = buildFileUrl('config.html')
-              mainWindow.loadURL(formattedPath)
+              loadConfigPage()
               isHiddenMenuDisplayed = true
             },
           },
@@ -111,7 +127,7 @@ export async function createFlowrWindow(flowrStore: Store<IFlowrStore>): Promise
             label: 'Flowr',
             click() {
               isHiddenMenuDisplayed = false
-              mainWindow.loadURL(flowrUrl)
+              loadFlowr(flowrUrl)
             },
           },
           {
@@ -119,7 +135,7 @@ export async function createFlowrWindow(flowrStore: Store<IFlowrStore>): Promise
             click() {
               mainWindow.setMenuBarVisibility(false)
               if (isHiddenMenuDisplayed) {
-                mainWindow.loadURL(flowrUrl)
+                loadFlowr(flowrUrl)
               }
             },
           },
@@ -141,7 +157,6 @@ export async function createFlowrWindow(flowrStore: Store<IFlowrStore>): Promise
 
   const _ipcEvents: { [key: string]: (...args: any[]) => void } = {
     FlowrIsInitializing: () => {
-      clearInterval(reloadTimeout)
       isLaunchedUrlCorrect = true
     },
     getAppConfig: (evt: any) => {
@@ -154,6 +169,7 @@ export async function createFlowrWindow(flowrStore: Store<IFlowrStore>): Promise
         isKiosk: flowrStore.get('isKiosk'),
         clearAppDataOnStart: flowrStore.get('clearAppDataOnStart'),
         enableVirtualKeyboard: flowrStore.get('enableVirtualKeyboard'),
+        lastError,
       }
       // no need to expose the complete config
       if (storedConfig && storedConfig.ozoneApi) {
@@ -274,12 +290,6 @@ export async function createFlowrWindow(flowrStore: Store<IFlowrStore>): Promise
 
   function getIpAddress(): Promise<string> {
     return networkEverywhere.getIpAddress()
-  }
-
-  function reload() {
-    if (mainWindow) {
-      mainWindow.reload()
-    }
   }
 
   return mainWindow
