@@ -9,18 +9,18 @@ import { FfmpegCommand } from 'fluent-ffmpeg'
 import { Dispatcher } from '../dispatcher'
 import { IPipelineTail } from '../../interfaces/playerPipeline'
 import { TrackInfo, TrackInfoStream } from '@taktik/mux.js'
-
-// TODO: Error management policy (how many retries before giving up, which errors to throw, etc...)
-// TODO: Forward logs to flowr-frontend
+import { getLogger } from '../../logging/loggers'
 
 type CurrentStream = { input: Readable, audioPid: number, subtitlesPid: number, command: FfmpegCommand }
 
 class FfmpegWrapper implements IPipelineTail {
+  private logger = getLogger('FfmpegWrapper')
   private flowrFfmpeg: FlowrFfmpeg = new FlowrFfmpeg()
   private streamer: IpcStreamer
   private dispatcher = new Dispatcher()
   private _currentStream?: CurrentStream
   private metadataProcess?: { input: Duplex, stream: TrackInfoStream, dataCb: (trackInfo: TrackInfo) => void, errorCb: (e: Error) => void }
+  private playTimeout?: number
 
   private set currentStream(currentStream: CurrentStream | undefined) {
     this._currentStream = currentStream
@@ -38,13 +38,12 @@ class FfmpegWrapper implements IPipelineTail {
     this.streamer = new IpcStreamer(store.get('streamer'))
   }
 
-  playTimeout?: number // TODO: implement timeout before playing again in some cases
 
   play(input: Readable, baseAudioPid?: number, subtitlesPid?: number): void {
     clearTimeout(this.playTimeout)
     input.pipe(this.dispatcher)
 
-    this.retrieveMetadata() // TODO: store this adapting to previous format
+    this.retrieveMetadata()
       .then((trackInfo: TrackInfo) => {
         const audioPid = baseAudioPid ?? trackInfo.audio.reduce((min, audio) => Math.min(min, audio.pid), 99999)
         const ffmpegInput = this.dispatcher.pipe(new PassThrough({ autoDestroy: false }))
@@ -56,8 +55,8 @@ class FfmpegWrapper implements IPipelineTail {
         command.pipe(this.streamer, { end: false })
       })
       .catch(e => {
-        // TODO: handle this error. replay after a few milliseconds ?
-        console.error('PLAY ERROR', e)
+        this.logger.warn('Play error (will retry):', e)
+        this.playTimeout = setTimeout(() => this.replay(), 1000)
       })
   }
 
@@ -65,13 +64,13 @@ class FfmpegWrapper implements IPipelineTail {
     if (!this._currentStream) {
       return
     }
-    console.log('ATTEMPT REPLAY !!')
+    this.logger.info('Attempt replay')
     const { input, audioPid, subtitlesPid } = this.currentStream
     this.clear()
     this.play(input, audioPid, subtitlesPid)
   }
 
-  clear() {
+  clear(): void {
     clearTimeout(this.playTimeout)
     this.killMetadataProcess()
     this.currentStream?.command.kill('SIGTERM')
@@ -81,7 +80,7 @@ class FfmpegWrapper implements IPipelineTail {
     this.currentStream = undefined
   }
 
-  async handleErroneousStreamError() {
+  handleErroneousStreamError(): void {
     if (this.currentStream) {
       // reset to default audio and subtitles and try again
       this.currentStream.audioPid = undefined
@@ -91,7 +90,7 @@ class FfmpegWrapper implements IPipelineTail {
   }
 
   getErrorHandler() {
-    return (error: PlayerError) => {
+    return (error: PlayerError): void => {
       switch (error.code) {
         case PlayerErrors.ERRONEOUS_STREAM:
           this.handleErroneousStreamError()
@@ -101,7 +100,7 @@ class FfmpegWrapper implements IPipelineTail {
           break
         case PlayerErrors.CONVERSION:
         default:
-          console.error('Player error', error)
+          this.logger.warn('Player error', error)
           this.replay()
       }
     }
@@ -156,7 +155,7 @@ class FfmpegWrapper implements IPipelineTail {
     }
   }
 
-  setSubtitlesFromPid(pid: number | undefined) {
+  setSubtitlesFromPid(pid: number | undefined): void {
     if (!this.currentStream) {
       return
     }
