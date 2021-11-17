@@ -1,1 +1,1 @@
-declare const __RENDERER_SERVER_PORT__: number
+declare const __RENDERER_SERVER_PORT__: string
