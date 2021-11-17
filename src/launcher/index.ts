@@ -12,6 +12,7 @@ import { IFlowrStore } from '../frontend/src/interfaces/flowrStore'
 import { keyboard } from '../keyboard/keyboardController'
 import { mergeWith, cloneDeep } from 'lodash'
 import { FullScreenManager } from '../common/fullscreen'
+app.commandLine.appendSwitch('ignore-certificate-errors')
 
 export const log = require('electron-log')
 
