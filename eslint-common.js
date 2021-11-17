@@ -27,12 +27,14 @@ module.exports = {
 		'no-duplicate-imports': 'warn',
 		eqeqeq: 'error',
 		// Enabled rules
-		'no-shadow': 'warn',
 		'prefer-const': 'warn',
 		'@typescript-eslint/no-useless-constructor': 'warn',
 		'@typescript-eslint/no-floating-promises': 'error',
 		'@typescript-eslint/prefer-nullish-coalescing': 'warn',
 		'@typescript-eslint/prefer-optional-chain': 'warn',
+		// you must disable the base rule as it can report incorrect errors
+		'no-shadow': 'off',
+		'@typescript-eslint/no-shadow': ['warn'],
 		// Disabled rules
 		'@typescript-eslint/no-explicit-any': 'off',
 		'@typescript-eslint/interface-name-prefix': 'off',

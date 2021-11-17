@@ -8,7 +8,8 @@ const {
     getOptimization,
     output,
     resolve,
-    Mode
+    Mode,
+    RENDERER_SERVER_PORT,
 } = require('./webpack/utils')
 
 module.exports = (env) => {
@@ -44,7 +45,7 @@ module.exports = (env) => {
             disableHostCheck: true,
             contentBase: path.join(__dirname),
             host: '0.0.0.0',
-            port: 4444,
+            port: RENDERER_SERVER_PORT,
             writeToDisk: true,
         },
         externals: {

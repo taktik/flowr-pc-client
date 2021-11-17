@@ -10,6 +10,7 @@ const Mode = {
 }
 
 const OUTPUT_DIR = './build'
+const RENDERER_SERVER_PORT = 4444
 
 function deleteFile(path) {
     return new Promise((resolve, reject) => {
@@ -156,4 +157,5 @@ module.exports = {
     deleteDir,
     getOptimization,
     preload,
+    RENDERER_SERVER_PORT,
 }

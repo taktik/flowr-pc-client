@@ -12,7 +12,7 @@ const buildUrl = (protocol = Protocols.NONE): (file: string) => string => {
   
     if (protocol === Protocols.HTTP) {
       result = process.env.ENV === 'dev'
-        ? `http://localhost:4444/${file}`
+        ? `http://localhost:${__RENDERER_SERVER_PORT__}/${file}`
         : join('file://', app.getAppPath(), 'build', file)
     } else {
       result = resolve(app.getAppPath(), `build/${file}`)
