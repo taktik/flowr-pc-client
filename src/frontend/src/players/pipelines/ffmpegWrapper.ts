@@ -39,25 +39,24 @@ class FfmpegWrapper implements IPipelineTail {
   }
 
 
-  play(input: Readable, baseAudioPid?: number, subtitlesPid?: number): void {
+  async play(input: Readable, baseAudioPid?: number, subtitlesPid?: number): Promise<void> {
     clearTimeout(this.playTimeout)
     input.pipe(this.dispatcher)
 
-    this.retrieveMetadata()
-      .then((trackInfo: TrackInfo) => {
-        const audioPid = baseAudioPid ?? trackInfo.audio.reduce((min, audio) => Math.min(min, audio.pid), 99999)
-        const ffmpegInput = this.dispatcher.pipe(new PassThrough({ autoDestroy: false }))
-        const command = trackInfo.video
-          ? this.flowrFfmpeg.getVideoPipelineWithSubtitles({ input: ffmpegInput, audioPid, subtitlesPid, errorHandler: this.getErrorHandler() })
-          : this.flowrFfmpeg.getAudioMpegtsPipeline(input, this.getErrorHandler())
+    try {
+      const trackInfo = await this.retrieveMetadata()
+      const audioPid = baseAudioPid ?? trackInfo.audio.reduce((min, audio) => Math.min(min, audio.pid), 99999)
+      const ffmpegInput = this.dispatcher.pipe(new PassThrough({ autoDestroy: false }))
+      const command = trackInfo.video
+        ? this.flowrFfmpeg.getVideoPipelineWithSubtitles({ input: ffmpegInput, audioPid, subtitlesPid, errorHandler: this.getErrorHandler() })
+        : this.flowrFfmpeg.getAudioMpegtsPipeline(input, this.getErrorHandler())
 
-        this.currentStream = { input, audioPid, subtitlesPid, command }
-        command.pipe(this.streamer, { end: false })
-      })
-      .catch(e => {
-        this.logger.warn('Play error (will retry):', e)
-        this.playTimeout = setTimeout(() => this.replay(), 1000)
-      })
+      this.currentStream = { input, audioPid, subtitlesPid, command }
+      command.pipe(this.streamer, { end: false })
+    } catch(e) {
+      this.logger.warn('Play error (will retry):', e)
+      this.playTimeout = setTimeout(() => this.replay(), 1000)
+    }
   }
 
   replay(): void {
@@ -67,7 +66,7 @@ class FfmpegWrapper implements IPipelineTail {
     this.logger.info('Attempt replay')
     const { input, audioPid, subtitlesPid } = this.currentStream
     this.clear()
-    this.play(input, audioPid, subtitlesPid)
+    void this.play(input, audioPid, subtitlesPid)
   }
 
   clear(): void {
@@ -151,7 +150,7 @@ class FfmpegWrapper implements IPipelineTail {
 
     if (pid !== audioPid) {
       this.clear()
-      this.play(input, pid, subtitlesPid)
+      void this.play(input, pid, subtitlesPid)
     }
   }
 
@@ -163,7 +162,7 @@ class FfmpegWrapper implements IPipelineTail {
 
     if (pid !== subtitlesPid) {
       this.clear()
-      this.play(input, audioPid, pid)
+      void this.play(input, audioPid, pid)
     }
   }
 }
