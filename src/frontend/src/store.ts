@@ -1,16 +1,17 @@
 import { writeFileSync, ensureFileSync, readFileSync, readFile, writeFile, existsSync } from 'fs-extra'
+import { join } from 'path'
 import * as deepExtend from 'deep-extend'
 import { DEFAULT_FRONTEND_STORE } from '..'
-const path = require('path')
+import { IFlowrStore } from './interfaces/flowrStore'
 
-export async function initConfigData(configPath: string, previousData: object): Promise<void> {
-  let storedData = {}
+export async function initConfigData(configPath: string, previousData: IFlowrStore | null): Promise<void> {
+  let storedData: IFlowrStore | null
 
   try {
     const storedDataString = await readFile(configPath, 'utf8')
-    storedData = JSON.parse(storedDataString)
+    storedData = JSON.parse(storedDataString) as IFlowrStore
   } catch (e) {
-    if (e.code === 'ENOENT') {
+    if ((e as NodeJS.ErrnoException).code === 'ENOENT') {
       storedData = previousData
     }
   }
@@ -27,7 +28,7 @@ interface StoreOptions<T> {
   defaults: T
 }
 
-export interface Store<T extends Object> {
+export interface Store<T extends Record<string, any>> {
   path: string
   data: T
   get<K extends keyof T>(key: K): T[K]
@@ -49,7 +50,7 @@ class StoreImpl<T> implements Store<T> {
   data: T
 
   constructor(storeDir: string, public opts: StoreOptions<T>) {
-    this.path = path.join(storeDir, opts.configName)
+    this.path = join(storeDir, opts.configName)
     this.data = parseDataFile(this.path, opts.defaults)
     ensureFileSync(this.path)
   }
@@ -88,11 +89,11 @@ class StoreImpl<T> implements Store<T> {
   }
 }
 
-function parseDataFile(filePath: string, defaults: any) {
+function parseDataFile<T>(filePath: string, defaults: T): T {
   // We'll try/catch it in case the file doesn't exist yet, which will be the case on the first application run.
   // `fs.readFileSync` will return a JSON string which we then parse into a Javascript object
   try {
-    return JSON.parse(readFileSync(filePath) as any)
+    return JSON.parse(readFileSync(filePath) as any) as T
   } catch (error) {
     // if there was some kind of error, return the passed in defaults instead.
     return defaults
@@ -107,11 +108,11 @@ export class StoreManager {
   }
 
   exists(namespace: string): boolean {
-    const storePath = path.join(this.path, `${namespace}.json`)
+    const storePath = join(this.path, `${namespace}.json`)
     return existsSync(storePath)
   }
 
-  createStore<T>(namespace: string = 'default', defaults: T): Store<T> {
+  createStore<T>(namespace = 'default', defaults: T): Store<T> {
     const configName = `${namespace}.json`
     return new StoreImpl(this.path, { configName, defaults })
   }

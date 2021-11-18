@@ -1,6 +1,6 @@
 import { BrowserWindow, BrowserWindowConstructorOptions } from 'electron'
 import { Store } from './src/store'
-import { Player } from './src/players/playerNew'
+import { Player } from './src/players/player'
 import { KeyboardMixin } from '../keyboard/keyboardMixin'
 import { IFlowrStore } from './src/interfaces/flowrStore'
 import { FullScreenManager } from '../common/fullscreen'
@@ -15,8 +15,7 @@ function toRatio(width: number, height: number) {
 }
 
 export class FlowrWindow extends KeyboardMixin(BrowserWindow) {
-
-  private resizeTimeout?: NodeJS.Timeout
+  private resizeTimeout?: number
   public player?: IPlayer
 
   get phoneServerUrl(): string | undefined {
@@ -49,7 +48,7 @@ export class FlowrWindow extends KeyboardMixin(BrowserWindow) {
     })
   }
 
-  initStore(desktopConfig: IFlowrStore, playerConfig: IPlayerStore): void {
+  initStore(desktopConfig: IFlowrStore, playerConfig: Partial<IPlayerStore>): void {
     this.store.bulkSet(desktopConfig)
     setLevel(desktopConfig.logLevel ?? LogSeverity.INFO)
 

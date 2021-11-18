@@ -32,7 +32,7 @@ abstract class AbstractPlayer implements IPlayer {
   protected log: ILogger
   store: Store<IPlayerStore>
 
-  constructor(playerConfig: IPlayerStore) {
+  constructor(playerConfig: Partial<IPlayerStore>) {
     this.log = getLogger(this.constructor.name)
 
     // Base events to register: common for all players
@@ -49,6 +49,11 @@ abstract class AbstractPlayer implements IPlayer {
     /* eslint-enable @typescript-eslint/no-unsafe-assignment */
     Object.entries(ipcEvents).forEach(([name, handler]) => this.registerEvent(name, handler))
 
+    /**
+     * Merge config from ozone over default one
+     * For empty values (null or '') coming from ozone, use the default value
+     * If customizer function returns undefined, merging is handled by the method instead
+     */
     // eslint-disable-next-line @typescript-eslint/no-unsafe-return
     const playerConfigMerged = mergeWith({}, DEFAULT_PLAYER_STORE, playerConfig, (a, b) => b === null || b === '' ? a : undefined)
     this.store = storeManager.createStore<IPlayerStore>('player', playerConfigMerged)

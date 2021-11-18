@@ -24,7 +24,7 @@ export class VlcPlayer extends AbstractPlayer {
   private keepAliveTimeout?: ResetableTimeout
   private frontendWebView?: WebContents
 
-  constructor(private readonly flowrWindow: BrowserWindow, playerConfig: IPlayerStore) {
+  constructor(private readonly flowrWindow: BrowserWindow, playerConfig: Partial<IPlayerStore>) {
     super(playerConfig)
     /* eslint-disable @typescript-eslint/no-unsafe-assignment */
     this.onClose = this.onClose.bind(this)

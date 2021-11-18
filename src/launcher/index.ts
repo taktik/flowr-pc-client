@@ -12,8 +12,9 @@ import { IFlowrStore } from '../frontend/src/interfaces/flowrStore'
 import { keyboard } from '../keyboard/keyboardController'
 import { mergeWith, cloneDeep } from 'lodash'
 import { FullScreenManager } from '../common/fullscreen'
-
-export const log = require('electron-log')
+import type { WexondOptions } from '../wexond/main/app-window'
+import { IPlayerStore } from '../frontend/src/interfaces/playerStore'
+import log from 'electron-log'
 
 const FlowrDataDir = resolve(homedir(), '.flowr')
 
@@ -22,7 +23,7 @@ const applicationManager = new ApplicationManager()
 
 async function main() {
   const migrateUserPreferences = getMigrateUserPreferences(`${FRONTEND_CONFIG_NAME}.json`)
-  await initFlowrConfig(migrateUserPreferences || {})
+  await initFlowrConfig(migrateUserPreferences)
 
   app.commandLine.appendSwitch('widevine-cdm-path', resolve('/Applications/Google Chrome.app/Contents/Versions/74.0.3729.169/Google Chrome Framework.framework/Versions/A/Libraries/WidevineCdm/_platform_specific/mac_x64'))
   // The version of plugin can be got from `chrome://components` page in Chrome.
@@ -44,7 +45,7 @@ async function main() {
   if (!gotTheLock) {
     app.quit()
   } else {
-    app.on('second-instance', (e, argv) => {
+    app.on('second-instance', () => {
       if (flowrWindow) {
         if (flowrWindow.isMinimized()) flowrWindow.restore()
         flowrWindow.focus()
@@ -62,6 +63,7 @@ async function main() {
 
     keyboard.flowrStore = flowrStore
 
+    // eslint-disable-next-line @typescript-eslint/no-misused-promises
     app.on('activate', async () => {
       if (flowrWindow === null) {
         await initFlowr(flowrStore)
@@ -75,17 +77,23 @@ async function main() {
       }
     })
 
-    ipcMain.on('flowr-desktop-config', (event: IpcMainEvent, desktopConfig?: any) => {
+    ipcMain.on('flowr-desktop-config', (event: IpcMainEvent, desktopConfig?: { userPreferences: Partial<IFlowrStore>, player: Partial<IPlayerStore> }) => {
       const currentFlowrStore = cloneDeep(flowrStore.data)
       delete currentFlowrStore.player
       if (desktopConfig) {
+        /**
+         * Merge config from ozone over default one
+         * For empty values (null or '') coming from ozone, use the default value
+         * If customizer function returns undefined, merging is handled by the method instead
+         */
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-return
         const userPreferencesMerged = mergeWith({}, DEFAULT_FRONTEND_STORE, currentFlowrStore, desktopConfig.userPreferences, (a, b) => b === null || b === '' ? a : undefined)
         flowrWindow.initStore(userPreferencesMerged, desktopConfig.player)
       }
     })
 
     // eslint-disable-next-line @typescript-eslint/no-misused-promises
-    ipcMain.on('open-browser', async (event: Event, options: any) => {
+    ipcMain.on('open-browser', async (event: Event, options: Omit<WexondOptions, 'enableVirtualKeyboard'>) => {
       browserWindow?.close()
 
       const wexondOptions = {
@@ -131,11 +139,13 @@ async function main() {
   }
 
   if (app.isReady()) {
-    onReady()
+    void onReady()
   } else {
+    // eslint-disable-next-line @typescript-eslint/no-misused-promises
     app.on('ready', onReady)
   }
 
+  // eslint-disable-next-line @typescript-eslint/no-misused-promises
   ipcMain.on('clear-application-data', clearBrowsingData)
 
   app.on('window-all-closed', () => {

@@ -32,7 +32,7 @@ export const DEFAULT_FRONTEND_STORE: IFlowrStore = {
   enableVirtualKeyboard: false,
   logLevel: LogSeverity.INFO,
 }
-export async function initFlowrConfig(data: Record<string, unknown>): Promise<void> {
+export async function initFlowrConfig(data: IFlowrStore | null): Promise<void> {
   await initConfigData(join(FlowrDataDir, `${FRONTEND_CONFIG_NAME}.json`), data)
 }
 const DEVICE_DETAIL_PATH = join(FlowrDataDir, 'device.json')
@@ -43,7 +43,7 @@ const RELOAD_INTERVAL = 120000 // 2min
 let isDebugMode: boolean
 let isHiddenMenuDisplayed = false
 let isLaunchedUrlCorrect = true
-let reloadTimeout: NodeJS.Timeout | undefined
+let reloadTimeout: number | undefined
 let lastError = ''
 
 export function buildBrowserWindowConfig(flowrStore: Store<IFlowrStore>, options: BrowserWindowConstructorOptions): BrowserWindowConstructorOptions {
