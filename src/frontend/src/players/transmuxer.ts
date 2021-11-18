@@ -9,7 +9,6 @@ export class TransmuxerWrapper extends Writable implements IPipelineTail {
   })
 
   sender?: WebContents
-  interval?: number
 
   constructor() {
     super({ autoDestroy: false })
@@ -19,7 +18,7 @@ export class TransmuxerWrapper extends Writable implements IPipelineTail {
     })
   }
 
-  play(input: Readable, audioPid?: number, subtitlesPid?: number): void {
+  play(input: Readable, audioPid?: number): void {
     input.pipe(this)
 
     if (audioPid) {
@@ -28,7 +27,7 @@ export class TransmuxerWrapper extends Writable implements IPipelineTail {
   }
 
   // tslint:disable-next-line: function-name
-  _write(chunk: Buffer, encoding: BufferEncoding, callback: TransformCallback) {
+  _write(chunk: Buffer, encoding: BufferEncoding, callback: TransformCallback): void {
     try {
       this._transmuxer.push(chunk)
 
@@ -41,18 +40,18 @@ export class TransmuxerWrapper extends Writable implements IPipelineTail {
     }
   }
 
-  clear(shouldFlush: boolean = false) {
+  clear(shouldFlush = false): void {
     if (shouldFlush) {
       this._transmuxer.flush()
     }
     this._transmuxer.reset()
   }
 
-  sendData(transmuxOutput: IOutputTrack<'audio' | 'video'>) {
+  sendData(transmuxOutput: IOutputTrack<'audio' | 'video'>): void {
     this.sender?.send('segment', transmuxOutput)
   }
 
-  setAudioTrackFromPid(pid: number) {
+  setAudioTrackFromPid(pid: number): void {
     this._transmuxer.setAudioTrackFromPid(pid)
   }
 }
