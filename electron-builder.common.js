@@ -42,8 +42,5 @@ module.exports = {
   },
   mac: {
     category: 'public.app-category.navigation'
-  },
-  electronDownload: {
-    mirror: 'http://localhost:5000/'
   }
 }
