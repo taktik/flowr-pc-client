@@ -23,16 +23,13 @@ module.exports = (env) => {
         'inactivity-preload': './src/inactivity/preload.ts',
     }
     const basePlugins = [
-        new HtmlWebpackPlugin({
-            template: path.resolve(__dirname, 'static/pages/app.html'),
-            filename: 'app.html',
-            chunks: ['app'],
-        }),
-        new HtmlWebpackPlugin({
-            template: path.resolve(__dirname, 'static/pages/config.html'),
-            filename: 'config.html',
-            chunks: [],
-        }),
+        new CopyWebpackPlugin({
+            patterns: [
+                {
+                    from: './static/pages'
+                },
+            ]
+        })
     ]
     const rendererConfig = {
         output,

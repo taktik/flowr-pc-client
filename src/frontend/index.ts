@@ -84,6 +84,13 @@ export async function createFlowrWindow(flowrStore: Store<IFlowrStore>): Promise
       })
   }
 
+ function loadRedirectPage(redirectUrl: string) {
+   mainWindow.loadURL(redirectUrl)
+       .catch(e => {
+         console.error('Failed to load default redirect page.... sorry but can\'t do anything else for you', e)
+       })
+ }
+
   function loadFlowr(flowrURL: string): void {
     mainWindow.loadURL(flowrURL)
       .catch((e: Error & { code: string }) => {
@@ -93,8 +100,8 @@ export async function createFlowrWindow(flowrStore: Store<IFlowrStore>): Promise
         }
         console.warn('Error loading flowr window', e)
         lastError = e.message
-        loadConfigPage()
-      }) 
+        loadRedirectPage(buildFileUrl('redirect.html'))
+      })
   }
 
   if (kiosk) {
@@ -166,6 +173,9 @@ export async function createFlowrWindow(flowrStore: Store<IFlowrStore>): Promise
   }
 
   const _ipcEvents: { [key: string]: (...args: any[]) => void } = {
+    clearReloadTimeout: () =>{
+      clearInterval(reloadTimeout)
+    },
     FlowrIsInitializing: () => {
       clearInterval(reloadTimeout)
       isLaunchedUrlCorrect = true
@@ -212,6 +222,15 @@ export async function createFlowrWindow(flowrStore: Store<IFlowrStore>): Promise
 
       evt.sender.send('receiveConfig', config)
     },
+    getErrorLoadingFlowr: (evt: IpcMainEvent) => {
+        const errorData: any = {
+          reloadTimeout: reloadTimeout._idleStart as number,
+          reloadInterval: reloadTimeout._idleTimeout as number,
+          url: flowrStore.get('extUrl') || defaultUrl,
+          lastError: lastError
+          }
+        evt.sender.send('receiveErrorLoadingFlowr', errorData)
+    },
     getMacAddress: async (evt: IpcMainEvent) => {
       const activeMacAddress = await getActiveMacAddress()
       evt.sender.send('receiveMacAddress', activeMacAddress)
@@ -242,6 +261,10 @@ export async function createFlowrWindow(flowrStore: Store<IFlowrStore>): Promise
       flowrStore.set('flowrConfig', newConfig)
       app.relaunch()
       app.quit()
+    },
+    reload:() => {
+      reload()
+      reloadTimeout = setInterval(reload, RELOAD_INTERVAL)
     },
     setDebugMode: (evt: IpcMainEvent, debugMode: boolean) => {
       isDebugMode = debugMode
