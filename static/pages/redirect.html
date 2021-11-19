@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <link href='http://fonts.googleapis.com/css?family=Roboto' rel='stylesheet' type='text/css'>
+    <style>
+
+        body {
+            font-family: 'Roboto', sans-serif;
+        }
+        .button {
+            color: white;
+            padding: 8px 16px;
+            text-align: center;
+            text-decoration: none;
+            font-size: 16px;
+            margin: 4px 2px;
+            transition-duration: 0.4s;
+            cursor: pointer;
+        }
+
+        .buttonReload {
+            background-color: white;
+            color: black;
+            border: 2px solid #e7e7e7;
+            border-radius: 8px;
+        }
+
+        .buttonReload:hover {
+            background-color: #e7e7e7;
+        }
+
+        .container {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-direction: column;
+            height: 720px;
+        }
+
+        .item {
+            max-width: 75%;
+        }
+
+        details {
+            width: 400px;
+            border: 1px solid #aaa;
+            border-radius: 4px;
+            padding: .5em .5em 0;
+        }
+
+        .detailsContent {
+            margin: auto;
+            display: flex;
+            justify-content: center;
+            width: 100%;
+        }
+
+        summary {
+            text-align: center;
+            font-weight: bold;
+            margin: -.5em -.5em 0;
+            padding: .5em;
+        }
+
+
+
+
+
+    </style>
+</head>
+<body>
+
+<div class="container">
+
+    <div class="item"><h2>something goes wrong with this url:</h2></div>
+
+    <details class="item" id="errorDetails">
+        <summary div id="url"> </summary>
+        <div class="detailsContent">
+        <p id="error" style="color: rgb(255, 0, 0,0.8)"> </p>
+        </div>
+        <div class="detailsContent">
+            <button id="reload" class="button buttonReload" onclick="reload()"> reload </button>
+        </div>
+    </details>
+    <br>
+    <div id="timer" class="item"></div>
+</div>
+
+
+<script>
+    let {lastError, reloadTimeout,reloadInterval, url} = {}
+    let Timer
+
+    window.ipc.removeAllListeners('receiveErrorLoadingFlowr')
+    window.ipc.on('receiveErrorLoadingFlowr', function(evt, data) {
+        [lastError, reloadTimeout,reloadInterval, url] = [data.lastError, data.reloadTimeout, data.reloadInterval, data.url]
+        init()
+    })
+    window.ipc.send('getErrorLoadingFlowr')
+    function init(){
+        runTimer()
+        document.getElementById('url').innerHTML = url
+        document.getElementById('errorDetails').addEventListener("toggle", function(){
+            if( document.getElementById('errorDetails').open) {
+                const detailsError = document.getElementById('error')
+                detailsError.innerText = lastError.trim()
+                getDetails()
+            }
+        });
+    }
+
+    function getDetails() {
+        window.ipc.send('clearReloadTimeout')
+        clearInterval(Timer)
+
+    }
+
+    function reload() {
+        window.ipc.send('reload')
+    }
+    //timer displayed when the user do nothing, we show him the next reload in a timer
+    function runTimer() {
+        let numberOfAttempt= (reloadTimeout / reloadInterval) + 1
+
+        let timeLeft = Math.floor(((reloadInterval*numberOfAttempt)-reloadTimeout)/1000)
+        Timer = setInterval(function(){
+            if(timeLeft < 0){
+                clearInterval(Timer)
+            } else {
+                document.getElementById("timer").innerHTML = "reload in..."+timeLeft
+                timeLeft -= 1
+            }
+
+        }, 1000)
+    }
+
+
+</script>
+</body>
+</html>
