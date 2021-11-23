@@ -12,6 +12,7 @@ import { IFlowrStore } from '../frontend/src/interfaces/flowrStore'
 import { keyboard } from '../keyboard/keyboardController'
 import { mergeWith, cloneDeep } from 'lodash'
 import { FullScreenManager } from '../common/fullscreen'
+import { IFlowrDesktopConfig } from '../frontend/src/interfaces/IFlowrDesktopConfig'
 
 export const log = require('electron-log')
 
@@ -44,7 +45,7 @@ async function main() {
   if (!gotTheLock) {
     app.quit()
   } else {
-    app.on('second-instance', (e, argv) => {
+    app.on('second-instance', () => {
       if (flowrWindow) {
         if (flowrWindow.isMinimized()) flowrWindow.restore()
         flowrWindow.focus()
@@ -89,7 +90,6 @@ async function main() {
   }
 
   async function onReady() {
-    await clearBrowsingData()
     const flowrStore = initFlowrStore()
 
     keyboard.flowrStore = flowrStore
@@ -107,7 +107,10 @@ async function main() {
       }
     })
 
-    ipcMain.on('flowr-desktop-config', (event: IpcMainEvent, desktopConfig?: any) => {
+    ipcMain.on('flowr-desktop-config', async (event: IpcMainEvent, desktopConfig?: IFlowrDesktopConfig) => {
+      if (desktopConfig.userPreferences?.clearAppDataOnStart) {
+        await clearBrowsingData()
+      }
       const currentFlowrStore = cloneDeep(flowrStore.data)
       delete currentFlowrStore.player
       if (desktopConfig) {
