@@ -17,10 +17,10 @@
     "lib": ["dom", "esnext"],
     "experimentalDecorators": true,
     "baseUrl": "./",
-
+    "resolveJsonModule": true,
     "paths": {
       "~/*": ["./src/wexond/*"]
     }
   },
-  "include": ["./src/**/*.ts", "./src/**/*.tsx"]
+  "include": ["./src/**/*.ts", "./src/**/*.tsx", "./*.js"]
 }

@@ -1,20 +1,11 @@
-import { IpcRenderer } from 'electron'
+import type { IpcRenderer } from 'electron'
 
-declare global {
-  namespace NodeJS {
-    interface Global {
-      ipcRenderer: IpcRenderer
-    }
-  }
-
-  interface Window {
-    global: Window
-  }
-}
-
-const ipcRenderer = require('electron').ipcRenderer
+// eslint-disable-next-line @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-var-requires
+const ipcRenderer = require('electron').ipcRenderer as IpcRenderer
 
 process.once('loaded', () => {
+  // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
   window.global = window.global || (window as any)
-  global.ipcRenderer = ipcRenderer
+  // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+  ;(global as any).ipcRenderer = ipcRenderer
 })

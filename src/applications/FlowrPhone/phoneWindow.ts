@@ -1,8 +1,9 @@
 import { BrowserWindow, Rectangle, ipcMain } from 'electron'
 import { WindowModes } from './WindowModes'
-import { RegisterProps } from './views/phone'
 import { Store } from '../../frontend/src/store'
 import { KeyboardMixin } from '../../keyboard/keyboardMixin'
+import type { RegisterProps } from './views/phone'
+import { getLogger } from '../../frontend/src/logging/loggers'
 
 interface PhoneAppProps {
   phoneServer?: string
@@ -31,6 +32,7 @@ export class PhoneWindow extends KeyboardMixin(BrowserWindow) {
   private _currentUser: string | undefined
   private _history: boolean | undefined
   private readonly _ipcEvents: {[key: string]: (...args: any[]) => void}
+  private logger = getLogger('Phone window')
 
   get _widgetPosition(): Rectangle {
     const contentBounds = this.getParentWindow().getBounds()
@@ -56,7 +58,7 @@ export class PhoneWindow extends KeyboardMixin(BrowserWindow) {
     this._registerProps = value
   }
 
-  get lang() {
+  get lang(): string | undefined {
     return this._lang
   }
 
@@ -65,7 +67,7 @@ export class PhoneWindow extends KeyboardMixin(BrowserWindow) {
     this._lang = lang
   }
 
-  get capabilities() {
+  get capabilities(): {[key: string]: boolean} | undefined {
     return this._capabilities
   }
 
@@ -74,7 +76,7 @@ export class PhoneWindow extends KeyboardMixin(BrowserWindow) {
     this._capabilities = capabilities
   }
 
-  get currentUser() {
+  get currentUser(): string | undefined {
     return this._currentUser
   }
   set currentUser(currentUser: string) {
@@ -84,7 +86,7 @@ export class PhoneWindow extends KeyboardMixin(BrowserWindow) {
     }
   }
 
-  get history() {
+  get history(): boolean | undefined {
     return this._history
   }
   set history(history: boolean) {
@@ -94,7 +96,7 @@ export class PhoneWindow extends KeyboardMixin(BrowserWindow) {
     }
   }
 
-  constructor(parent: BrowserWindow, preload: string | undefined, index: string, props: PhoneAppProps, private store?: Store | undefined) {
+  constructor(parent: BrowserWindow, preload: string | undefined, index: string, props: PhoneAppProps, private store?: Store<Record<string, any>> | undefined) {
     super(Object.assign({
       frame: false,
       transparent: true,
@@ -145,7 +147,8 @@ export class PhoneWindow extends KeyboardMixin(BrowserWindow) {
     this.loadURL(pageUrl.href)
 
     this.mode = WindowModes.WIDGET
-    this._ipcEvents = {
+      /* eslint-disable @typescript-eslint/no-unsafe-assignment */
+      this._ipcEvents = {
       'phone-maximize': () => this.mode = WindowModes.FULLSCREEN,
       'phone-reduce': () => this.mode = WindowModes.WIDGET,
       'phone-show': this.show.bind(this),
@@ -161,27 +164,28 @@ export class PhoneWindow extends KeyboardMixin(BrowserWindow) {
       },
       'update-phone-store': this.updateStore.bind(this),
     }
+      /* eslint-enable @typescript-eslint/no-unsafe-assignment */
 
     Object.entries(this._ipcEvents).forEach(event => ipcMain.on(...event))
     this.on('close', () => Object.entries(this._ipcEvents).forEach(event => ipcMain.removeListener(...event)))
   }
 
-  updateRegisterProps(e: Event, registerProps: RegisterProps) {
-    console.log('Received register props', registerProps)
+  private updateRegisterProps(e: Event, registerProps: RegisterProps) {
+    this.logger.info('Received register props', registerProps)
     this.registerProps = registerProps
   }
 
-  open(mode: WindowModes = WindowModes.WIDGET) {
+  open(mode: WindowModes = WindowModes.WIDGET): void {
     this.mode = mode
     this.show()
   }
 
-  mute(e: Event, mute: boolean) {
+  mute(e: Event, mute: boolean): void {
     this.webContents.setAudioMuted(mute)
     this.webContents.send('mute-changed', this.webContents.isAudioMuted())
   }
 
-  updateStore(e: Event, data: {[key: string]: any} = {}) {
+  updateStore(e: Event, data: {[key: string]: any} = {}): void {
     if (this.store) {
       if (Object.keys(data).length) {
         this.store.bulkSet(data)

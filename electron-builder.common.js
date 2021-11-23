@@ -1,3 +1,5 @@
+/* globals module */
+
 module.exports = {
   appId: 'org.taktik.flowr.pcClient',
   productName: 'flowr-desktop',

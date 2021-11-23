@@ -1,4 +1,4 @@
-import { RegisterProps } from './views/phone'
+import type { RegisterProps } from './views/phone'
 import { PhoneWindow } from './phoneWindow'
 import { FlowrWindow } from '../../frontend/flowr-window'
 import { BrowserWindow, ipcMain } from 'electron'
@@ -56,8 +56,8 @@ export function create(options: PhoneOptions): PhoneWindow {
 
   function keepFocus(win: BrowserWindow) {
     if (win) {
-      win.focus()
       win.on('blur', win.focus)
+      win.focus()
     }
   }
 

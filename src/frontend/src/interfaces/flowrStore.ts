@@ -1,6 +1,7 @@
 import { IFlowrConfig } from './flowrConfig'
 import { IChannelData } from './channelData'
 import { IPlayerStore } from './playerStore'
+import { LogSeverity } from '../logging/types'
 
 export interface IFlowrStore {
   windowBounds: { width: number, height: number }
@@ -15,4 +16,5 @@ export interface IFlowrStore {
   enableVirtualKeyboard: boolean
   useRealMacAddress?: boolean
   phoneServer?: string
+  logLevel: LogSeverity
 }

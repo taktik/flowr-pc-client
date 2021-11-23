@@ -10,8 +10,9 @@ import { TOOLBAR_HEIGHT } from '../renderer/app/constants'
 import { KeyboardMixin } from '../../keyboard/keyboardMixin'
 import { watchForInactivity } from '../../inactivity/window'
 import { buildPreloadPath } from '../../common/preload'
+import { Point, Rectangle } from 'electron/main'
 
-const containsPoint = (bounds: any, point: any) => {
+const containsPoint = (bounds: Rectangle, point: Point) => {
   return (
     point.x >= bounds.x &&
     point.y >= bounds.y &&
@@ -75,7 +76,7 @@ export class AppWindow extends KeyboardMixin(BrowserWindow) {
     let urlString: string
     if (process.env.ENV === 'dev') {
       this.webContents.openDevTools({ mode: 'detach' })
-      urlString = 'http://localhost:4444/app.html'
+      urlString = `http://localhost:${__RENDERER_SERVER_PORT__}/app.html`
     } else {
       urlString = join('file://', app.getAppPath(), 'build/app.html')
     }
@@ -85,7 +86,7 @@ export class AppWindow extends KeyboardMixin(BrowserWindow) {
         url.searchParams.set(key, value)
       }
     })
-    this.loadURL(url.toString())
+    void this.loadURL(url.toString())
 
     this.once('ready-to-show', () => {
       this.show()
@@ -170,7 +171,7 @@ export class AppWindow extends KeyboardMixin(BrowserWindow) {
           }
         },
       })
-      watchForInactivity(this, timeout, () => {
+      void watchForInactivity(this, timeout, () => {
         // Only close if inactivity occurs on "main" view
         if (!this.getBrowserView()) {
           this.close()
@@ -181,7 +182,7 @@ export class AppWindow extends KeyboardMixin(BrowserWindow) {
     }
   }
 
-  public activateWindowCapturing(ipcEvents: {[key: string]: (...args: any[]) => void}) {
+  private activateWindowCapturing(ipcEvents: {[key: string]: (...args: any[]) => void}) {
     const mouseEventsListeners = {
       'mouse-down': () => {
         if (this.isMinimized()) return
@@ -197,11 +198,11 @@ export class AppWindow extends KeyboardMixin(BrowserWindow) {
           }
         }, 50)
       },
-      'mouse-up': async () => {
+      'mouse-up': () => {
         if (this.selectedWindow && !this.isMoving) {
           const bounds = this.selectedWindow.getBounds()
           const { lastBounds } = this.selectedWindow
-  
+
           if (
             !this.isMaximized() &&
             (bounds.width !== lastBounds.width ||
@@ -220,7 +221,7 @@ export class AppWindow extends KeyboardMixin(BrowserWindow) {
               y: bounds.y - TOOLBAR_HEIGHT - 1,
             })
   
-            this.interval = setInterval(this.intervalCallback, 100)
+            this.interval = setInterval(() => void this.intervalCallback(), 100)
   
             this.isUpdatingContentBounds = false
           }
@@ -275,7 +276,7 @@ export class AppWindow extends KeyboardMixin(BrowserWindow) {
       windowManager.removeAllListeners('window-activated')
     })
 
-    this.interval = setInterval(this.intervalCallback, 100)
+    this.interval = setInterval(() => void this.intervalCallback(), 100)
 
     Object.entries(ipcEvents).forEach(event => ipcMain.on(...event))
     Object.entries(mouseEventsListeners).forEach(([eventName, callback]) => mouseEvents.on(eventName, callback))
@@ -298,7 +299,7 @@ export class AppWindow extends KeyboardMixin(BrowserWindow) {
     })
   }
 
-  intervalCallback = async () => {
+  intervalCallback = async (): Promise<void> => {
     if (this.isMoving) return
 
     if (!this.isMinimized()) {
@@ -384,7 +385,7 @@ export class AppWindow extends KeyboardMixin(BrowserWindow) {
     }
   }
 
-  getContentArea() {
+  getContentArea(): Rectangle {
     const bounds = this.getContentBounds()
 
     bounds.y += TOOLBAR_HEIGHT
@@ -393,7 +394,7 @@ export class AppWindow extends KeyboardMixin(BrowserWindow) {
     return bounds
   }
 
-  selectWindow(window: ProcessWindow) {
+  selectWindow(window: ProcessWindow): void {
     if (!window) return
 
     if (this.selectedWindow) {
@@ -415,7 +416,7 @@ export class AppWindow extends KeyboardMixin(BrowserWindow) {
     this.resizeWindow(window)
   }
 
-  resizeWindow(window: ProcessWindow) {
+  resizeWindow(window: ProcessWindow): void {
     if (!window || this.isMinimized()) return
 
     const newBounds = this.getContentArea()
@@ -431,7 +432,7 @@ export class AppWindow extends KeyboardMixin(BrowserWindow) {
     }
   }
 
-  detachWindow(window: ProcessWindow) {
+  detachWindow(window: ProcessWindow): void {
     if (!window) return
 
     if (this.selectedWindow === window) {
@@ -443,7 +444,7 @@ export class AppWindow extends KeyboardMixin(BrowserWindow) {
     this.windows = this.windows.filter(x => x.id !== window.id)
   }
 
-  close() {
+  close(): void {
     this.viewManager.clear()
     super.close()
   }
