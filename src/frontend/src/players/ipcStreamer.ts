@@ -1,6 +1,7 @@
+import { CircularBuffer } from '@taktik/buffers'
+import { IOutputTrack, TrackInfo } from '@taktik/mux.js'
 import { Writable } from 'stream'
 import { WebContents } from 'electron'
-import { CircularBuffer } from '@taktik/buffers'
 import { IStreamerConfig } from './interfaces/ipcStreamerConfig'
 
 export class IpcStreamer extends Writable {
@@ -8,12 +9,12 @@ export class IpcStreamer extends Writable {
   private buffer: CircularBuffer
   private sendInterval: number | undefined
   private sendIntervalValue: number
-  /**
-   * @deprecated: This property should be handled on Flowr side
-   */
-  private isFirstChunk: boolean = true
 
-  set sender(sender: WebContents) {
+  currentAudioPid: number | undefined
+  currentTrackInfo: TrackInfo | undefined
+  currentCodec = 'avc1.64001f, mp4a.40.5' // default codec: custom chromium always goes through ffmepg anyway
+
+  set sender(sender: WebContents | undefined) {
     this._sender = sender
   }
 
@@ -43,7 +44,7 @@ export class IpcStreamer extends Writable {
           console.error('Ffmpeg output chunk size is bigger than streamer\'s capacity.')
           console.error('Consider increasing streamer\'s maxCapacity and/or capacity')
           console.error(e)
-          this.send(chunk)
+          this.sendSegment(chunk)
         }
       }
       if (!this.sendInterval) {
@@ -62,9 +63,8 @@ export class IpcStreamer extends Writable {
     clearInterval(this.sendInterval)
     this.buffer.clear()
     this.sendInterval = undefined
-    this._sender = undefined
-    this.isFirstChunk = true
     this.removeAllListeners()
+    this.currentTrackInfo = undefined
   }
 
   // tslint:disable-next-line: function-name
@@ -73,18 +73,39 @@ export class IpcStreamer extends Writable {
     cb()
   }
 
-  private attemptSend() {
-    if (this.buffer.availableRead) {
-      this.send(this.buffer.readAll())
+  private formatFfmpegOutput(data: Buffer): IOutputTrack<'audio' | 'video'> {
+    const type = !this.currentTrackInfo?.video ? 'audio' : 'video' // default to video if we did not
+    const pid = this.currentAudioPid || 0
+
+    return {
+      data,
+      type,
+      codec: this.currentCodec,
+      pid,
     }
   }
 
-  private send(buffer: Buffer) {
-    if (this._sender) {
-      this._sender.send('segment', { buffer, isFirst: this.isFirstChunk })
-      this.isFirstChunk = false
-    } else {
-      console.error('No sender defined, cannot send segment')
+  private attemptSend() {
+    if (this.buffer.availableRead) {
+      this.sendSegment(this.buffer.readAll())
     }
+  }
+
+  private send(message: string, content: any) {
+    if (this._sender) {
+      this._sender.send(message, content)
+    } else {
+      console.error(`No sender defined, cannot send "${message}" message`)
+    }
+  }
+
+  private sendSegment(segment: Buffer) {
+    const data = this.formatFfmpegOutput(segment)
+    this.send('segment', data)
+  }
+
+  sendTrackInfo(trackInfo: TrackInfo) {
+    this.currentTrackInfo = trackInfo
+    this.send('trackinfo', trackInfo)
   }
 }

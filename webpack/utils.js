@@ -1,3 +1,5 @@
+/* eslint-disable */
+
 const TerserPlugin = require('terser-webpack-plugin')
 const path = require('path')
 const fs = require('fs')
@@ -8,6 +10,7 @@ const Mode = {
 }
 
 const OUTPUT_DIR = './build'
+const RENDERER_SERVER_PORT = 4444
 
 function deleteFile(path) {
     return new Promise((resolve, reject) => {
@@ -81,7 +84,7 @@ const webpackModule = {
     rules: [
         {
             // If you see a file that ends in .ejs, just send it to the raw-loader.
-            test: /\.ejs$/,
+            test: /\.(ejs|html)$/,
             use: 'raw-loader',
         },
         {
@@ -154,4 +157,5 @@ module.exports = {
     deleteDir,
     getOptimization,
     preload,
+    RENDERER_SERVER_PORT,
 }

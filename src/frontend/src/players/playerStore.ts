@@ -1,6 +1,6 @@
 import { ReadMode } from '@taktik/buffers'
 import { app } from 'electron'
-import { IPlayerStore } from './interfaces/playerStore'
+import { IPlayerStore, PipelineType } from '../interfaces/playerStore'
 
 export const DEFAULT_PLAYER_STORE: IPlayerStore = {
   version: app.getVersion(),
@@ -10,7 +10,11 @@ export const DEFAULT_PLAYER_STORE: IPlayerStore = {
     readMode: ReadMode.COPY,
     sendInterval: 300, // to increase on "BUFFER ERROR" in flowr
   },
-  decryption: { use: true }, // whether to use ts-decryptor
+  pipeline: {
+    use: PipelineType.FFMPEG,
+    metadata: {}
+  },
+  decryption: { use: false }, // whether to use ts-decryptor
   tsDecryptor: {
     alignConfig: {
       capacity: 200000000, // must be superior or equal to UdpStreamer's capacity

@@ -1,11 +1,15 @@
+/* eslint-disable */
+
 const HtmlWebpackPlugin = require('html-webpack-plugin')
+const CopyWebpackPlugin = require('copy-webpack-plugin')
 const path = require('path')
 const {
     webpackModule,
     getOptimization,
     output,
     resolve,
-    Mode
+    Mode,
+    RENDERER_SERVER_PORT,
 } = require('./webpack/utils')
 
 module.exports = (env) => {
@@ -41,7 +45,7 @@ module.exports = (env) => {
             disableHostCheck: true,
             contentBase: path.join(__dirname),
             host: '0.0.0.0',
-            port: 4444,
+            port: RENDERER_SERVER_PORT,
             writeToDisk: true,
         },
         externals: {
@@ -53,7 +57,7 @@ module.exports = (env) => {
         },
     }
 
-    function appConfig(name, fileType) {
+    function appConfig(name, fileType, packageJSON) {
         const entry = {
             [name]: {
                 import: `./src/applications/${name}/views/index.${fileType}`,
@@ -71,10 +75,20 @@ module.exports = (env) => {
                 chunks: [name]
             }),
         ]
+        if (packageJSON) {
+            plugins.push(new CopyWebpackPlugin({
+                patterns: [
+                    {
+                        from: `./src/applications/${name}/package.json`,
+                        to: `${name}/package.json`,
+                    },
+                ]
+            }))
+        }
         return { entry, plugins }
     }
 
-    const flowrPhoneConfig = appConfig('FlowrPhone', 'tsx')
+    const flowrPhoneConfig = appConfig('FlowrPhone', 'tsx', true)
     const keyboardConfig = appConfig('keyboard', 'ts')
 
     return {

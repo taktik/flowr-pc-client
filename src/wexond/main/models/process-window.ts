@@ -1,4 +1,5 @@
 import { Window } from 'node-window-manager';
+import { IRectangle } from 'node-window-manager/dist/interfaces'
 import mouseEvents from 'mouse-hooks';
 import { appWindow } from '..';
 
@@ -11,8 +12,8 @@ export class ProcessWindow extends Window {
 
   public opacity: number;
 
-  public lastBounds: any;
-  public initialBounds: any;
+  public lastBounds: IRectangle;
+  public initialBounds: IRectangle;
 
   constructor(handle: number) {
     super(handle);
@@ -22,7 +23,7 @@ export class ProcessWindow extends Window {
     this.initialBounds = this.getBounds();
   }
 
-  public detach() {
+  public detach(): void {
     this.setOwner(null);
 
     mouseEvents.once('mouse-up', () => {
@@ -37,12 +38,12 @@ export class ProcessWindow extends Window {
     });
   }
 
-  public show() {
+  public show(): void {
     super.show();
     this.setOpacity(1);
   }
 
-  public hide() {
+  public hide(): void {
     super.hide();
     this.setOpacity(0);
   }

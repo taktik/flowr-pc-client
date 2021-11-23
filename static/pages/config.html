@@ -12,12 +12,11 @@
 		width: 300px;
 	}
 
-	#wrongurl {
+	.error {
 		color: red;
-		display: inline;
 	}
 
-	#wrongurl.hidden {
+	.hidden {
 		display: none;
 	}
 	</style>
@@ -29,9 +28,10 @@
 <div id="userAgent"></div>
 <hr>
 
+<p id="last-error" class="error hidden"></p>
 
 <h3>External Config</h3>
-<div class='config-label'>Url to flowr :</div> <input type="text" id="extUrl" onchange='resetInvalidUrl()'>&emsp;<span id="wrongurl" class="hidden"> Invalid url*</span><br>
+<div class='config-label'>Url to flowr :</div> <input type="text" id="extUrl" onchange='resetInvalidUrl()'>&emsp;<span id="wrongurl" class="error hidden"> Invalid url*</span><br>
 <button id="validateURL" onclick="validateExtUrl()">Validate</button>
 <button id="reinit" onclick="init()">Reinit</button>
 <br>
@@ -64,8 +64,6 @@
 <label>Activate Debug Mode</label> <input type="checkbox" id="activateDebug" onclick='toggleDebugCheckbox()'>
 
 <script>
-	const ipc = nodeRequire('electron').ipcRenderer
-
 	let isDebugMode = false
 	let config = undefined
 	let isDeinterlacingActivated = false
@@ -74,10 +72,11 @@
 	let isLaunchedUrlCorrect = true
 	let clearAppDataOnStart = false
 	let enableVirtualKeyboard = false
+	let lastError = ''
 
-	ipc.removeAllListeners('receiveConfig')
+	window.ipc.removeAllListeners('receiveConfig')
 
-	ipc.on('receiveConfig', function(evt, data) {
+	window.ipc.on('receiveConfig', function(evt, data) {
 		config = data.appConfig
 		isDebugMode = data.debugMode
 		isDeinterlacingActivated = data.deinterlacing
@@ -86,10 +85,11 @@
 		isKiosk = !!data.isKiosk
 		isLaunchedUrlCorrect = !!data.isLaunchedUrlCorrect
 		enableVirtualKeyboard = !!data.enableVirtualKeyboard
+		lastError = data.lastError || ''
 		console.log('data: ', data)
 		init()
 	})
-	ipc.send('getAppConfig')
+	window.ipc.send('getAppConfig')
 
 
 	function validate(){
@@ -98,7 +98,7 @@
 		config.socketApi.host = document.getElementById('socketApi').value
 		config.pushVodSocketApi.host = document.getElementById('pushVodSocketApi').value
 		config.aneviaVodSocketApi.host = document.getElementById('aneviaVodSocketApi').value
-		ipc.send('updateAppConfig', config)
+		window.ipc.send('updateAppConfig', config)
 	}
 
 	function init(){
@@ -123,6 +123,12 @@
 		if (!isLaunchedUrlCorrect) {
 			invalidUrl()
 		}
+
+		if (lastError) {
+			const lastErrorEl = document.getElementById('last-error')
+			lastErrorEl.innerText = lastError
+			lastErrorEl.classList.remove('hidden')
+		}
 	}
 
 	function validateExtUrl() {
@@ -130,7 +136,7 @@
 		try {
 			// try to parse as URL to check validity
 			new URL(url)
-			ipc.send('setExtUrl', url)
+			window.ipc.send('setExtUrl', url)
 		} catch (e) {
 			console.error('Error when validating the URL', e)
 			invalidUrl()
@@ -138,23 +144,23 @@
 	}
 
 	function toggleKioskCheckbox(){
-		ipc.send('setKioskMode', document.getElementById('activateKioskMode').checked)
+		window.ipc.send('setKioskMode', document.getElementById('activateKioskMode').checked)
 	}
 
 	function toggleDebugCheckbox(){
-		ipc.send('setDebugMode', document.getElementById('activateDebug').checked)
+		window.ipc.send('setDebugMode', document.getElementById('activateDebug').checked)
 	}
 
 	function toggleDeinterlacingCheckbox(){
-		ipc.send('setDeinterlacingMode', document.getElementById('activateDeinterlacing').checked)
+		window.ipc.send('setDeinterlacingMode', document.getElementById('activateDeinterlacing').checked)
   }
 
 	function toggleClearAppDataCheckbox(){
-		ipc.send('setClearAppDataOnStart', document.getElementById('clearAppDataOnStart').checked)
+		window.ipc.send('setClearAppDataOnStart', document.getElementById('clearAppDataOnStart').checked)
 	}
 
 	function toggleVirtualKeyboardCheckbox() {
-		ipc.send('setEnableVirtualKeyboard', document.getElementById('enableVirtualKeyboard').checked)
+		window.ipc.send('setEnableVirtualKeyboard', document.getElementById('enableVirtualKeyboard').checked)
 	}
 
 	function invalidUrl() {

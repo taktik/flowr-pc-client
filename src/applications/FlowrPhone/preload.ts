@@ -1,4 +1,4 @@
-import { IpcRenderer } from 'electron'
+import type { IpcRenderer } from 'electron'
 import { VirtualKeyboardEvent } from '../../keyboard/events'
 
 declare global {
@@ -18,18 +18,19 @@ declare global {
 }
 
 const production = process.env.NODE_ENV !== 'dev' && process.env.NODE_ENV !== 'development'
-const packagesToExport = [
-  'react',
-  'react-dom',
-  'typescript-state-machine',
-  '@fortawesome/react-fontawesome',
-  '@fortawesome/fontawesome-svg-core',
-  '@fortawesome/free-solid-svg-icons',
-  'styled-components',
-  'moment',
-]
-const nodeRequire: {[key: string]: any} = packagesToExport.reduce((exported, pack) => Object.assign(exported, { [pack]: require(pack) }), {})
+/* eslint-disable @typescript-eslint/no-unsafe-assignment */
+const nodeRequire = {
+  'react': require('react'),
+  'react-dom': require('react-dom'),
+  'typescript-state-machine': require('typescript-state-machine'),
+  '@fortawesome/react-fontawesome': require('@fortawesome/react-fontawesome'),
+  '@fortawesome/fontawesome-svg-core': require('@fortawesome/fontawesome-svg-core'),
+  '@fortawesome/free-solid-svg-icons': require('@fortawesome/free-solid-svg-icons'),
+  'styled-components': require('styled-components'),
+  'moment': require('moment'),
+}
 const ipcRenderer = require('electron').ipcRenderer
+/* eslint-enable @typescript-eslint/no-unsafe-assignment */
 
 process.once('loaded', () => {
   window.global = window.global || (window as any)
