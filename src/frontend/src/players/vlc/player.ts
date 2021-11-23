@@ -2,6 +2,7 @@ import { ChildProcess, spawn } from 'child_process'
 import type { BrowserWindow, IpcMainEvent, WebContents } from 'electron'
 import { IPlayerStore } from '../../interfaces/playerStore'
 import { ILogger } from '../../logging/types'
+import { Store } from '../../store'
 import { AbstractPlayer, PlayProps } from '../abstractPlayer'
 import { IMessage, LogMessage, MessageType, ProcessMessaging, VLCLogLevel } from './messaging'
 import { ResetableTimeout } from './resetableTimeout'
@@ -24,8 +25,8 @@ export class VlcPlayer extends AbstractPlayer {
   private keepAliveTimeout?: ResetableTimeout
   private frontendWebView?: WebContents
 
-  constructor(private readonly flowrWindow: BrowserWindow, playerConfig: Partial<IPlayerStore>) {
-    super(playerConfig)
+  constructor(private readonly flowrWindow: BrowserWindow, store: Store<IPlayerStore>) {
+    super(store)
     /* eslint-disable @typescript-eslint/no-unsafe-assignment */
     this.onClose = this.onClose.bind(this)
     this.onError = this.onError.bind(this)
