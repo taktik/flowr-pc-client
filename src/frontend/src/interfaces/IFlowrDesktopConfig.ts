@@ -16,6 +16,6 @@ interface IFlowrDesktopConfigUserPreferences {
 }
 
 export interface IFlowrDesktopConfig {
-  userPreferences: IFlowrDesktopConfigUserPreferences
-  player: IPlayerStore
+  userPreferences?: IFlowrDesktopConfigUserPreferences
+  player?: IPlayerStore
 }

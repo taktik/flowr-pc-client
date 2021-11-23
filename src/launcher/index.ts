@@ -108,7 +108,7 @@ async function main() {
     })
 
     ipcMain.on('flowr-desktop-config', async (event: IpcMainEvent, desktopConfig?: IFlowrDesktopConfig) => {
-      if (desktopConfig.userPreferences?.clearAppDataOnStart) {
+      if (desktopConfig?.userPreferences?.clearAppDataOnStart) {
         await clearBrowsingData()
       }
       const currentFlowrStore = cloneDeep(flowrStore.data)
