@@ -96,7 +96,7 @@
     function init() {
         runTimer()
         document.getElementById('url').innerHTML = url
-        document.getElementById('errorDetails').addEventListener("toggle", function(){
+        document.getElementById('errorDetails').addEventListener("toggle", function() {
             if (document.getElementById('errorDetails').open) {
                 const detailsError = document.getElementById('error')
                 detailsError.innerText = lastError.trim()
