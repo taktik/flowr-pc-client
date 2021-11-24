@@ -52,12 +52,12 @@ export class VlcPlayer extends AbstractPlayer {
   }
 
   private startProcess(url: string) {
-    const path = this.store.get('pipeline')?.metadata?.applicationPath
-
+    // const path = this.store.get('pipeline')?.metadata?.applicationPath
+    const path = "C:\\projects\\bedside-vlc\\VlcForm\\bin\\Debug\\netcoreapp3.1\\VlcForm.exe"
     if (!path) {
       throw Error('No path is defined for VLC executable. Please configure it in flowr-admin\'s settings')
     }
-    const args = [url, toRectangle(this.playerPosition)]
+    const args = [url, toRectangle(this.playerPosition), this.store.get('position')]
     const process = spawn(path, args)
 
     /* eslint-disable @typescript-eslint/unbound-method */
@@ -108,13 +108,10 @@ export class VlcPlayer extends AbstractPlayer {
     switch (vlcLevel) {
       case VLCLogLevel.DEBUG:
         return this.log.debug.bind(this.log) as ILogger['debug']
-        break
       case VLCLogLevel.WARN:
         return this.log.warn.bind(this.log) as ILogger['warn']
-        break
       case VLCLogLevel.ERROR:
         return this.log.error.bind(this.log) as ILogger['error']
-        break
       case VLCLogLevel.INFO:
       default:
         return this.log.info.bind(this.log) as ILogger['info']

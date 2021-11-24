@@ -57,6 +57,7 @@ abstract class AbstractPlayer implements IPlayer {
     // eslint-disable-next-line @typescript-eslint/no-unsafe-return
     const playerConfigMerged = mergeWith({}, DEFAULT_PLAYER_STORE, playerConfig, (a, b) => b === null || b === '' ? a : undefined)
     this.store = storeManager.createStore<IPlayerStore>('player', playerConfigMerged)
+    this.store.persist()
   }
 
   registerEvent(name: string, handler: (event: IpcMainEvent, ...args: any[]) => void): void {

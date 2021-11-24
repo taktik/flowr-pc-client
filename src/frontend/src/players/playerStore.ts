@@ -1,6 +1,6 @@
 import { ReadMode } from '@taktik/buffers'
 import { app } from 'electron'
-import { IPlayerStore, PipelineType } from '../interfaces/playerStore'
+import { IPlayerStore, PipelineType, PlayerPosition } from '../interfaces/playerStore'
 
 export const DEFAULT_PLAYER_STORE: IPlayerStore = {
   version: app.getVersion(),
@@ -29,4 +29,5 @@ export const DEFAULT_PLAYER_STORE: IPlayerStore = {
     maxCapacity: 200000000, // max buffer expansion size, to increase on OverflowErrors
     readMode: ReadMode.SLICE,
   },
+  position: PlayerPosition.FOREGROUND
 }

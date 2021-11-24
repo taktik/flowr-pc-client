@@ -9,6 +9,11 @@ export enum PipelineType {
   VLC = 'vlc',
 }
 
+export enum PlayerPosition {
+  BACKGROUND = 'BACKGROUND',
+  FOREGROUND = 'FOREGROUND'
+}
+
 export interface IPlayerStore {
   version: string
   decryption: IDecryption
@@ -21,5 +26,6 @@ export interface IPlayerStore {
       applicationPath?: string
       keepAliveTimeout?: number
     }
-  }
+  },
+  position: PlayerPosition
 }

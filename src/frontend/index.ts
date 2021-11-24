@@ -73,6 +73,8 @@ export async function createFlowrWindow(flowrStore: Store<IFlowrStore>): Promise
       partition: 'persist:flowr', // needed to display webcam image
       preload: buildPreloadPath('exportNode.js'),
     },
+    transparent: true,
+    frame: false
   })
 
   const mainWindow = new FlowrWindow(flowrStore, opts)
@@ -114,7 +116,7 @@ export async function createFlowrWindow(flowrStore: Store<IFlowrStore>): Promise
 
   // Open the DevTools.
   if (process.env.ENV === 'dev') {
-    mainWindow.webContents.openDevTools()
+    // mainWindow.webContents.openDevTools()
     isDebugMode = true
   }
 
