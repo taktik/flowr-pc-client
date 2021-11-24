@@ -116,7 +116,7 @@ export async function createFlowrWindow(flowrStore: Store<IFlowrStore>): Promise
 
   // Open the DevTools.
   if (process.env.ENV === 'dev') {
-    // mainWindow.webContents.openDevTools()
+    mainWindow.webContents.openDevTools()
     isDebugMode = true
   }
 

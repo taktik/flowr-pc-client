@@ -52,8 +52,7 @@ export class VlcPlayer extends AbstractPlayer {
   }
 
   private startProcess(url: string) {
-    // const path = this.store.get('pipeline')?.metadata?.applicationPath
-    const path = "C:\\projects\\bedside-vlc\\VlcForm\\bin\\Debug\\netcoreapp3.1\\VlcForm.exe"
+    const path = this.store.get('pipeline')?.metadata?.applicationPath
     if (!path) {
       throw Error('No path is defined for VLC executable. Please configure it in flowr-admin\'s settings')
     }
