@@ -23,9 +23,13 @@ export async function initConfigData(configPath: string, previousData: IFlowrSto
   }
 }
 
-interface StoreOptions<T> {
+interface StoreInitilizer<T> {
+  defaults?: T
+  resolver?(stored: T | undefined): T
+}
+
+interface StoreOptions<T> extends StoreInitilizer<T> {
   configName: string
-  defaults: T
 }
 
 export interface Store<T extends Record<string, any>> {
@@ -51,13 +55,13 @@ class StoreImpl<T> implements Store<T> {
 
   constructor(storeDir: string, public opts: StoreOptions<T>) {
     this.path = join(storeDir, opts.configName)
-    this.data = parseDataFile(this.path, opts.defaults)
+    this.data = parseDataFile(this.path, opts)
     ensureFileSync(this.path)
   }
 
   // This will just return the property on the `data` object
   get<K extends keyof T>(key: K): T[K] {
-    return this.data[key] || this.opts.defaults[key]
+    return this.data[key] || this.opts.defaults?.[key]
   }
 
   // ...and this will set it
@@ -89,15 +93,18 @@ class StoreImpl<T> implements Store<T> {
   }
 }
 
-function parseDataFile<T>(filePath: string, defaults: T): T {
+function parseDataFile<T>(filePath: string, { defaults, resolver }: StoreInitilizer<T>): T {
   // We'll try/catch it in case the file doesn't exist yet, which will be the case on the first application run.
   // `fs.readFileSync` will return a JSON string which we then parse into a Javascript object
+  let data: T
   try {
-    return JSON.parse(readFileSync(filePath) as any) as T
+    data = JSON.parse(readFileSync(filePath) as any) as T
   } catch (error) {
     // if there was some kind of error, return the passed in defaults instead.
-    return defaults
+    data = defaults
   }
+
+  return resolver?.(data) ?? data
 }
 
 export class StoreManager {
@@ -112,8 +119,8 @@ export class StoreManager {
     return existsSync(storePath)
   }
 
-  createStore<T>(namespace = 'default', defaults: T): Store<T> {
+  createStore<T>(namespace = 'default', initializer: StoreInitilizer<T> = {}): Store<T> {
     const configName = `${namespace}.json`
-    return new StoreImpl(this.path, { configName, defaults })
+    return new StoreImpl(this.path, { configName, ...initializer })
   }
 }

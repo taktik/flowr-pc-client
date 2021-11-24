@@ -195,7 +195,7 @@ async function main() {
   }
 
   function initFlowrStore(): Store<IFlowrStore> {
-    return storeManager.createStore(FRONTEND_CONFIG_NAME, DEFAULT_FRONTEND_STORE)
+    return storeManager.createStore(FRONTEND_CONFIG_NAME, { defaults: DEFAULT_FRONTEND_STORE })
   }
 }
 

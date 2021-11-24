@@ -7,6 +7,7 @@ import { Readable } from 'stream'
 import { UdpStreamerError, UdpStreamerErrors } from '@taktik/udp-streamer'
 import { IPipelineTail } from '../interfaces/playerPipeline'
 import { AbstractPlayer, PlayProps, SubtitlesProps } from './abstractPlayer'
+import { Store } from '../store'
 
 export class Player extends AbstractPlayer {
   private replayOnErrorTimeout: number | null = null
@@ -17,8 +18,8 @@ export class Player extends AbstractPlayer {
   private ffmpegWrapper: FfmpegWrapper
   private playPipelineTail?: IPipelineTail
 
-  constructor(playerConfig: Partial<IPlayerStore>) {
-    super(playerConfig)
+  constructor(store: Store<IPlayerStore>) {
+    super(store)
     this.playPipelineHead = new MainPipeline(this.store)
     this.transmuxer = new TransmuxerWrapper()
     this.ffmpegWrapper = new FfmpegWrapper(this.store)
