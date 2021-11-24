@@ -109,9 +109,6 @@ async function main() {
     })
 
     ipcMain.on('flowr-desktop-config', async (event: IpcMainEvent, desktopConfig?: IFlowrDesktopConfig) => {
-      if (desktopConfig?.userPreferences?.clearAppDataOnStart) {
-        await clearBrowsingData()
-      }
       const currentFlowrStore = cloneDeep(flowrStore.data)
       delete currentFlowrStore.player
       if (desktopConfig) {
@@ -123,6 +120,9 @@ async function main() {
         // eslint-disable-next-line @typescript-eslint/no-unsafe-return
         const userPreferencesMerged = mergeWith({}, DEFAULT_FRONTEND_STORE, currentFlowrStore, desktopConfig.userPreferences, (a, b) => b === null || b === '' ? a : undefined)
         flowrWindow.initStore(userPreferencesMerged, desktopConfig.player)
+        if (flowrWindow.store.get('clearAppDataOnStart')) {
+          await clearBrowsingData()
+        }
       }
     })
 
