@@ -49,7 +49,7 @@ export const buildFileUrl = buildUrl(Protocols.HTTP)
  */
 export const buildFilePath = buildUrl(Protocols.NONE)
 
-export const monitorActivity: void = (browserWindow: BrowserWindow, timeout: number, callback: () => void) => {
+export const monitorActivity = (browserWindow: BrowserWindow, timeout: number, callback: () => void): void => {
 
   const watchDogTimeout = 30000 // ping every 30 s
   let watchDogTimer: number | undefined
