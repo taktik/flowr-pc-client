@@ -118,7 +118,7 @@
         let numberOfAttempt= (reloadTimeout / reloadInterval) + 1
 
         let timeLeft = Math.floor(((reloadInterval*numberOfAttempt)-reloadTimeout)/1000)
-        Timer = setInterval(function(){
+        Timer = setInterval(function() {
             if(timeLeft < 0){
                 clearInterval(Timer)
             } else {
