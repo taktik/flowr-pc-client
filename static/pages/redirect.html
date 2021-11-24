@@ -119,7 +119,7 @@
 
         let timeLeft = Math.floor(((reloadInterval*numberOfAttempt)-reloadTimeout)/1000)
         Timer = setInterval(function() {
-            if(timeLeft < 0){
+            if (timeLeft < 0) {
                 clearInterval(Timer)
             } else {
                 document.getElementById("timer").innerHTML = "reload in..."+timeLeft
