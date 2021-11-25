@@ -43,7 +43,7 @@ const RELOAD_INTERVAL = 120000 // 2min
 let isDebugMode: boolean
 let isHiddenMenuDisplayed = false
 let isLaunchedUrlCorrect = true
-let reloadTimeout: number | undefined
+let reloadInterval: number | undefined
 let lastError = ''
 
 export function buildBrowserWindowConfig(flowrStore: Store<IFlowrStore>, options: BrowserWindowConstructorOptions): BrowserWindowConstructorOptions {
@@ -117,7 +117,7 @@ export async function createFlowrWindow(flowrStore: Store<IFlowrStore>): Promise
   // set mac address in the URL te ensure backward compatibility with Flowr 5.1
   firstUrl.searchParams.set('mac', mac)
   loadFlowr(firstUrl.href)
-  reloadTimeout = setInterval(reload, RELOAD_INTERVAL)
+  reloadInterval = setInterval(reload, RELOAD_INTERVAL)
 
   // Open the DevTools.
   if (process.env.ENV === 'dev') {
@@ -174,10 +174,10 @@ export async function createFlowrWindow(flowrStore: Store<IFlowrStore>): Promise
 
   const _ipcEvents: { [key: string]: (...args: any[]) => void } = {
     clearReloadTimeout: () =>{
-      clearInterval(reloadTimeout)
+      clearInterval(reloadInterval)
     },
     FlowrIsInitializing: () => {
-      clearInterval(reloadTimeout)
+      clearInterval(reloadInterval)
       isLaunchedUrlCorrect = true
     },
     getAppConfig: (evt: IpcMainEvent) => {
@@ -224,8 +224,8 @@ export async function createFlowrWindow(flowrStore: Store<IFlowrStore>): Promise
     },
     getErrorLoadingFlowr: (evt: IpcMainEvent) => {
         const errorData: any = {
-          reloadTimeout: reloadTimeout._idleStart as number,
-          reloadInterval: reloadTimeout._idleTimeout as number,
+          reloadTimeout: reloadInterval._idleStart as number,
+          reloadInterval: reloadInterval._idleTimeout as number,
           url: flowrStore.get('extUrl') || defaultUrl,
           lastError: lastError
           }
@@ -264,7 +264,7 @@ export async function createFlowrWindow(flowrStore: Store<IFlowrStore>): Promise
     },
     reload:() => {
       reload()
-      reloadTimeout = setInterval(reload, RELOAD_INTERVAL)
+      reloadInterval = setInterval(reload, RELOAD_INTERVAL)
     },
     setDebugMode: (evt: IpcMainEvent, debugMode: boolean) => {
       isDebugMode = debugMode
