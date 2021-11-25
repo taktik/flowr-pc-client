@@ -1,4 +1,4 @@
-import { BrowserWindow, BrowserWindowConstructorOptions } from 'electron'
+import { BrowserWindow, BrowserWindowConstructorOptions, screen } from 'electron'
 import { Store } from './src/store'
 import { Player } from './src/players/player'
 import { KeyboardMixin } from '../keyboard/keyboardMixin'
@@ -10,9 +10,15 @@ import { IPlayer } from './src/players/abstractPlayer'
 import { IPlayerStore, PipelineType } from './src/interfaces/playerStore'
 import { VlcPlayer } from './src/players/vlc/player'
 
-function toRatio(width: number, height: number) {
+function toRatioHeight(width: number, height: number) {
   return (value: number) => Math.floor((value - width) * height / width)
 }
+
+function toRatioWidth(width: number, height: number) {
+  return (value: number) => Math.floor((value + width) * width / height)
+}
+
+const targetResolution = 16/9
 
 export class FlowrWindow extends KeyboardMixin(BrowserWindow) {
   private resizeTimeout?: number
@@ -27,8 +33,7 @@ export class FlowrWindow extends KeyboardMixin(BrowserWindow) {
 
     this.on('unmaximize', () => {
       const width = this.store.get('windowBounds').width
-      const height = toRatio(16, 9)(width)
-
+      const height = toRatioHeight(16, 9)(width)
       this.setSize(width, height + 40)
     })
 
@@ -38,10 +43,16 @@ export class FlowrWindow extends KeyboardMixin(BrowserWindow) {
       }
       this.resizeTimeout = setTimeout(() => {
         if (!this.isMaximized() && !FullScreenManager.isFullScreen(this)) {
-          const size = this.getSize()
-          const width = size[0]
-          const height = toRatio(16, 9)(width)
-          this.setSize(width, height + 40)
+          const mainScreen = screen.getPrimaryDisplay()
+          const { width: mainWidth, height: mainHeight } = mainScreen.size
+          const mainResolution = mainWidth/mainHeight
+          let [width, height] = this.getSize()
+          if (mainResolution >= targetResolution) { // respect the max height of screen
+            width = toRatioWidth(16, 9)(height > mainHeight ? mainHeight : height)
+          } else { // respect the max width of screen
+            height = toRatioHeight(16, 9)(width > mainWidth ? mainWidth : width)
+          }
+          this.setSize(width, height)
           store.set('windowBounds', { width, height })
         }
       }, 150)
