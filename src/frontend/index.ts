@@ -180,6 +180,7 @@ export async function createFlowrWindow(flowrStore: Store<IFlowrStore>): Promise
         isLaunchedUrlCorrect,
         deinterlacing: flowrStore.get('deinterlacing'),
         extUrl: flowrStore.get('extUrl'),
+        flowrMonitoringTime: flowrStore.get('flowrMonitoringTime'),
         isKiosk: flowrStore.get('isKiosk'),
         clearAppDataOnStart: flowrStore.get('clearAppDataOnStart'),
         enableVirtualKeyboard: flowrStore.get('enableVirtualKeyboard'),
@@ -274,6 +275,9 @@ export async function createFlowrWindow(flowrStore: Store<IFlowrStore>): Promise
       flowrStore.set('enableVirtualKeyboard', enableVirtualKeyboard)
       app.relaunch()
       app.quit()
+    },
+    setFlowrMonitoringTimer:(evt: IpcMainEvent, monitorTimer: number) => {
+      flowrStore.set('flowrMonitoringTime',monitorTimer)
     },
     getClientMetadata: (evt: IpcMainEvent) => {
       evt.sender.send('receiveClientMetadata', {

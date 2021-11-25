@@ -62,7 +62,7 @@ export const monitorActivity = (browserWindow: BrowserWindow, timeout: number, c
         callback()
         cancel()
       }, timeout)
-    },watchDogTimeout)
+    }, watchDogTimeout)
   }
 
   const cancel = () => {

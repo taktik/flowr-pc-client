@@ -69,6 +69,7 @@
 	let config = undefined
 	let isDeinterlacingActivated = false
 	let externalUrl = ''
+	let flowrMonitoringTimer = 0
 	let isKiosk = false
 	let isLaunchedUrlCorrect = true
 	let clearAppDataOnStart = false
@@ -83,6 +84,7 @@
 		isDeinterlacingActivated = data.deinterlacing
 		clearAppDataOnStart = data.clearAppDataOnStart
 		externalUrl = data.extUrl || ''
+		flowrMonitoringTimer = data.flowrMonitoringTime
 		isKiosk = !!data.isKiosk
 		isLaunchedUrlCorrect = !!data.isLaunchedUrlCorrect
 		enableVirtualKeyboard = !!data.enableVirtualKeyboard
@@ -120,6 +122,7 @@
 		document.getElementById('activateDebug').checked = isDebugMode
 		document.getElementById('clearAppDataOnStart').checked = clearAppDataOnStart
 		document.getElementById('enableVirtualKeyboard').checked = enableVirtualKeyboard
+		document.getElementById('monitorFlowr').value = flowrMonitoringTimer
 
 		if (!isLaunchedUrlCorrect) {
 			invalidUrl()
@@ -134,11 +137,12 @@
 
 	function validateExtUrl() {
 		const url = document.getElementById('extUrl').value
+		const monitorTimer = document.getElementById('monitorFlowr').value
+		window.ipc.send('setFlowrMonitoringTimer', monitorTimer)
 		try {
 			// try to parse as URL to check validity
 			new URL(url)
 			window.ipc.send('setExtUrl', url)
-			window.ipc.send('setFlowrMonitoringTimer', monitorTimer)
 		} catch (e) {
 			console.error('Error when validating the URL', e)
 			invalidUrl()
