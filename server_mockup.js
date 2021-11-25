@@ -1,6 +1,10 @@
-const WebSocket = require('ws');
+/* globals require, console, global */
+/* eslint-disable no-console */
+const { Server } = require('ws')
 
-const wss = new WebSocket.Server({
+const TIME_BEFORE_PICKING_UP = 4000 // ms
+
+const wss = new Server({
   port: 8001,
   perMessageDeflate: {
     zlibDeflateOptions: {
@@ -21,7 +25,7 @@ const wss = new WebSocket.Server({
     threshold: 1024 // Size (in bytes) below which messages
     // should not be compressed.
   }
-});
+})
 
 const STATUS = {
   OFFHOOK: 'offhook',
@@ -68,31 +72,31 @@ wss.on('connection', ws => {
   }
 
   function setStatus(state) {
-    clearTimeout(callingTimeout)
-    clearTimeout(callEndingTimeout)
+    global.clearTimeout(callingTimeout)
+    global.clearTimeout(callEndingTimeout)
     status = state
   }
 
   ws.on('message', function incoming(message) {
-    const m = JSON.parse(message)
-    console.log('received', m)
-    switch (m.action) {
+    const parsed = JSON.parse(message)
+    console.log('received', parsed)
+
+    switch (parsed.action) {
       case 'status':
-        const message = messageFromStatus()
-        send(message)
+        send(messageFromStatus())
         break
       case 'status_register':
         send({ "status" : "registered" , "identity" : "%s" , "duration" : "%s" , "refrence" : "SM-04" })
         break
       case 'call':
-        callingTimeout = setTimeout(() => {
+        callingTimeout = global.setTimeout(() => {
           sendStatusChangedMessage(STATUS.CALLOUT)
-          clearTimeout(callEndingTimeout)
-          callEndingTimeout = setTimeout(() => {
+          global.clearTimeout(callEndingTimeout)
+          callEndingTimeout = global.setTimeout(() => {
             setStatus(STATUS.OFFHOOK)
             send(messageFromStatus())
-          }, m.number)
-        }, 4000)
+          }, parsed.number)
+        }, TIME_BEFORE_PICKING_UP)
         break
       case 'terminate':
         setStatus(STATUS.OFFHOOK)

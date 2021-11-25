@@ -57,6 +57,7 @@ class StoreImpl<T> implements Store<T> {
     this.path = join(storeDir, opts.configName)
     this.data = parseDataFile(this.path, opts)
     ensureFileSync(this.path)
+    this.persist()
   }
 
   // This will just return the property on the `data` object
