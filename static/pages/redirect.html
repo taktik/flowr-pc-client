@@ -1,7 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <link href='http://fonts.googleapis.com/css?family=Roboto' rel='stylesheet' type='text/css'>
     <style>
 
         body {
@@ -82,24 +81,20 @@
     <div id="timer" class="item"></div>
 </div>
 
-
 <script>
-    let {lastError, reloadTimeout,reloadInterval, url} = {}
     let Timer
-
     window.ipc.removeAllListeners('receiveErrorLoadingFlowr')
     window.ipc.on('receiveErrorLoadingFlowr', function(evt, data) {
-        [lastError, reloadTimeout,reloadInterval, url] = [data.lastError, data.reloadTimeout, data.reloadInterval, data.url]
-        init()
+        init(data)
     })
     window.ipc.send('getErrorLoadingFlowr')
-    function init() {
-        runTimer()
-        document.getElementById('url').innerHTML = url
+    function init(data) {
+        runTimer(data.reloadTimeout, data.reloadInterval)
+        document.getElementById('url').innerHTML = data.url
         document.getElementById('errorDetails').addEventListener("toggle", function() {
             if (document.getElementById('errorDetails').open) {
                 const detailsError = document.getElementById('error')
-                detailsError.innerText = lastError.trim()
+                detailsError.innerText = data.lastError.trim()
                 getDetails()
             }
         })
@@ -114,9 +109,8 @@
         window.ipc.send('reload')
     }
     //timer displayed when the user do nothing, we show him the next reload in a timer
-    function runTimer() {
+    function runTimer(reloadTimeout, reloadInterval) {
         let numberOfAttempt= (reloadTimeout / reloadInterval) + 1
-
         let timeLeft = Math.floor(((reloadInterval*numberOfAttempt)-reloadTimeout)/1000)
         Timer = setInterval(function() {
             if (timeLeft < 0) {
@@ -125,7 +119,6 @@
                 document.getElementById("timer").innerHTML = "reload in..."+timeLeft
                 timeLeft -= 1
             }
-
         }, 1000)
     }
 
