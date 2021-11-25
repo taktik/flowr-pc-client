@@ -1,6 +1,7 @@
 /* globals require, console, global */
 /* eslint-disable no-console */
 const { Server } = require('ws')
+const { stdin } = require('process')
 
 const TIME_BEFORE_PICKING_UP = 4000 // ms
 
@@ -119,4 +120,10 @@ wss.on('connection', ws => {
 
   setStatus(STATUS.OFFHOOK)
   ws.send(JSON.stringify({ "message" : "Your are connected!" , "reference" : "SM-01" }))
+
+  stdin.on('data', (data) => {
+    if (data.toString().trim() === 'callme') {
+        sendStatusChangedMessage(STATUS.INCOMING)
+    }
+  })
 })
