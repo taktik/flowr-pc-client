@@ -1,4 +1,4 @@
-import { app } from 'electron'
+import { app, BrowserWindow, ipcMain } from 'electron'
 import { resolve, join } from 'path'
 
 enum Protocols {
@@ -48,3 +48,38 @@ export const buildFileUrl = buildUrl(Protocols.HTTP)
  * Build paths for files used by the electron scripts (node)
  */
 export const buildFilePath = buildUrl(Protocols.NONE)
+
+export const monitorActivity = (browserWindow: BrowserWindow, timeout: number, callback: () => void): void => {
+
+  const watchDogTimeout = 30000 // ping every 30 s
+  let watchDogTimer: number | undefined
+
+  const start = () => {
+    setTimeout(() => {
+      ipcMain.on('pong', refresh)
+      browserWindow.webContents.send('ping')
+      watchDogTimer = setTimeout(() => {
+        callback()
+        cancel()
+      }, timeout)
+    }, watchDogTimeout)
+  }
+
+  const cancel = () => {
+    if (watchDogTimer) {
+      clearTimeout(watchDogTimer)
+    }
+    ipcMain.removeListener('pong', refresh)
+  }
+
+  const reset = () => {
+    cancel()
+    start()
+  }
+
+  const refresh = () => {
+    reset()
+  }
+
+  start()
+}
