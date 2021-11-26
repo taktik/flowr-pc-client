@@ -18,8 +18,6 @@ interface PhoneOptions extends ApplicationOptions {
 }
 
 export function create(options: PhoneOptions): PhoneWindow {
-  // Most of these functions are to be moved outside...
-  // ...applications should not have control over other windows, they should request it
   function mute() {
     options.executeOnWindows(
       [WindowTypes.FLOWR, WindowTypes.WEXOND],
