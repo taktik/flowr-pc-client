@@ -7,54 +7,7 @@ import { FlowrWindow } from '../frontend/flowr-window'
 import { buildApplicationPreloadPath, buildFilePath, getApplicationIndexUrl } from './helpers'
 import { getLogger } from '../frontend/src/logging/loggers'
 import { IFlowrStore } from '../frontend/src/interfaces/flowrStore'
-
-interface ApplicationInitConfig {
-  application: FlowrApplication
-  capabilities?: {[key: string]: boolean}
-  config?: ApplicationConfig
-}
-
-interface ApplicationCanOpenConfig {
-  application: FlowrApplication
-  config?: {[key: string]: any}
-}
-
-interface ApplicationOpenConfig {
-  application: FlowrApplication
-  config?: {[key: string]: any}
-}
-
-export interface FlowrApplicationWindow extends BrowserWindow {
-  capabilities?: {[key: string]: boolean}
-  props?: {[key: string]: any}
-}
-
-interface ApplicationInitializer {
-  packageJSON: ApplicationConfig
-  canOpen(this: void, capabilities?: {[key: string]: boolean}, props?: {[key: string]: any}): boolean
-  create(this: void, options: ApplicationOptions): FlowrApplicationWindow
-}
-
-interface FlowrApplicationInitializer {
-  create: (options: ApplicationOptions) => FlowrApplicationWindow
-  canOpen: (capabilities?: {[key: string]: boolean}, props?: any) => boolean
-  index: string
-  package: ApplicationConfig
-  preload?: string
-  store?: Store<Record<string, any>>
-  config?: {[key: string]: any}
-  capabilities?: {[key: string]: boolean}
-}
-
-export interface ApplicationOptions {
-  config: {[key: string]: any},
-  preload?: string,
-  index: string,
-  store?: Store<Record<string, any>>,
-  capabilities?: {[key: string]: boolean},
-  flowrWindow?: FlowrWindow | null,
-  browserWindow?: BrowserWindow | null,
-}
+import { ApplicationCanOpenConfig, ApplicationInitConfig, ApplicationInitializer, ApplicationOpenConfig, FlowrApplicationInitializer, FlowrApplicationWindow, WindowTypes } from './types'
 
 function readdirPromise(path: PathLike, options: BaseEncodingOptions & {withFileTypes: true}): Promise<Dirent[]> {
   return new Promise((resolve, reject) => {
@@ -110,6 +63,7 @@ export class ApplicationManager {
     this.processApplicationsConfigs = this.processApplicationsConfigs.bind(this)
     this.openApplication = this.openApplication.bind(this)
     this.canOpenApplication = this.canOpenApplication.bind(this)
+    this.executeOnWindows = this.executeOnWindows.bind(this)
     /* eslint-enable @typescript-eslint/no-unsafe-assignment */
     /* eslint-disable @typescript-eslint/unbound-method */
     // eslint-disable-next-line @typescript-eslint/no-misused-promises
@@ -177,6 +131,22 @@ export class ApplicationManager {
     return !!this.applications[applicationTitle]
   }
 
+  private executeOnWindows(windows: WindowTypes[], fun: (win: BrowserWindow) => void): void {
+    windows
+      .flatMap(windowType => {
+        switch (windowType) {
+          case WindowTypes.FLOWR:
+            return this.flowrWindow
+          case WindowTypes.WEXOND:
+            return this.browserWindow
+          case WindowTypes.APPLICATIONS:
+            return Object.values(this.activeWindows)
+        }
+      })
+      .filter((winOrNull: BrowserWindow | null): winOrNull is BrowserWindow => !!winOrNull)
+      .forEach(fun)
+  }
+
   unregisterApp(name: string): boolean {
     if (this.isRegistered(name)) {
       return delete this.applications[name]
@@ -241,7 +211,8 @@ export class ApplicationManager {
             store: application.store,
             capabilities: application.capabilities,
             flowrWindow: this._flowrWindow,
-            browserWindow: this._browserWindow,
+            // eslint-disable-next-line @typescript-eslint/unbound-method
+            executeOnWindows: this.executeOnWindows,
           })
           applicationWindow.on('close', () => delete this.activeWindows[appName])
         } else {
