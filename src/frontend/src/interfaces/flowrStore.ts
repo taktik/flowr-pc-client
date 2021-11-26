@@ -10,6 +10,7 @@ export interface IFlowrStore {
   clearAppDataOnStart: boolean
   extUrl: string
   isKiosk: boolean
+  flowrMonitoringTime?: number
   deinterlacing: boolean
   flowrConfig?: IFlowrConfig
   player?: IPlayerStore
