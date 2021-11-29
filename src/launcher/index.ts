@@ -1,19 +1,25 @@
-import { ipcMain, app, BrowserWindow, IpcMainEvent } from 'electron'
+import { app, BrowserWindow, ipcMain, IpcMainEvent } from 'electron'
 import { resolve } from 'path'
 import { homedir } from 'os'
-import { createFlowrWindow, initFlowrConfig, buildBrowserWindowConfig, FRONTEND_CONFIG_NAME, DEFAULT_FRONTEND_STORE } from '../frontend'
+import {
+  buildBrowserWindowConfig,
+  createFlowrWindow,
+  DEFAULT_FRONTEND_STORE,
+  FRONTEND_CONFIG_NAME,
+  initFlowrConfig
+} from '../frontend'
 import { createWexondWindow, setWexondLog } from '~/main'
 import { clearBrowsingData } from '~/main/clearBrowsingData'
 import { getMigrateUserPreferences } from './migration/fromFlowrClientToFlowrPcClient'
 import type { FlowrWindow } from 'src/frontend/flowr-window'
-import { StoreManager, Store } from '../frontend/src/store'
+import { Store, StoreManager } from '../frontend/src/store'
 import { ApplicationManager } from '../application-manager/application-manager'
 import { IFlowrStore } from '../frontend/src/interfaces/flowrStore'
 import { keyboard } from '../keyboard/keyboardController'
-import { mergeWith, cloneDeep } from 'lodash'
+import { cloneDeep, mergeWith } from 'lodash'
 import { FullScreenManager } from '../common/fullscreen'
 import type { WexondOptions } from '../wexond/main/app-window'
-import { IPlayerStore } from '../frontend/src/interfaces/playerStore'
+import { IPlayerStore, PlayerPosition } from '../frontend/src/interfaces/playerStore'
 import log from 'electron-log'
 
 const FlowrDataDir = resolve(homedir(), '.flowr')
@@ -121,6 +127,12 @@ async function main() {
         // eslint-disable-next-line @typescript-eslint/no-unsafe-return
         const userPreferencesMerged = mergeWith({}, DEFAULT_FRONTEND_STORE, currentFlowrStore, desktopConfig.userPreferences, (a, b) => b === null || b === '' ? a : undefined)
         flowrWindow.initStore(userPreferencesMerged, desktopConfig.player)
+
+        // If the browserWindow is not properly configured to use a player configured zPosition, destroy and remake it
+        if (flowrWindow.transparent && userPreferencesMerged.player.position !== PlayerPosition.BACKGROUND) {
+          app.quit();
+          app.relaunch();
+        }
       }
     })
 

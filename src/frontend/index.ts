@@ -1,6 +1,6 @@
-import { resolve, join } from 'path'
+import { join, resolve } from 'path'
 import { homedir } from 'os'
-import { ipcMain, Menu, app, BrowserWindowConstructorOptions, IpcMainEvent } from 'electron'
+import { app, BrowserWindowConstructorOptions, ipcMain, IpcMainEvent, Menu } from 'electron'
 import { initConfigData, Store } from './src/store'
 import { DeviceDetailHelper } from './src/deviceDetail'
 import { FlowrWindow } from './flowr-window'
@@ -16,6 +16,7 @@ import { LogSeverity } from './src/logging/types'
 import * as deepExtend from 'deep-extend'
 import { IFlowrConfig } from './src/interfaces/flowrConfig'
 import { buildFileUrl } from '../application-manager/helpers'
+import { PlayerPosition } from "./src/interfaces/playerStore";
 
 const FlowrDataDir = resolve(homedir(), '.flowr')
 
@@ -64,6 +65,7 @@ export async function createFlowrWindow(flowrStore: Store<IFlowrStore>): Promise
     console.error(`Invalid FlowR URL: ${storedUrl}. Display config page.`)
     firstUrl = new URL(defaultUrl)
   }
+  const position = flowrStore.get('player')?.position
   // Create the browser window.
   const opts = buildBrowserWindowConfig(flowrStore, {
     icon: resolve(app.getAppPath(), 'static/app-icons/icon.png'),
@@ -73,8 +75,8 @@ export async function createFlowrWindow(flowrStore: Store<IFlowrStore>): Promise
       partition: 'persist:flowr', // needed to display webcam image
       preload: buildPreloadPath('exportNode.js'),
     },
-    transparent: true,
-    frame: false
+    transparent: position === PlayerPosition.BACKGROUND,
+    frame: position !== PlayerPosition.BACKGROUND
   })
 
   const mainWindow = new FlowrWindow(flowrStore, opts)
