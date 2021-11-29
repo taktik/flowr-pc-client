@@ -50,42 +50,9 @@ export class PhoneWindow extends KeyboardMixin(BrowserWindow) {
         preload,
       },
     }, buildPositionFromParents(parent.getContentBounds())))
+
     const pageUrl = new URL(index)
 
-    if (props.phoneMessagingNumber) {
-      pageUrl.searchParams.append('messagingNumber', props.phoneMessagingNumber)
-    }
-
-    if (props.phoneServer) {
-      pageUrl.searchParams.append('server', props.phoneServer)
-    }
-
-    if (props.registerProps) {
-      pageUrl.searchParams.append('username', props.registerProps.username)
-      pageUrl.searchParams.append('host', props.registerProps.host)
-    }
-
-    if (props.lang) {
-      pageUrl.searchParams.append('lang', props.lang)
-    }
-
-    if (props.history) {
-      this._history = props.history
-      pageUrl.searchParams.append('history', '') // boolean
-    }
-
-    if (props.favorites) {
-      pageUrl.searchParams.append('favorites', '') // boolean
-    }
-
-    if (props.currentUser) {
-      this._currentUser = props.currentUser
-      pageUrl.searchParams.append('currentUser', props.currentUser)
-    }
-
-    if (props.capabilities) {
-      pageUrl.searchParams.append('capabilities', encodeURIComponent(JSON.stringify(props.capabilities)))
-    }
     /* eslint-disable @typescript-eslint/no-floating-promises */
     this.loadURL(pageUrl.href)
 
@@ -106,6 +73,19 @@ export class PhoneWindow extends KeyboardMixin(BrowserWindow) {
         }
       },
       'update-phone-store': this.updateStore.bind(this),
+        initProps: () => {
+          this.webContents.send( 'init-props',
+              {
+                phoneMessagingNumber: props.phoneMessagingNumber,
+                phoneServer: props.phoneServer,
+                capabilities: props.capabilities,
+                currentUser: props.currentUser,
+                favorites: props.favorites,
+                history: !!props.history,
+                lang: props.lang,
+                registerProps: props.registerProps
+              })
+        }
     }
       /* eslint-enable @typescript-eslint/no-unsafe-assignment */
 
