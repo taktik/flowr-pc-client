@@ -71,13 +71,14 @@ export function create(options: PhoneOptions): PhoneWindow {
   const phoneAppProps = {
     phoneServer: options.flowrWindow.phoneServerUrl,
     capabilities: options.capabilities,
+    phoneMessagingNumber: options.flowrWindow.phoneMessagingNumber,
     registerProps,
     lang,
     history,
     favorites,
     currentUser,
   }
-  ipcMain.on('phone.incoming-call', (event => {
+  ipcMain.on('phone.incoming-call', (() => {
     options.flowrWindow.webContents.send('send-statistic-report', {
       type: 'counter',
       count: 1,
@@ -89,7 +90,7 @@ export function create(options: PhoneOptions): PhoneWindow {
         aggregationType: 'sum',
       })
   }))
-  ipcMain.on('phone.outgoing-call', (event => {
+  ipcMain.on('phone.outgoing-call', (() => {
     options.flowrWindow.webContents.send('send-statistic-report', {
       type: 'counter',
       count: 1,
@@ -135,7 +136,7 @@ export function create(options: PhoneOptions): PhoneWindow {
 
 export const packageJSON: ApplicationConfig = pkgJSON
 
-export function canOpen(capabilities?: {[key: string]: boolean}, props?: OpenPhoneProps) {
+export function canOpen(capabilities?: {[key: string]: boolean}, props?: OpenPhoneProps): boolean {
   const canEmit = !capabilities || capabilities.emit
   const requiredPropsAvailable = !!props &&
       !!props.registerProps &&

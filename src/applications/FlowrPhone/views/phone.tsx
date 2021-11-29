@@ -34,6 +34,7 @@ declare global {
 
 type PhoneProps = {
   phoneServer: string | null,
+  phoneMessagingNumber?:string,
   className?: string,
   registerProps: RegisterProps | null,
   lang?: string,
@@ -50,6 +51,7 @@ type PhoneAppState = {
   lang?: string,
   isMute: boolean,
   callingNumber: CallingNumber,
+  messagingNumber?: string,
   capabilities: {[key: string]: boolean} | undefined,
   phoneHistory: PhoneHistory[],
   favorites: CallingNumber[],
@@ -136,6 +138,7 @@ export class Phone extends React.Component<PhoneProps, PhoneAppState> {
       waiting: false,
       lang: props.lang,
       isMute: false,
+      messagingNumber: props.phoneMessagingNumber,
       callingNumber: { value: '' },
       capabilities: props.capabilities,
       phoneHistory: [],
@@ -342,6 +345,7 @@ export class Phone extends React.Component<PhoneProps, PhoneAppState> {
             hangup={this.hangup.bind(this)}
             mute={this.ipcSend('phone-mute')}
             callingNumber={this.state.callingNumber}
+            messagingNumber={this.state.messagingNumber}
             capabilities={this.state.capabilities}
             history={this.state.phoneHistory}
             sendKey={this.sendKey.bind(this)}

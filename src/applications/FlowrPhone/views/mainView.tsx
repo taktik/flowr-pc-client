@@ -24,6 +24,7 @@ interface MainViewProps {
   translator: Translator
   lang?: string
   callingNumber: CallingNumber
+  messagingNumber: string
   capabilities: {[key: string]: boolean} | undefined
   history: PhoneHistory[] | undefined
   favorites: CallingNumber[] | undefined
@@ -91,6 +92,7 @@ export class MainView extends React.Component<MainViewProps, MainViewState> {
           translator={this.props.translator}
           lang={this.props.lang}
           call={this.call.bind(this)}
+          messagingNumber={this.props.messagingNumber}
           callNumber={this.state.callNumber}
           goToHistory={this.goToPage(PhoneRoute.HISTORY)}
           goToFavorites={this.goToPage(PhoneRoute.FAVORITES)}

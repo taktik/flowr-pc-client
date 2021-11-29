@@ -17,5 +17,6 @@ export interface IFlowrStore {
   enableVirtualKeyboard: boolean
   useRealMacAddress?: boolean
   phoneServer?: string
+  messagingNumber?: string
   logLevel: LogSeverity
 }

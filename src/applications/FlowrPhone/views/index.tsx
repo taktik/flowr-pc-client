@@ -14,6 +14,7 @@ const encodedCapabilities = url.searchParams.get('capabilities')
 const history = url.searchParams.has('history')
 const favorites = url.searchParams.has('favorites')
 const currentUser = url.searchParams.get('currentUser') || ''
+const messagingNumber = url.searchParams.get('messagingNumber')
 
 let capabilities
 
@@ -75,6 +76,7 @@ document.head.appendChild(styleElement)
 
 ReactDOM.render(<StyledPhone
   phoneServer={server}
+  phoneMessagingNumber={messagingNumber}
   registerProps={registerProps}
   lang={lang}
   capabilities={capabilities}

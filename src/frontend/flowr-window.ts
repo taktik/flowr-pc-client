@@ -17,10 +17,6 @@ export class FlowrWindow extends KeyboardMixin(BrowserWindow) {
   private resizeTimeout?: number
   public player?: IPlayer
 
-  get phoneServerUrl(): string | undefined {
-    return this.store.get('phoneServer')
-  }
-
   constructor(private store: Store<IFlowrStore>, options?: BrowserWindowConstructorOptions) {
     super(options)
 
@@ -45,6 +41,14 @@ export class FlowrWindow extends KeyboardMixin(BrowserWindow) {
         }
       }, 150)
     })
+  }
+
+  get phoneServerUrl(): string | undefined {
+    return this.store.get('phoneServer')
+  }
+
+  get phoneMessagingNumber(): string | undefined {
+    return this.store.get('messagingNumber')
   }
 
   initStore(desktopConfig: IFlowrStore, playerConfig: Partial<IPlayerStore>): void {

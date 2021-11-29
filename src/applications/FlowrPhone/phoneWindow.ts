@@ -6,6 +6,7 @@ import type { RegisterProps } from './views/phone'
 import { getLogger } from '../../frontend/src/logging/loggers'
 
 interface PhoneAppProps {
+  phoneMessagingNumber?: string,
   phoneServer?: string
   registerProps?: RegisterProps
   lang?: string
@@ -33,6 +34,85 @@ export class PhoneWindow extends KeyboardMixin(BrowserWindow) {
   private _history: boolean | undefined
   private readonly _ipcEvents: {[key: string]: (...args: any[]) => void}
   private logger = getLogger('Phone window')
+
+  constructor(parent: BrowserWindow, preload: string | undefined, index: string, props: PhoneAppProps, private store?: Store<Record<string, any>> | undefined) {
+    super(Object.assign({
+      frame: false,
+      transparent: true,
+      show: false,
+      parent,
+      backgroundColor: '#00000000',
+      webPreferences: {
+        plugins: true,
+        nodeIntegration: false,
+        contextIsolation: false,
+        experimentalFeatures: true,
+        preload,
+      },
+    }, buildPositionFromParents(parent.getContentBounds())))
+    const pageUrl = new URL(index)
+
+    if (props.phoneMessagingNumber) {
+      pageUrl.searchParams.append('messagingNumber', props.phoneMessagingNumber)
+    }
+
+    if (props.phoneServer) {
+      pageUrl.searchParams.append('server', props.phoneServer)
+    }
+
+    if (props.registerProps) {
+      pageUrl.searchParams.append('username', props.registerProps.username)
+      pageUrl.searchParams.append('host', props.registerProps.host)
+    }
+
+    if (props.lang) {
+      pageUrl.searchParams.append('lang', props.lang)
+    }
+
+    if (props.history) {
+      this._history = props.history
+      pageUrl.searchParams.append('history', '') // boolean
+    }
+
+    if (props.favorites) {
+      pageUrl.searchParams.append('favorites', '') // boolean
+    }
+
+    if (props.currentUser) {
+      this._currentUser = props.currentUser
+      pageUrl.searchParams.append('currentUser', props.currentUser)
+    }
+
+    if (props.capabilities) {
+      pageUrl.searchParams.append('capabilities', encodeURIComponent(JSON.stringify(props.capabilities)))
+    }
+    /* eslint-disable @typescript-eslint/no-floating-promises */
+    this.loadURL(pageUrl.href)
+
+    this.mode = WindowModes.WIDGET
+    /* eslint-disable @typescript-eslint/no-unsafe-assignment */
+      this._ipcEvents = {
+      'phone-maximize': () => this.mode = WindowModes.FULLSCREEN,
+      'phone-reduce': () => this.mode = WindowModes.WIDGET,
+      'phone-show': this.show.bind(this),
+      'phone-hide': this.hide.bind(this),
+      'register-props': this.updateRegisterProps.bind(this),
+      'phone-mute': this.mute.bind(this),
+      setDebugMode: (evt: any, debugMode: boolean) => {
+        if (debugMode) {
+          this.webContents.openDevTools()
+        } else {
+          this.webContents.closeDevTools()
+        }
+      },
+      'update-phone-store': this.updateStore.bind(this),
+    }
+      /* eslint-enable @typescript-eslint/no-unsafe-assignment */
+
+    Object.entries(this._ipcEvents).forEach(event => ipcMain.on(...event))
+    this.on('close', () => Object.entries(this._ipcEvents).forEach(event => ipcMain.removeListener(...event)))
+  }
+
 
   get _widgetPosition(): Rectangle {
     const contentBounds = this.getParentWindow().getBounds()
@@ -94,80 +174,6 @@ export class PhoneWindow extends KeyboardMixin(BrowserWindow) {
       this.webContents.send('history-changed', history)
       this._history = history
     }
-  }
-
-  constructor(parent: BrowserWindow, preload: string | undefined, index: string, props: PhoneAppProps, private store?: Store<Record<string, any>> | undefined) {
-    super(Object.assign({
-      frame: false,
-      transparent: true,
-      show: false,
-      parent,
-      backgroundColor: '#00000000',
-      webPreferences: {
-        plugins: true,
-        nodeIntegration: false,
-        contextIsolation: false,
-        experimentalFeatures: true,
-        preload,
-      },
-    }, buildPositionFromParents(parent.getContentBounds())))
-    const pageUrl = new URL(index)
-
-    if (props.phoneServer) {
-      pageUrl.searchParams.append('server', props.phoneServer)
-    }
-
-    if (props.registerProps) {
-      pageUrl.searchParams.append('username', props.registerProps.username)
-      pageUrl.searchParams.append('host', props.registerProps.host)
-    }
-
-    if (props.lang) {
-      pageUrl.searchParams.append('lang', props.lang)
-    }
-
-    if (props.history) {
-      this._history = props.history
-      pageUrl.searchParams.append('history', '') // boolean
-    }
-
-    if (props.favorites) {
-      pageUrl.searchParams.append('favorites', '') // boolean
-    }
-
-    if (props.currentUser) {
-      this._currentUser = props.currentUser
-      pageUrl.searchParams.append('currentUser', props.currentUser)
-    }
-
-    if (props.capabilities) {
-      pageUrl.searchParams.append('capabilities', encodeURIComponent(JSON.stringify(props.capabilities)))
-    }
-
-    this.loadURL(pageUrl.href)
-
-    this.mode = WindowModes.WIDGET
-      /* eslint-disable @typescript-eslint/no-unsafe-assignment */
-      this._ipcEvents = {
-      'phone-maximize': () => this.mode = WindowModes.FULLSCREEN,
-      'phone-reduce': () => this.mode = WindowModes.WIDGET,
-      'phone-show': this.show.bind(this),
-      'phone-hide': this.hide.bind(this),
-      'register-props': this.updateRegisterProps.bind(this),
-      'phone-mute': this.mute.bind(this),
-      setDebugMode: (evt: any, debugMode: boolean) => {
-        if (debugMode) {
-          this.webContents.openDevTools()
-        } else {
-          this.webContents.closeDevTools()
-        }
-      },
-      'update-phone-store': this.updateStore.bind(this),
-    }
-      /* eslint-enable @typescript-eslint/no-unsafe-assignment */
-
-    Object.entries(this._ipcEvents).forEach(event => ipcMain.on(...event))
-    this.on('close', () => Object.entries(this._ipcEvents).forEach(event => ipcMain.removeListener(...event)))
   }
 
   private updateRegisterProps(e: Event, registerProps: RegisterProps) {
