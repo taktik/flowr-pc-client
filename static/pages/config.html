@@ -32,7 +32,7 @@
 
 <h3>External Config</h3>
 <div class='config-label'>Url to flowr :</div> <input type="text" id="extUrl" onchange='resetInvalidUrl()'>&emsp;<span id="wrongurl" class="error hidden"> Invalid url*</span><br>
-<div class='config-label'>flowr monitoring timer :</div> <input  id="monitorFlowr" type="number"  min="0" max="1000000"><br>
+<div class='config-label'>Flowr monitoring timer (use 0 to disable):</div> <input id="monitorFlowr" type="number" min="0" max="10000000"><br>
 <button id="validateURL" onclick="validateExtUrl()">Validate</button>
 <button id="reinit" onclick="init()">Reinit</button>
 <br>
