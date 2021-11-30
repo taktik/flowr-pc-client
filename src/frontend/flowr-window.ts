@@ -21,7 +21,7 @@ export class FlowrWindow extends KeyboardMixin(BrowserWindow) {
     return this.store.get('phoneServer')
   }
 
-  constructor(private store: Store<IFlowrStore>, options?: BrowserWindowConstructorOptions) {
+  constructor(public store: Store<IFlowrStore>, options?: BrowserWindowConstructorOptions) {
     super(options)
 
     this.on('unmaximize', () => {
