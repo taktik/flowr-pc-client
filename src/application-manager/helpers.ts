@@ -1,5 +1,6 @@
 import { app, BrowserWindow, ipcMain } from 'electron'
 import { resolve, join } from 'path'
+import { getLogger } from '../frontend/src/logging/loggers'
 
 enum Protocols {
   HTTP,
@@ -50,6 +51,14 @@ export const buildFileUrl = buildUrl(Protocols.HTTP)
 export const buildFilePath = buildUrl(Protocols.NONE)
 
 export const monitorActivity = (browserWindow: BrowserWindow, timeout: number, callback: () => void): void => {
+  const log = getLogger('Activity monitor')
+
+  if (timeout === 0) {
+    log.info('Activity monitor disabled (timeout value === 0)')
+    return
+  }
+
+  log.info(`Activity monitor enabled (timeout value: ${timeout}ms)`)
 
   const watchDogTimeout = 30000 // ping every 30 s
   let watchDogTimer: number | undefined

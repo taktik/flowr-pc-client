@@ -277,7 +277,7 @@ export async function createFlowrWindow(flowrStore: Store<IFlowrStore>): Promise
       app.quit()
     },
     setFlowrMonitoringTimer:(evt: IpcMainEvent, monitorTimer: number) => {
-      flowrStore.set('flowrMonitoringTime',monitorTimer)
+      flowrStore.set('flowrMonitoringTime', monitorTimer)
     },
     getClientMetadata: (evt: IpcMainEvent) => {
       evt.sender.send('receiveClientMetadata', {
