@@ -58,14 +58,14 @@ export function createFlowrWindow(flowrStore: Store<IFlowrStore>): FlowrWindow {
 
   let reloadTimer: Timer | undefined
   let cancelActivityMonitor: (() => void) | undefined
-  let flowrURL: URL
+  let flowrFrontendURL: string
 
   try {
-    flowrURL = new URL(storedUrl)
+    flowrFrontendURL = storedUrl
   } catch (e) {
     isLaunchedUrlCorrect = false
     console.error(`Invalid FlowR URL: ${storedUrl}. Display config page.`)
-    flowrURL = new URL(defaultUrl)
+    flowrFrontendURL = defaultUrl
   }
   // Create the browser window.
   const opts = buildBrowserWindowConfig(flowrStore, {
@@ -96,12 +96,13 @@ export function createFlowrWindow(flowrStore: Store<IFlowrStore>): FlowrWindow {
 
   async function loadFlowr(): Promise<void> {
     const mac = await getActiveMacAddress()
+    const url = new URL(flowrFrontendURL)
     // set mac address in the URL te ensure backward compatibility with Flowr 5.1
-    flowrURL.searchParams.set('mac', mac)
+    url.searchParams.set('mac', mac)
     reloadTimer = new Timer(() => void loadFlowr(), RELOAD_TIMEOUT)
 
     try {
-      await mainWindow.loadURL(flowrURL.href)
+      await mainWindow.loadURL(url.href)
     } catch (untypedError) {
       const e = untypedError as NodeJS.ErrnoException
 
@@ -141,7 +142,7 @@ export function createFlowrWindow(flowrStore: Store<IFlowrStore>): FlowrWindow {
   }
 
   function displayHiddenMenu(): void {
-    flowrURL = new URL(flowrStore.get('extUrl') || defaultUrl)
+    flowrFrontendURL = flowrStore.get('extUrl') || defaultUrl
     const template: any = [
       {
         label: 'Menu',
