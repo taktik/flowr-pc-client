@@ -2,7 +2,6 @@
 <html lang="en">
 <head>
     <style>
-
         body {
             font-family: 'Roboto', sans-serif;
         }
@@ -89,7 +88,7 @@
     })
     window.ipc.send('getErrorLoadingFlowr')
     function init(data) {
-        runTimer(data.reloadTimeout, data.reloadInterval)
+        runTimer(data.remainingTime)
         document.getElementById('url').innerHTML = data.url
         document.getElementById('errorDetails').addEventListener("toggle", function() {
             if (document.getElementById('errorDetails').open) {
@@ -108,21 +107,20 @@
     function reload() {
         window.ipc.send('reload')
     }
-    //timer displayed when the user do nothing, we show him the next reload in a timer
-    function runTimer(reloadTimeout, reloadInterval) {
-        let numberOfAttempt= (reloadTimeout / reloadInterval) + 1
-        let timeLeft = Math.floor(((reloadInterval*numberOfAttempt)-reloadTimeout)/1000)
+
+    //timer displayed when the user does nothing, we show him the next reload in a timer
+    function runTimer(remainingTime) {
+        let timeLeft = Math.floor(remainingTime / 1000)
+
         Timer = setInterval(function() {
             if (timeLeft < 0) {
                 clearInterval(Timer)
             } else {
-                document.getElementById("timer").innerHTML = "reload in..."+timeLeft
+                document.getElementById('timer').innerHTML = 'reload in...' + timeLeft
                 timeLeft -= 1
             }
         }, 1000)
     }
-
-
 </script>
 </body>
 </html>

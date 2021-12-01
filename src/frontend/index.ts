@@ -1,21 +1,23 @@
-import { resolve, join } from 'path'
-import { homedir } from 'os'
+import * as deepExtend from 'deep-extend'
 import { ipcMain, Menu, app, BrowserWindowConstructorOptions, IpcMainEvent } from 'electron'
+import { extend } from 'lodash'
+import { networkEverywhere } from 'network-everywhere'
+import { homedir } from 'os'
+import { resolve, join } from 'path'
+import { URL } from 'url'
+
 import { initConfigData, Store } from './src/store'
 import { DeviceDetailHelper } from './src/deviceDetail'
 import { FlowrWindow } from './flowr-window'
-import { extend } from 'lodash'
-import { URL } from 'url'
-import { networkEverywhere } from 'network-everywhere'
 import defaultBrowserWindowOptions from './defaultBrowserWindowOptions'
 import { IFlowrStore } from './src/interfaces/flowrStore'
 import { buildPreloadPath } from '../common/preload'
 import { FullScreenManager } from '../common/fullscreen'
 import { initializeLogging } from './src/logging'
 import { LogSeverity } from './src/logging/types'
-import * as deepExtend from 'deep-extend'
 import { IFlowrConfig } from './src/interfaces/flowrConfig'
-import { buildFileUrl } from '../application-manager/helpers'
+import { buildFileUrl, monitorActivity } from '../application-manager/helpers'
+import { Timer } from '../common/timer'
 
 const FlowrDataDir = resolve(homedir(), '.flowr')
 
@@ -26,6 +28,7 @@ export const DEFAULT_FRONTEND_STORE: IFlowrStore = {
   channelData: {},
   isMaximized: false,
   clearAppDataOnStart: false,
+  flowrMonitoringTime: 1000,
   extUrl: '',
   isKiosk: false,
   deinterlacing: false,
@@ -37,32 +40,32 @@ export async function initFlowrConfig(data: IFlowrStore | null): Promise<void> {
 }
 const DEVICE_DETAIL_PATH = join(FlowrDataDir, 'device.json')
 const devicesDetailsHelper = new DeviceDetailHelper(DEVICE_DETAIL_PATH)
-
-const RELOAD_INTERVAL = 120000 // 2min
+const RELOAD_TIMEOUT = 120000 // 2min
 
 let isDebugMode: boolean
 let isHiddenMenuDisplayed = false
 let isLaunchedUrlCorrect = true
-let reloadInterval: number | undefined
 let lastError = ''
 
 export function buildBrowserWindowConfig(flowrStore: Store<IFlowrStore>, options: BrowserWindowConstructorOptions): BrowserWindowConstructorOptions {
   return extend(options, defaultBrowserWindowOptions(flowrStore))
 }
 
-export async function createFlowrWindow(flowrStore: Store<IFlowrStore>): Promise<FlowrWindow> {
-  const mac = await getActiveMacAddress()
-
+export function createFlowrWindow(flowrStore: Store<IFlowrStore>): FlowrWindow {
   const defaultUrl = buildFileUrl('config.html')
   const kiosk = flowrStore.get('isKiosk') || false
   const storedUrl = flowrStore.get('extUrl')
-  let firstUrl: URL
+
+  let reloadTimer: Timer | undefined
+  let cancelActivityMonitor: (() => void) | undefined
+  let flowrURL: URL
+
   try {
-    firstUrl = new URL(storedUrl)
+    flowrURL = new URL(storedUrl)
   } catch (e) {
     isLaunchedUrlCorrect = false
     console.error(`Invalid FlowR URL: ${storedUrl}. Display config page.`)
-    firstUrl = new URL(defaultUrl)
+    flowrURL = new URL(defaultUrl)
   }
   // Create the browser window.
   const opts = buildBrowserWindowConfig(flowrStore, {
@@ -77,58 +80,68 @@ export async function createFlowrWindow(flowrStore: Store<IFlowrStore>): Promise
 
   const mainWindow = new FlowrWindow(flowrStore, opts)
 
-  function loadConfigPage() {
-    mainWindow.loadURL(defaultUrl)
-      .catch(e => {
-        console.error('Failed to load default configuration page.... sorry but can\'t do anything else for you', e)
-      })
+  function loadOtherPage(name: string, url: string) {
+    return (): void => {
+      reloadTimer.clear()
+      cancelActivityMonitor?.()
+      mainWindow.loadURL(url)
+        .catch(e => {
+          console.error(`Failed to load ${name} page.... sorry but can't do anything else for you`, e)
+        })
+    }
   }
 
- function loadRedirectPage(redirectUrl: string) {
-   mainWindow.loadURL(redirectUrl)
-       .catch(e => {
-         console.error('Failed to load default redirect page.... sorry but can\'t do anything else for you', e)
-       })
- }
+  const loadConfigPage = loadOtherPage('default config', defaultUrl)
+  const loadRedirectPage = loadOtherPage('redirect', buildFileUrl('redirect.html'))
 
-  function loadFlowr(flowrURL: string): void {
-    mainWindow.loadURL(flowrURL)
-      .catch((e: Error & { code: string }) => {
-        if (e.code === 'ERR_ABORTED') {
-          // ignore => it means the page changed its hash in the meantime
-          return
-        }
-        console.warn('Error loading flowr window', e)
-        lastError = e.message
-        loadRedirectPage(buildFileUrl('redirect.html'))
-      })
+  async function loadFlowr(): Promise<void> {
+    const mac = await getActiveMacAddress()
+    // set mac address in the URL te ensure backward compatibility with Flowr 5.1
+    flowrURL.searchParams.set('mac', mac)
+    reloadTimer = new Timer(() => void loadFlowr(), RELOAD_TIMEOUT)
+
+    try {
+      await mainWindow.loadURL(flowrURL.href)
+    } catch (untypedError) {
+      const e = untypedError as NodeJS.ErrnoException
+
+      if (e.code === 'ERR_ABORTED') {
+        // ignore => it means the page changed its hash in the meantime
+        return
+      }
+      console.warn('Error loading flowr window', e)
+      lastError = e.message
+      loadRedirectPage()
+    }
+  }
+  
+  async function getActiveMacAddress(): Promise<string> {
+    if (flowrStore.get('useRealMacAddress')) {
+      return (await networkEverywhere.getActiveInterface()).mac
+    }
+    return (await devicesDetailsHelper.getDeviceDetails()).uuid
   }
 
-  if (kiosk) {
-    // No menu is kiosk mode
-    const emptyAppMenu = Menu.buildFromTemplate([])
-    Menu.setApplicationMenu(emptyAppMenu)
+  async function getAllMacAddresses(): Promise<string[]> {
+    const activeMac = await getActiveMacAddress()
+    const allMac = await networkEverywhere.getAllMacAddresses()
+    return [activeMac, ...allMac]
   }
 
-  // mainWindow.setAspectRatio(16/9)
-  mainWindow.setMenuBarVisibility(false)
-  // mainWindow.setAlwaysOnTop(true, 'floating', 0)
-
-  // set mac address in the URL te ensure backward compatibility with Flowr 5.1
-  firstUrl.searchParams.set('mac', mac)
-  loadFlowr(firstUrl.href)
-  reloadInterval = setInterval(reload, RELOAD_INTERVAL)
-
-  // Open the DevTools.
-  if (process.env.ENV === 'dev') {
-    mainWindow.webContents.openDevTools()
-    isDebugMode = true
+  function getIpAddress(): Promise<string> {
+    return networkEverywhere.getIpAddress()
   }
 
-  initializeLogging(mainWindow.webContents)
+  function reload() {
+    reloadTimer.clear()
+    cancelActivityMonitor?.()
+
+    reloadTimer = new Timer(() => void loadFlowr(), RELOAD_TIMEOUT)
+    void loadFlowr()
+  }
 
   function displayHiddenMenu(): void {
-    const flowrUrl = flowrStore.get('extUrl') || defaultUrl
+    flowrURL = new URL(flowrStore.get('extUrl') || defaultUrl)
     const template: any = [
       {
         label: 'Menu',
@@ -144,7 +157,7 @@ export async function createFlowrWindow(flowrStore: Store<IFlowrStore>): Promise
             label: 'Flowr',
             click() {
               isHiddenMenuDisplayed = false
-              loadFlowr(flowrUrl)
+              void loadFlowr()
             },
           },
           {
@@ -152,7 +165,7 @@ export async function createFlowrWindow(flowrStore: Store<IFlowrStore>): Promise
             click() {
               mainWindow.setMenuBarVisibility(false)
               if (isHiddenMenuDisplayed) {
-                loadFlowr(flowrUrl)
+                void loadFlowr()
               }
             },
           },
@@ -173,12 +186,14 @@ export async function createFlowrWindow(flowrStore: Store<IFlowrStore>): Promise
   }
 
   const _ipcEvents: { [key: string]: (...args: any[]) => void } = {
-    clearReloadTimeout: () =>{
-      clearInterval(reloadInterval)
+    clearReloadTimeout: () => {
+      reloadTimer.clear()
     },
     FlowrIsInitializing: () => {
-      clearInterval(reloadInterval)
+      reloadTimer.clear()
       isLaunchedUrlCorrect = true
+      cancelActivityMonitor?.()
+      cancelActivityMonitor = monitorActivity(mainWindow, flowrStore.get('flowrMonitoringTime'), reload)
     },
     getAppConfig: (evt: IpcMainEvent) => {
       const storedConfig = flowrStore.get('flowrConfig')
@@ -187,6 +202,7 @@ export async function createFlowrWindow(flowrStore: Store<IFlowrStore>): Promise
         isLaunchedUrlCorrect,
         deinterlacing: flowrStore.get('deinterlacing'),
         extUrl: flowrStore.get('extUrl'),
+        flowrMonitoringTime: flowrStore.get('flowrMonitoringTime'),
         isKiosk: flowrStore.get('isKiosk'),
         clearAppDataOnStart: flowrStore.get('clearAppDataOnStart'),
         enableVirtualKeyboard: flowrStore.get('enableVirtualKeyboard'),
@@ -224,8 +240,7 @@ export async function createFlowrWindow(flowrStore: Store<IFlowrStore>): Promise
     },
     getErrorLoadingFlowr: (evt: IpcMainEvent) => {
         const errorData: any = {
-          reloadTimeout: reloadInterval._idleStart as number,
-          reloadInterval: reloadInterval._idleTimeout as number,
+          remainingTime: reloadTimer.remainingTime,
           url: flowrStore.get('extUrl') || defaultUrl,
           lastError: lastError
           }
@@ -262,10 +277,7 @@ export async function createFlowrWindow(flowrStore: Store<IFlowrStore>): Promise
       app.relaunch()
       app.quit()
     },
-    reload:() => {
-      reload()
-      reloadInterval = setInterval(reload, RELOAD_INTERVAL)
-    },
+    reload,
     setDebugMode: (evt: IpcMainEvent, debugMode: boolean) => {
       isDebugMode = debugMode
       if (isDebugMode) {
@@ -295,6 +307,9 @@ export async function createFlowrWindow(flowrStore: Store<IFlowrStore>): Promise
       app.relaunch()
       app.quit()
     },
+    setFlowrMonitoringTimer:(evt: IpcMainEvent, monitorTimer: number) => {
+      flowrStore.set('flowrMonitoringTime', monitorTimer)
+    },
     getClientMetadata: (evt: IpcMainEvent) => {
       evt.sender.send('receiveClientMetadata', {
         name: app.getName(),
@@ -312,29 +327,26 @@ export async function createFlowrWindow(flowrStore: Store<IFlowrStore>): Promise
   }
   Object.entries(_ipcEvents).forEach(event => ipcMain.on(...event))
   mainWindow.on('close', () => Object.entries(_ipcEvents).forEach(event => ipcMain.removeListener(...event)))
-
-  async function getActiveMacAddress(): Promise<string> {
-    if (flowrStore.get('useRealMacAddress')) {
-      return (await networkEverywhere.getActiveInterface()).mac
-    }
-    return (await devicesDetailsHelper.getDeviceDetails()).uuid
+  
+  if (kiosk) {
+    // No menu is kiosk mode
+    const emptyAppMenu = Menu.buildFromTemplate([])
+    Menu.setApplicationMenu(emptyAppMenu)
   }
 
-  async function getAllMacAddresses(): Promise<string[]> {
-    const activeMac = await getActiveMacAddress()
-    const allMac = await networkEverywhere.getAllMacAddresses()
-    return [activeMac, ...allMac]
+  // mainWindow.setAspectRatio(16/9)
+  mainWindow.setMenuBarVisibility(false)
+  // mainWindow.setAlwaysOnTop(true, 'floating', 0)
+
+  void loadFlowr()
+
+  // Open the DevTools.
+  if (process.env.ENV === 'dev') {
+    mainWindow.webContents.openDevTools()
+    isDebugMode = true
   }
 
-  function getIpAddress(): Promise<string> {
-    return networkEverywhere.getIpAddress()
-  }
-
-  function reload() {
-    if (mainWindow) {
-      mainWindow.reload()
-    }
-  }
+  initializeLogging(mainWindow.webContents)
 
   return mainWindow
 }

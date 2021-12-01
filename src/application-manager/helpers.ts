@@ -50,12 +50,14 @@ export const buildFileUrl = buildUrl(Protocols.HTTP)
  */
 export const buildFilePath = buildUrl(Protocols.NONE)
 
-export const monitorActivity = (browserWindow: BrowserWindow, timeout: number, callback: () => void): void => {
+export const monitorActivity = (browserWindow: BrowserWindow, timeout: number, callback: () => void): () => void => {
   const log = getLogger('Activity monitor')
 
   if (timeout === 0) {
     log.info('Activity monitor disabled (timeout value === 0)')
-    return
+    return () => {
+      // does nothing
+    }
   }
 
   log.info(`Activity monitor enabled (timeout value: ${timeout}ms)`)
@@ -90,5 +92,8 @@ export const monitorActivity = (browserWindow: BrowserWindow, timeout: number, c
     reset()
   }
 
+  browserWindow.on('close', cancel)
   start()
+
+  return cancel
 }
