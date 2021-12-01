@@ -74,16 +74,19 @@ export class PhoneWindow extends KeyboardMixin(BrowserWindow) {
       },
       'update-phone-store': this.updateStore.bind(this),
         initProps: () => {
-          this.webContents.send( 'init-props',
+          const { username, host } =  props.registerProps
+          this._history = props.history
+          this._currentUser = props.currentUser
+          this.webContents.send( 'initPropsReply',
               {
                 phoneMessagingNumber: props.phoneMessagingNumber,
                 phoneServer: props.phoneServer,
                 capabilities: props.capabilities,
-                currentUser: props.currentUser,
-                favorites: props.favorites,
+                currentUser: props.currentUser || '',
+                favorites: !!props.favorites,
                 history: !!props.history,
                 lang: props.lang,
-                registerProps: props.registerProps
+                registerProps: username && host ? { username, host } : null
               })
         }
     }

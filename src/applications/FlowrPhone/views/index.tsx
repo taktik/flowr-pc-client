@@ -54,7 +54,7 @@ export const robotoMedium = () => `
 
 document.head.appendChild(styleElement)
 
-window.ipcRenderer.on('init-props', ( evt, props) => {
+window.ipcRenderer.on('initPropsReply', (evt, props) => {
   ReactDOM.render(<StyledPhone
       capabilities={props.capabilities}
       currentUser={props.currentUser}
