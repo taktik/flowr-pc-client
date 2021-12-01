@@ -187,9 +187,6 @@ export function createFlowrWindow(flowrStore: Store<IFlowrStore>): FlowrWindow {
   }
 
   const _ipcEvents: { [key: string]: (...args: any[]) => void } = {
-    clearReloadTimeout: () => {
-      reloadTimer.clear()
-    },
     FlowrIsInitializing: () => {
       reloadTimer.clear()
       isLaunchedUrlCorrect = true

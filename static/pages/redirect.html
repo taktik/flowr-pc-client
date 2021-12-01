@@ -100,7 +100,6 @@
     }
 
     function getDetails() {
-        window.ipc.send('clearReloadTimeout')
         clearInterval(Timer)
     }
 
@@ -115,6 +114,7 @@
         Timer = setInterval(function() {
             if (timeLeft < 0) {
                 clearInterval(Timer)
+                reload()
             } else {
                 document.getElementById('timer').innerHTML = 'reload in...' + timeLeft
                 timeLeft -= 1
