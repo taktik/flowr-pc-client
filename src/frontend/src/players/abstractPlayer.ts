@@ -1,14 +1,12 @@
 import { ipcMain, IpcMainEvent } from 'electron'
-import { mergeWith } from 'lodash'
-import { storeManager } from '../../../launcher'
 import { Store } from '../store'
 import { IPlayerStore } from '../interfaces/playerStore'
-import { DEFAULT_PLAYER_STORE } from './playerStore'
 import { ILogger } from '../logging/types'
 import { getLogger } from '../logging/loggers'
 
 interface IPlayer {
   store: Store<IPlayerStore>
+  close(): Promise<void>
 }
 
 type PlayProps = {
@@ -33,9 +31,8 @@ abstract class AbstractPlayer implements IPlayer {
 
   protected readonly _ipcEvents: {[key: string]: (...args: any[]) => void} = {}
   protected log: ILogger
-  store: Store<IPlayerStore>
 
-  constructor(playerConfig: Partial<IPlayerStore>) {
+  constructor(public store: Store<IPlayerStore>) {
     this.log = getLogger(this.constructor.name)
 
     // Base events to register: common for all players
@@ -54,15 +51,6 @@ abstract class AbstractPlayer implements IPlayer {
     }
     /* eslint-enable @typescript-eslint/no-unsafe-assignment */
     Object.entries(ipcEvents).forEach(([name, handler]) => this.registerEvent(name, handler))
-
-    /**
-     * Merge config from ozone over default one
-     * For empty values (null or '') coming from ozone, use the default value
-     * If customizer function returns undefined, merging is handled by the method instead
-     */
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-return
-    const playerConfigMerged = mergeWith({}, DEFAULT_PLAYER_STORE, playerConfig, (a, b) => b === null || b === '' ? a : undefined)
-    this.store = storeManager.createStore<IPlayerStore>('player', playerConfigMerged)
   }
 
   registerEvent(name: string, handler: (event: IpcMainEvent, ...args: any[]) => void): void {

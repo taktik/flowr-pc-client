@@ -11,16 +11,17 @@ import {
 import { createWexondWindow, setWexondLog } from '~/main'
 import { clearBrowsingData } from '~/main/clearBrowsingData'
 import { getMigrateUserPreferences } from './migration/fromFlowrClientToFlowrPcClient'
-import type { FlowrWindow } from 'src/frontend/flowr-window'
+import { FlowrWindow } from 'src/frontend/flowr-window'
 import { Store, StoreManager } from '../frontend/src/store'
 import { ApplicationManager } from '../application-manager/application-manager'
 import { IFlowrStore } from '../frontend/src/interfaces/flowrStore'
 import { keyboard } from '../keyboard/keyboardController'
 import { cloneDeep, mergeWith } from 'lodash'
 import { FullScreenManager } from '../common/fullscreen'
-import type { WexondOptions } from '../wexond/main/app-window'
-import { IPlayerStore, PlayerPosition } from '../frontend/src/interfaces/playerStore'
-import log from 'electron-log'
+import { IFlowrDesktopConfig } from '../frontend/src/interfaces/IFlowrDesktopConfig'
+import { PlayerPosition } from '../frontend/src/interfaces/playerStore'
+
+export const log = require('electron-log')
 
 const FlowrDataDir = resolve(homedir(), '.flowr')
 
@@ -96,7 +97,6 @@ async function main() {
   }
 
   async function onReady() {
-    await clearBrowsingData()
     const flowrStore = initFlowrStore()
 
     keyboard.flowrStore = flowrStore
@@ -115,7 +115,7 @@ async function main() {
       }
     })
 
-    ipcMain.on('flowr-desktop-config', (event: IpcMainEvent, desktopConfig?: { userPreferences: Partial<IFlowrStore>, player: Partial<IPlayerStore> }) => {
+    ipcMain.on('flowr-desktop-config', async (event: IpcMainEvent, desktopConfig?: IFlowrDesktopConfig) => {
       const currentFlowrStore = cloneDeep(flowrStore.data)
       delete currentFlowrStore.player
       if (desktopConfig) {
@@ -127,6 +127,9 @@ async function main() {
         // eslint-disable-next-line @typescript-eslint/no-unsafe-return
         const userPreferencesMerged = mergeWith({}, DEFAULT_FRONTEND_STORE, currentFlowrStore, desktopConfig.userPreferences, (a, b) => b === null || b === '' ? a : undefined)
         flowrWindow.initStore(userPreferencesMerged, desktopConfig.player)
+        if (flowrWindow.store.get('clearAppDataOnStart')) {
+          await clearBrowsingData()
+        }
 
         // If the browserWindow is not properly configured to use a player configured zPosition, destroy and remake it
         if (flowrWindow.transparent && userPreferencesMerged.player.position !== PlayerPosition.BACKGROUND) {
@@ -207,7 +210,7 @@ async function main() {
   }
 
   function initFlowrStore(): Store<IFlowrStore> {
-    return storeManager.createStore(FRONTEND_CONFIG_NAME, DEFAULT_FRONTEND_STORE)
+    return storeManager.createStore(FRONTEND_CONFIG_NAME, { defaults: DEFAULT_FRONTEND_STORE })
   }
 }
 

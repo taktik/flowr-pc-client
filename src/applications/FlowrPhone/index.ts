@@ -1,10 +1,8 @@
 import type { RegisterProps } from './views/phone'
 import { PhoneWindow } from './phoneWindow'
-import { FlowrWindow } from '../../frontend/flowr-window'
 import { BrowserWindow, ipcMain } from 'electron'
-import { ApplicationOptions } from '../../application-manager/application-manager'
 import * as pkgJSON from './package.json'
-import { ApplicationConfig } from '@taktik/flowr-common-js'
+import { ApplicationOptions, WindowTypes } from '../../application-manager/types'
 
 export type OpenPhoneProps = {
   registerProps: RegisterProps,
@@ -17,45 +15,40 @@ export type OpenPhoneProps = {
 
 interface PhoneOptions extends ApplicationOptions {
   config: OpenPhoneProps,
-  flowrWindow: FlowrWindow,
-  browserWindow: BrowserWindow,
 }
 
 export function create(options: PhoneOptions): PhoneWindow {
-  // Most of these functions are to be moved outside...
-  // ...applications should not have control over other windows, they should request it
   function mute() {
-    if (options.flowrWindow) {
-      muteWindow(options.flowrWindow)
-    }
-    if (options.browserWindow) {
-      muteWindow(options.browserWindow)
-    }
+    options.executeOnWindows(
+      [WindowTypes.FLOWR, WindowTypes.WEXOND],
+      muteWindow
+    )
   }
 
   function unmute() {
-    if (options.flowrWindow) {
-      unmuteWindow(options.flowrWindow)
-    }
-    if (options.browserWindow) {
-      unmuteWindow(options.browserWindow)
-    }
+    options.executeOnWindows(
+      [WindowTypes.FLOWR, WindowTypes.WEXOND],
+      unmuteWindow
+    )
   }
 
   function muteWindow(windowToMute: BrowserWindow) {
     if (!windowToMute.webContents.isAudioMuted()) {
       windowToMute.webContents.setAudioMuted(true)
+      windowToMute.getBrowserView()?.webContents?.setAudioMuted(true)
     }
   }
 
-  function unmuteWindow(windowToMute: BrowserWindow) {
-    if (windowToMute.webContents.isAudioMuted()) {
-      windowToMute.webContents.setAudioMuted(false)
+  function unmuteWindow(windowToUnMute: BrowserWindow) {
+    if (windowToUnMute.webContents.isAudioMuted()) {
+      windowToUnMute.webContents.setAudioMuted(false)
+      windowToUnMute.getBrowserView()?.webContents?.setAudioMuted(false)
     }
   }
 
   function keepFocus(win: BrowserWindow) {
     if (win) {
+      // eslint-disable-next-line @typescript-eslint/unbound-method
       win.on('blur', win.focus)
       win.focus()
     }
@@ -63,6 +56,7 @@ export function create(options: PhoneOptions): PhoneWindow {
 
   function releaseFocus(win: BrowserWindow) {
     if (win) {
+      // eslint-disable-next-line @typescript-eslint/unbound-method
       win.removeListener('blur', win.focus)
     }
   }
@@ -77,7 +71,7 @@ export function create(options: PhoneOptions): PhoneWindow {
     favorites,
     currentUser,
   }
-  ipcMain.on('phone.incoming-call', (event => {
+  ipcMain.on('phone.incoming-call', (() => {
     options.flowrWindow.webContents.send('send-statistic-report', {
       type: 'counter',
       count: 1,
@@ -89,7 +83,7 @@ export function create(options: PhoneOptions): PhoneWindow {
         aggregationType: 'sum',
       })
   }))
-  ipcMain.on('phone.outgoing-call', (event => {
+  ipcMain.on('phone.outgoing-call', (() => {
     options.flowrWindow.webContents.send('send-statistic-report', {
       type: 'counter',
       count: 1,
@@ -133,9 +127,9 @@ export function create(options: PhoneOptions): PhoneWindow {
   return phoneWindow
 }
 
-export const packageJSON: ApplicationConfig = pkgJSON
+export const packageJSON = pkgJSON
 
-export function canOpen(capabilities?: {[key: string]: boolean}, props?: OpenPhoneProps) {
+export function canOpen(capabilities?: {[key: string]: boolean}, props?: OpenPhoneProps): boolean {
   const canEmit = !capabilities || capabilities.emit
   const requiredPropsAvailable = !!props &&
       !!props.registerProps &&

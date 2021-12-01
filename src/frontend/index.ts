@@ -15,7 +15,7 @@ import { initializeLogging } from './src/logging'
 import { LogSeverity } from './src/logging/types'
 import * as deepExtend from 'deep-extend'
 import { IFlowrConfig } from './src/interfaces/flowrConfig'
-import { buildFileUrl } from '../application-manager/helpers'
+import { buildFileUrl, monitorActivity } from '../application-manager/helpers'
 import { PlayerPosition } from "./src/interfaces/playerStore";
 
 const FlowrDataDir = resolve(homedir(), '.flowr')
@@ -27,6 +27,7 @@ export const DEFAULT_FRONTEND_STORE: IFlowrStore = {
   channelData: {},
   isMaximized: false,
   clearAppDataOnStart: false,
+  flowrMonitoringTime: 1000,
   extUrl: '',
   isKiosk: false,
   deinterlacing: false,
@@ -98,7 +99,7 @@ export async function createFlowrWindow(flowrStore: Store<IFlowrStore>): Promise
         console.warn('Error loading flowr window', e)
         lastError = e.message
         loadConfigPage()
-      }) 
+      })
   }
 
   if (kiosk) {
@@ -173,6 +174,7 @@ export async function createFlowrWindow(flowrStore: Store<IFlowrStore>): Promise
     FlowrIsInitializing: () => {
       clearInterval(reloadTimeout)
       isLaunchedUrlCorrect = true
+      monitorActivity(mainWindow, flowrStore.get('flowrMonitoringTime'), reload)
     },
     getAppConfig: (evt: IpcMainEvent) => {
       const storedConfig = flowrStore.get('flowrConfig')
@@ -181,6 +183,7 @@ export async function createFlowrWindow(flowrStore: Store<IFlowrStore>): Promise
         isLaunchedUrlCorrect,
         deinterlacing: flowrStore.get('deinterlacing'),
         extUrl: flowrStore.get('extUrl'),
+        flowrMonitoringTime: flowrStore.get('flowrMonitoringTime'),
         isKiosk: flowrStore.get('isKiosk'),
         clearAppDataOnStart: flowrStore.get('clearAppDataOnStart'),
         enableVirtualKeyboard: flowrStore.get('enableVirtualKeyboard'),
@@ -275,6 +278,9 @@ export async function createFlowrWindow(flowrStore: Store<IFlowrStore>): Promise
       flowrStore.set('enableVirtualKeyboard', enableVirtualKeyboard)
       app.relaunch()
       app.quit()
+    },
+    setFlowrMonitoringTimer:(evt: IpcMainEvent, monitorTimer: number) => {
+      flowrStore.set('flowrMonitoringTime', monitorTimer)
     },
     getClientMetadata: (evt: IpcMainEvent) => {
       evt.sender.send('receiveClientMetadata', {
