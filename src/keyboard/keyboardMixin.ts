@@ -3,7 +3,7 @@ import { keyboard } from './keyboardController'
 import { VirtualKeyboardEvent } from './events'
 
 // tslint:disable-next-line: function-name
-export function KeyboardMixin<T extends new (...args: any[]) => BrowserWindow>(baseWindow: T) {
+export function KeyboardMixin<T extends new (...args: any[]) => BrowserWindow>(baseWindow: T): T {
   return class extends baseWindow {
     constructor(...args: any[]) {
       super(...args)
