@@ -17,7 +17,7 @@ export class FlowrWindow extends KeyboardMixin(BrowserWindow) {
   private resizeTimeout?: number
   public player?: IPlayer
 
-  constructor(private store: Store<IFlowrStore>, options?: BrowserWindowConstructorOptions) {
+  constructor(public store: Store<IFlowrStore>, options?: BrowserWindowConstructorOptions) {
     super(options)
 
     this.on('unmaximize', () => {
