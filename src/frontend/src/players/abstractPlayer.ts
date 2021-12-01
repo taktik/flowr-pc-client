@@ -25,6 +25,9 @@ type SubtitlesProps = {
 abstract class AbstractPlayer implements IPlayer {
   abstract stop(): void | Promise<void>
   abstract play(event: IpcMainEvent, props: PlayProps): void | Promise<void>
+  abstract pause(event: IpcMainEvent): void | Promise<void>
+  abstract resume(event: IpcMainEvent): void | Promise<void>
+  abstract backToLive(event: IpcMainEvent): void | Promise<void>
   abstract setAudioTrack(event: IpcMainEvent, pid: number): void | Promise<void>
   abstract setSubtitles(event: IpcMainEvent, { audioPid, subtitlesPid }: SubtitlesProps): void | Promise<void>
 
@@ -42,6 +45,9 @@ abstract class AbstractPlayer implements IPlayer {
       getSubtitleStreams: () => { /* Empty */ },
       setsubtitlestream: () => { /* Empty */ },
       openurl: this.play.bind(this),
+      pausestream: this.pause.bind(this),
+      resumestream: this.resume.bind(this),
+      backtolive: this.backToLive.bind(this),
       FlowrIsInitializing: this.stop.bind(this),
       setAudioPid: this.setAudioTrack.bind(this),
       setSubtitlesPid: this.setSubtitles.bind(this),

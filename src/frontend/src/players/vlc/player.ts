@@ -3,7 +3,7 @@ import type { BrowserWindow, IpcMainEvent, WebContents } from 'electron'
 import { IPlayerStore } from '../../interfaces/playerStore'
 import { ILogger } from '../../logging/types'
 import { AbstractPlayer, PlayProps } from '../abstractPlayer'
-import { IMessage, LogMessage, MessageType, ProcessMessaging, VLCLogLevel } from './messaging'
+import { IMessage, LogMessage, MessageDataType, MessageType, ProcessMessaging, VLCLogLevel } from './messaging'
 import { ResetableTimeout } from './resetableTimeout'
 
 type ResizeProps = {
@@ -52,7 +52,8 @@ export class VlcPlayer extends AbstractPlayer {
   }
 
   private startProcess(url: string) {
-    const path = this.store.get('pipeline')?.metadata?.applicationPath
+    //const path = this.store.get('pipeline')?.metadata?.applicationPath
+    const path = "C:\\projects\\bedside-vlc\\VlcForm\\bin\\Debug\\netcoreapp3.1\\VlcForm.exe"
     if (!path) {
       throw Error('No path is defined for VLC executable. Please configure it in flowr-admin\'s settings')
     }
@@ -158,6 +159,18 @@ export class VlcPlayer extends AbstractPlayer {
     } catch (e) {
       this.log.warn('Failed to instantiate player.', e)
     }
+  }
+
+  pause(): void {
+    this.messaging?.send(MessageType.VLC, {type: MessageDataType.PAUSE})
+  }
+
+  resume(): void {
+    this.messaging.send(MessageType.VLC, {type: MessageDataType.RESUME})
+  }
+
+  backToLive(): void {
+    this.messaging.send(MessageType.VLC, {type: MessageDataType.BACK_TO_LIVE})
   }
 
   setAudioTrack(): void {

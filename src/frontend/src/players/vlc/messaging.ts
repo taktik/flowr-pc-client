@@ -17,6 +17,7 @@ enum VLCLogLevel {
 }
 
 enum MessageDataType {
+  BACK_TO_LIVE = 'backToLive',
   PLAY = 'play',
   PAUSE = 'pause',
   STOP = 'stop',
@@ -28,7 +29,7 @@ enum MessageDataType {
 
 interface IMessageData {
   type?: MessageDataType | string
-  value: string
+  value?: string
 }
 
 interface IMessage {
