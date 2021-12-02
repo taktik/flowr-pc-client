@@ -17,6 +17,10 @@ export class FlowrWindow extends KeyboardMixin(BrowserWindow) {
   private resizeTimeout?: number
   public player?: IPlayer
 
+  get phoneMessagingNumber(): string | undefined {
+    return this.store.get('messagingNumber')
+  }
+
   get phoneServerUrl(): string | undefined {
     return this.store.get('phoneServer')
   }

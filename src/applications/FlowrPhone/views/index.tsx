@@ -4,25 +4,6 @@ import { Phone } from './phone'
 import styled from 'styled-components'
 import { fonts } from '../fonts'
 
-const url = new URL(window.location.href)
-const server = url.searchParams.get('server')
-const username = url.searchParams.get('username')
-const host = url.searchParams.get('host')
-const lang = url.searchParams.get('lang') || undefined
-const registerProps = username && host ? { username, host } : null
-const encodedCapabilities = url.searchParams.get('capabilities')
-const history = url.searchParams.has('history')
-const favorites = url.searchParams.has('favorites')
-const currentUser = url.searchParams.get('currentUser') || ''
-
-let capabilities
-
-try {
-  capabilities = encodedCapabilities && JSON.parse(decodeURIComponent(encodedCapabilities))
-} catch (e) {
-  console.error('Failed to parse capabilities', e)
-}
-
 const StyledPhone = styled(Phone)`
   position: absolute;
   width: 100%;
@@ -73,12 +54,15 @@ export const robotoMedium = () => `
 
 document.head.appendChild(styleElement)
 
-ReactDOM.render(<StyledPhone
-  phoneServer={server}
-  registerProps={registerProps}
-  lang={lang}
-  capabilities={capabilities}
-  history={history}
-  favorites={favorites}
-  currentUser={currentUser}
-/>, document.getElementById('phone'))
+window.ipcRenderer.on('initPropsReply', (evt, props) => {
+  ReactDOM.render(<StyledPhone
+      capabilities={props.capabilities}
+      currentUser={props.currentUser}
+      favorites={props.favorites}
+      history={props.history}
+      lang={props.lang}
+      phoneServer={props.server}
+      registerProps={props.registerProps}
+  />, document.getElementById('phone'))
+})
+window.ipcRenderer.send('initProps')

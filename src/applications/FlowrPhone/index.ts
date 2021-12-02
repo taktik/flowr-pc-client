@@ -65,6 +65,7 @@ export function create(options: PhoneOptions): PhoneWindow {
   const phoneAppProps = {
     phoneServer: options.flowrWindow.phoneServerUrl,
     capabilities: options.capabilities,
+    phoneMessagingNumber: options.flowrWindow.phoneMessagingNumber,
     registerProps,
     lang,
     history,
