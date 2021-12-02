@@ -1,9 +1,12 @@
 export class Timer {
+  private triggered = false
   started: number
   timeout: NodeJS.Timeout
 
   get remainingTime(): number {
-    return this.started + this.duration - Date.now()
+    return this.triggered
+      ? 0
+      : this.started + this.duration - Date.now()
   }
 
   constructor(
@@ -11,7 +14,10 @@ export class Timer {
     private duration: number,
   ) {
     this.started = Date.now()
-    this.timeout = global.setTimeout(callback, duration)
+    this.timeout = global.setTimeout(() => {
+      this.triggered = true
+      callback()
+    }, duration)
   }
 
   clear(): void {
