@@ -28,11 +28,13 @@ module.exports = (env) => {
             filename: 'app.html',
             chunks: ['app'],
         }),
-        new HtmlWebpackPlugin({
-            template: path.resolve(__dirname, 'static/pages/config.html'),
-            filename: 'config.html',
-            chunks: [],
-        }),
+        new CopyWebpackPlugin({
+            patterns: [
+                {
+                    from: './static/pages',
+                },
+            ]
+        })
     ]
     const rendererConfig = {
         output,

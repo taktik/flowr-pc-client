@@ -1,7 +1,10 @@
 import { session } from 'electron'
+import { getLogger } from '../../frontend/src/logging/loggers'
 
-export const clearBrowsingData = async () => {
-  console.log('----------- clearBrowsingData ----------------')
+const log = getLogger('Browsing data')
+
+export const clearBrowsingData = async (): Promise<void> => {
+  log.info('clear browsing data')
   const ses = session.fromPartition('persist:view')
   try {
     await ses.clearCache()
@@ -19,6 +22,6 @@ export const clearBrowsingData = async () => {
       ],
     })
   } catch (err) {
-    console.error(err)
+    log.error(err)
   }
 }
