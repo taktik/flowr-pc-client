@@ -136,8 +136,6 @@ export function createFlowrWindow(flowrStore: Store<IFlowrStore>): FlowrWindow {
   function reload() {
     reloadTimer.clear()
     cancelActivityMonitor?.()
-
-    reloadTimer = new Timer(() => void loadFlowr(), RELOAD_TIMEOUT)
     void loadFlowr()
   }
 
