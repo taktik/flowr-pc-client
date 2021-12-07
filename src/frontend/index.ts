@@ -16,7 +16,8 @@ import { LogSeverity } from './src/logging/types'
 import * as deepExtend from 'deep-extend'
 import { IFlowrConfig } from './src/interfaces/flowrConfig'
 import { buildFileUrl, monitorActivity } from '../application-manager/helpers'
-import { PlayerPosition } from "./src/interfaces/playerStore";
+import { IPlayerStore, PlayerPosition } from "./src/interfaces/playerStore";
+import { storeManager } from "../launcher";
 
 const FlowrDataDir = resolve(homedir(), '.flowr')
 
@@ -66,7 +67,11 @@ export async function createFlowrWindow(flowrStore: Store<IFlowrStore>): Promise
     console.error(`Invalid FlowR URL: ${storedUrl}. Display config page.`)
     firstUrl = new URL(defaultUrl)
   }
-  const position = flowrStore.get('player')?.position
+
+  // Pre instantiate the player store to check if we have a stored value for player position
+  const playerStore = storeManager.createStore<IPlayerStore>('player')
+  const position = playerStore.get('position')
+
   // Create the browser window.
   const opts = buildBrowserWindowConfig(flowrStore, {
     icon: resolve(app.getAppPath(), 'static/app-icons/icon.png'),

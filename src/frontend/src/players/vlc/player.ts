@@ -1,11 +1,12 @@
 import { ChildProcess, spawn } from 'child_process'
-import type { BrowserWindow, IpcMainEvent, WebContents } from 'electron'
-import { IPlayerStore } from '../../interfaces/playerStore'
+import { app, IpcMainEvent, WebContents } from 'electron'
+import { IPlayerStore, PlayerPosition } from '../../interfaces/playerStore'
 import { ILogger } from '../../logging/types'
 import { Store } from '../../store'
 import { AbstractPlayer, PlayProps } from '../abstractPlayer'
 import { IMessage, LogMessage, MessageDataType, MessageType, ProcessMessaging, VLCLogLevel } from './messaging'
 import { ResetableTimeout } from './resetableTimeout'
+import { FlowrWindow } from "../../../flowr-window";
 
 type ResizeProps = {
   width: number
@@ -25,7 +26,7 @@ export class VlcPlayer extends AbstractPlayer {
   private keepAliveTimeout?: ResetableTimeout
   private frontendWebView?: WebContents
 
-  constructor(private readonly flowrWindow: BrowserWindow, store: Store<IPlayerStore>) {
+  constructor(private readonly flowrWindow: FlowrWindow, store: Store<IPlayerStore>) {
     super(store)
     /* eslint-disable @typescript-eslint/no-unsafe-assignment */
     this.onClose = this.onClose.bind(this)
@@ -53,8 +54,14 @@ export class VlcPlayer extends AbstractPlayer {
   }
 
   private startProcess(url: string) {
-    //const path = this.store.get('pipeline')?.metadata?.applicationPath
-    const path = "C:\\projects\\bedside-vlc\\VlcForm\\bin\\Debug\\netcoreapp3.1\\VlcForm.exe"
+
+    // If the flowrWindow is not properly configured to use a player configured zPosition, destroy and remake it
+    if (this.flowrWindow.transparent !== (this.store.get('position') !== PlayerPosition.FOREGROUND)) {
+      app.relaunch()
+      app.quit()
+    }
+
+    const path = this.store.get('pipeline')?.metadata?.applicationPath
     if (!path) {
       throw Error('No path is defined for VLC executable. Please configure it in flowr-admin\'s settings')
     }

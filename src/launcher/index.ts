@@ -19,7 +19,7 @@ import { keyboard } from '../keyboard/keyboardController'
 import { cloneDeep, mergeWith } from 'lodash'
 import { FullScreenManager } from '../common/fullscreen'
 import { IFlowrDesktopConfig } from '../frontend/src/interfaces/IFlowrDesktopConfig'
-import { PlayerPosition } from '../frontend/src/interfaces/playerStore'
+import { WexondOptions } from "../wexond/main/app-window";
 
 export const log = require('electron-log')
 
@@ -129,12 +129,6 @@ async function main() {
         flowrWindow.initStore(userPreferencesMerged, desktopConfig.player)
         if (flowrWindow.store.get('clearAppDataOnStart')) {
           await clearBrowsingData()
-        }
-
-        // If the browserWindow is not properly configured to use a player configured zPosition, destroy and remake it
-        if (flowrWindow.transparent && userPreferencesMerged.player.position !== PlayerPosition.BACKGROUND) {
-          app.quit();
-          app.relaunch();
         }
       }
     })

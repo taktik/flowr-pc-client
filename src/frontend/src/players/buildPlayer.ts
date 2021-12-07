@@ -1,5 +1,4 @@
 import * as deepExtend from 'deep-extend'
-import { BrowserWindow } from 'electron'
 import { mergeWith } from 'lodash'
 import { storeManager } from '../../../launcher'
 import { IPlayerStore, PipelineType } from '../interfaces/playerStore'
@@ -7,8 +6,9 @@ import { IPlayer } from './abstractPlayer'
 import { Player } from './player'
 import { DEFAULT_PLAYER_STORE } from './playerStore'
 import { VlcPlayer } from './vlc/player'
+import { FlowrWindow } from "../../flowr-window";
 
-export default function(flowrWindow: BrowserWindow, playerConfig: Partial<IPlayerStore>): IPlayer {
+export default function(flowrWindow: FlowrWindow, playerConfig: Partial<IPlayerStore>): IPlayer {
   const resolver = (stored: IPlayerStore): IPlayerStore => {
     // first fill in stored data from potentially new defaults
     const base = deepExtend({}, DEFAULT_PLAYER_STORE, stored)
