@@ -1,11 +1,12 @@
 import { ChildProcess, spawn } from 'child_process'
-import type { BrowserWindow, IpcMainEvent, WebContents } from 'electron'
-import { IPlayerStore } from '../../interfaces/playerStore'
+import { app, IpcMainEvent, WebContents } from 'electron'
+import { IPlayerStore, PlayerPosition } from '../../interfaces/playerStore'
 import { ILogger } from '../../logging/types'
 import { Store } from '../../store'
 import { AbstractPlayer, PlayProps } from '../abstractPlayer'
-import { IMessage, LogMessage, MessageType, ProcessMessaging, VLCLogLevel } from './messaging'
+import { IMessage, LogMessage, MessageDataType, MessageType, ProcessMessaging, VLCLogLevel } from './messaging'
 import { ResetableTimeout } from './resetableTimeout'
+import { FlowrWindow } from "../../../flowr-window";
 
 type ResizeProps = {
   width: number
@@ -25,7 +26,7 @@ export class VlcPlayer extends AbstractPlayer {
   private keepAliveTimeout?: ResetableTimeout
   private frontendWebView?: WebContents
 
-  constructor(private readonly flowrWindow: BrowserWindow, store: Store<IPlayerStore>) {
+  constructor(private readonly flowrWindow: FlowrWindow, store: Store<IPlayerStore>) {
     super(store)
     /* eslint-disable @typescript-eslint/no-unsafe-assignment */
     this.onClose = this.onClose.bind(this)
@@ -53,12 +54,18 @@ export class VlcPlayer extends AbstractPlayer {
   }
 
   private startProcess(url: string) {
-    const path = this.store.get('pipeline')?.metadata?.applicationPath
 
+    // If the flowrWindow is not properly configured to use a player configured zPosition, destroy and remake it
+    if (this.flowrWindow.transparent !== (this.store.get('position') !== PlayerPosition.FOREGROUND)) {
+      app.relaunch()
+      app.quit()
+    }
+
+    const path = this.store.get('pipeline')?.metadata?.applicationPath
     if (!path) {
       throw Error('No path is defined for VLC executable. Please configure it in flowr-admin\'s settings')
     }
-    const args = [url, toRectangle(this.playerPosition)]
+    const args = [url, toRectangle(this.playerPosition), this.store.get('position')]
     const process = spawn(path, args)
 
     /* eslint-disable @typescript-eslint/unbound-method */
@@ -109,13 +116,10 @@ export class VlcPlayer extends AbstractPlayer {
     switch (vlcLevel) {
       case VLCLogLevel.DEBUG:
         return this.log.debug.bind(this.log) as ILogger['debug']
-        break
       case VLCLogLevel.WARN:
         return this.log.warn.bind(this.log) as ILogger['warn']
-        break
       case VLCLogLevel.ERROR:
         return this.log.error.bind(this.log) as ILogger['error']
-        break
       case VLCLogLevel.INFO:
       default:
         return this.log.info.bind(this.log) as ILogger['info']
@@ -163,6 +167,18 @@ export class VlcPlayer extends AbstractPlayer {
     } catch (e) {
       this.log.warn('Failed to instantiate player.', e)
     }
+  }
+
+  pause(): void {
+    this.messaging?.send(MessageType.VLC, {type: MessageDataType.PAUSE})
+  }
+
+  resume(): void {
+    this.messaging.send(MessageType.VLC, {type: MessageDataType.RESUME})
+  }
+
+  backToLive(): void {
+    this.messaging.send(MessageType.VLC, {type: MessageDataType.BACK_TO_LIVE})
   }
 
   setAudioTrack(): void {

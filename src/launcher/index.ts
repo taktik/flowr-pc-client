@@ -1,18 +1,24 @@
-import { ipcMain, app, BrowserWindow, IpcMainEvent } from 'electron'
+import { app, BrowserWindow, ipcMain, IpcMainEvent } from 'electron'
 import * as log from 'electron-log'
 import { resolve } from 'path'
 import { homedir } from 'os'
 
-import { createFlowrWindow, initFlowrConfig, buildBrowserWindowConfig, FRONTEND_CONFIG_NAME, DEFAULT_FRONTEND_STORE } from '../frontend'
+import {
+  buildBrowserWindowConfig,
+  createFlowrWindow,
+  DEFAULT_FRONTEND_STORE,
+  FRONTEND_CONFIG_NAME,
+  initFlowrConfig
+} from '../frontend'
 import { createWexondWindow, setWexondLog } from '~/main'
 import { clearBrowsingData } from '~/main/clearBrowsingData'
 import { getMigrateUserPreferences } from './migration/fromFlowrClientToFlowrPcClient'
 import { FlowrWindow } from 'src/frontend/flowr-window'
-import { StoreManager, Store } from '../frontend/src/store'
+import { Store, StoreManager } from '../frontend/src/store'
 import { ApplicationManager } from '../application-manager/application-manager'
 import { IFlowrStore } from '../frontend/src/interfaces/flowrStore'
 import { keyboard } from '../keyboard/keyboardController'
-import { mergeWith, cloneDeep } from 'lodash'
+import { cloneDeep, mergeWith } from 'lodash'
 import { FullScreenManager } from '../common/fullscreen'
 import { IFlowrDesktopConfig } from '../frontend/src/interfaces/IFlowrDesktopConfig'
 import { WexondOptions } from '../wexond/main/app-window'

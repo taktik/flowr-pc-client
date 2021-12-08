@@ -16,6 +16,7 @@ function toRatio(width: number, height: number) {
 export class FlowrWindow extends KeyboardMixin(BrowserWindow) {
   private resizeTimeout?: number
   public player?: IPlayer
+  public transparent = false
 
   get phoneMessagingNumber(): string | undefined {
     return this.store.get('messagingNumber')
@@ -27,6 +28,7 @@ export class FlowrWindow extends KeyboardMixin(BrowserWindow) {
 
   constructor(public store: Store<IFlowrStore>, options?: BrowserWindowConstructorOptions) {
     super(options)
+    if (options.transparent) this.transparent = true
 
     this.on('unmaximize', () => {
       const width = this.store.get('windowBounds').width

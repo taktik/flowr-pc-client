@@ -18,6 +18,8 @@ import { LogSeverity } from './src/logging/types'
 import { IFlowrConfig } from './src/interfaces/flowrConfig'
 import { buildFileUrl, monitorActivity } from '../application-manager/helpers'
 import { Timer } from '../common/timer'
+import { IPlayerStore, PlayerPosition } from "./src/interfaces/playerStore";
+import { storeManager } from "../launcher";
 
 const FlowrDataDir = resolve(homedir(), '.flowr')
 
@@ -67,6 +69,11 @@ export function createFlowrWindow(flowrStore: Store<IFlowrStore>): FlowrWindow {
     console.error(`Invalid FlowR URL: ${storedUrl}. Display config page.`)
     flowrFrontendURL = defaultUrl
   }
+
+  // Pre instantiate the player store to check if we have a stored value for player position
+  const playerStore = storeManager.createStore<IPlayerStore>('player')
+  const position = playerStore.get('position')
+
   // Create the browser window.
   const opts = buildBrowserWindowConfig(flowrStore, {
     icon: resolve(app.getAppPath(), 'static/app-icons/icon.png'),
@@ -76,6 +83,8 @@ export function createFlowrWindow(flowrStore: Store<IFlowrStore>): FlowrWindow {
       partition: 'persist:flowr', // needed to display webcam image
       preload: buildPreloadPath('exportNode.js'),
     },
+    transparent: position === PlayerPosition.BACKGROUND,
+    frame: position !== PlayerPosition.BACKGROUND
   })
 
   const mainWindow = new FlowrWindow(flowrStore, opts)
@@ -115,7 +124,7 @@ export function createFlowrWindow(flowrStore: Store<IFlowrStore>): FlowrWindow {
       loadRedirectPage()
     }
   }
-  
+
   async function getActiveMacAddress(): Promise<string> {
     if (flowrStore.get('useRealMacAddress')) {
       return (await networkEverywhere.getActiveInterface()).mac
@@ -323,7 +332,7 @@ export function createFlowrWindow(flowrStore: Store<IFlowrStore>): FlowrWindow {
   }
   Object.entries(_ipcEvents).forEach(event => ipcMain.on(...event))
   mainWindow.on('close', () => Object.entries(_ipcEvents).forEach(event => ipcMain.removeListener(...event)))
-  
+
   if (kiosk) {
     // No menu is kiosk mode
     const emptyAppMenu = Menu.buildFromTemplate([])
