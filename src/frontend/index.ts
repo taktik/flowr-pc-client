@@ -20,6 +20,7 @@ import { buildFileUrl, monitorActivity } from '../application-manager/helpers'
 import { Timer } from '../common/timer'
 import { IPlayerStore, PlayerPosition } from "./src/interfaces/playerStore";
 import { storeManager } from "../launcher";
+import { DEFAULT_PLAYER_STORE } from "./src/players/playerStore";
 
 const FlowrDataDir = resolve(homedir(), '.flowr')
 
@@ -71,8 +72,8 @@ export function createFlowrWindow(flowrStore: Store<IFlowrStore>): FlowrWindow {
   }
 
   // Pre instantiate the player store to check if we have a stored value for player position
-  const playerStore = storeManager.createStore<IPlayerStore>('player')
-  const position = playerStore.get('position')
+  const playerStore = storeManager.createStore<IPlayerStore>('player', { defaults: DEFAULT_PLAYER_STORE})
+  const position: PlayerPosition = playerStore.get('position')
 
   // Create the browser window.
   const opts = buildBrowserWindowConfig(flowrStore, {
