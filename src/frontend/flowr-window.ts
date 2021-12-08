@@ -18,6 +18,10 @@ export class FlowrWindow extends KeyboardMixin(BrowserWindow) {
   public player?: IPlayer
   public transparent = false
 
+  get phoneMessagingNumber(): string | undefined {
+    return this.store.get('messagingNumber')
+  }
+
   get phoneServerUrl(): string | undefined {
     return this.store.get('phoneServer')
   }

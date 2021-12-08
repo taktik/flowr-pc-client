@@ -39,6 +39,7 @@ wss.on('connection', ws => {
   let callEndingTimeout
   let callingTimeout
   let status
+  let registeredIdentity
 
   function messageFromStatus() {
     let message
@@ -87,7 +88,11 @@ wss.on('connection', ws => {
         send(messageFromStatus())
         break
       case 'status_register':
-        send({ "status" : "registered" , "identity" : "%s" , "duration" : "%s" , "refrence" : "SM-04" })
+        if (!registeredIdentity) {
+          send({ "status" : "unregistered", "refrence" : "SM-10" })
+        } else {
+          send({ "status" : "registered" , "identity" : registeredIdentity , "duration" : "500" , "refrence" : "SM-04" })
+        }
         break
       case 'call':
         callingTimeout = global.setTimeout(() => {
@@ -114,7 +119,14 @@ wss.on('connection', ws => {
       case 'callme':
         sendStatusChangedMessage(STATUS.INCOMING)
         break
-
+      case 'register':
+        // eslint-disable-next-line @typescript-eslint/restrict-template-expressions
+        registeredIdentity = `sip:${parsed.username}@${parsed.host}`
+        send({ "status" : "registered" , "identity" : registeredIdentity, "duration" : "0" , "refrence" : "SM-04" })
+        break
+      case 'unregister':
+        send({ "action" : "unregister" , "response" : "signal send to daemon" , "reference" : "SM-15" })
+        break
     }
   })
 

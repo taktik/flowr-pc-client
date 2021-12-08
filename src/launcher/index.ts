@@ -1,6 +1,8 @@
 import { app, BrowserWindow, ipcMain, IpcMainEvent } from 'electron'
+import * as log from 'electron-log'
 import { resolve } from 'path'
 import { homedir } from 'os'
+
 import {
   buildBrowserWindowConfig,
   createFlowrWindow,
@@ -19,9 +21,7 @@ import { keyboard } from '../keyboard/keyboardController'
 import { cloneDeep, mergeWith } from 'lodash'
 import { FullScreenManager } from '../common/fullscreen'
 import { IFlowrDesktopConfig } from '../frontend/src/interfaces/IFlowrDesktopConfig'
-import { WexondOptions } from "../wexond/main/app-window";
-
-export const log = require('electron-log')
+import { WexondOptions } from '../wexond/main/app-window'
 
 const FlowrDataDir = resolve(homedir(), '.flowr')
 
@@ -96,18 +96,17 @@ async function main() {
     return browserWindow
   }
 
-  async function onReady() {
+  function onReady() {
     const flowrStore = initFlowrStore()
 
     keyboard.flowrStore = flowrStore
 
-    // eslint-disable-next-line @typescript-eslint/no-misused-promises
-    app.on('activate', async () => {
+    app.on('activate', () => {
       if (flowrWindow === null) {
-        await initFlowr(flowrStore)
+        initFlowr(flowrStore)
       }
     })
-    await initFlowr(flowrStore)
+    initFlowr(flowrStore)
 
     ipcMain.on('window-focus', () => {
       if (flowrWindow) {
@@ -115,6 +114,7 @@ async function main() {
       }
     })
 
+    // eslint-disable-next-line @typescript-eslint/no-misused-promises
     ipcMain.on('flowr-desktop-config', async (event: IpcMainEvent, desktopConfig?: IFlowrDesktopConfig) => {
       const currentFlowrStore = cloneDeep(flowrStore.data)
       delete currentFlowrStore.player
@@ -162,7 +162,6 @@ async function main() {
   if (app.isReady()) {
     void onReady()
   } else {
-    // eslint-disable-next-line @typescript-eslint/no-misused-promises
     app.on('ready', onReady)
   }
 
@@ -174,11 +173,11 @@ async function main() {
     app.quit()
   })
 
-  async function initFlowr(store: Store<IFlowrStore>) {
+  function initFlowr(store: Store<IFlowrStore>) {
     applicationManager.flowrStore = store
 
     try {
-      flowrWindow = await createFlowrWindow(store)
+      flowrWindow = createFlowrWindow(store)
       FullScreenManager.applyDefaultActionOnWindow(flowrWindow)
       applicationManager.flowrWindow = flowrWindow
 
