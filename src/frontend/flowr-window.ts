@@ -4,8 +4,8 @@ import { Player } from './src/players/player'
 import { KeyboardMixin } from '../keyboard/keyboardMixin'
 import { IFlowrStore } from './src/interfaces/flowrStore'
 import { FullScreenManager } from '../common/fullscreen'
-import {getLogger, setLevel} from './src/logging/loggers'
-import {ILogger, LogSeverity} from './src/logging/types'
+import { setLevel} from './src/logging/loggers'
+import { LogSeverity} from './src/logging/types'
 import { IPlayer } from './src/players/abstractPlayer'
 import { IPlayerStore, PipelineType } from './src/interfaces/playerStore'
 import { VlcPlayer } from './src/players/vlc/player'
@@ -17,7 +17,6 @@ function toRatio(width: number, height: number) {
 export class FlowrWindow extends KeyboardMixin(BrowserWindow) {
   private resizeTimeout?: number
   public player?: IPlayer
-  public logger?: ILogger
 
   get phoneServerUrl(): string | undefined {
     return this.store.get('phoneServer')
@@ -25,7 +24,6 @@ export class FlowrWindow extends KeyboardMixin(BrowserWindow) {
 
   constructor(private store: Store<IFlowrStore>, options?: BrowserWindowConstructorOptions) {
     super(options)
-    this.logger = getLogger('Flowr-windows')
 
     this.on('unmaximize', () => {
       const width = this.store.get('windowBounds').width
@@ -40,11 +38,8 @@ export class FlowrWindow extends KeyboardMixin(BrowserWindow) {
       this.resizeTimeout = setTimeout(() => {
         if (!this.isMaximized() && !FullScreenManager.isFullScreen(this)) {
           const mainScreen = screen.getPrimaryDisplay()
-          this.logger.warn(`MainScreen: ${mainScreen.size.width} x ${mainScreen.size.height}`)
           const { width: mainWidth, height: mainHeight } = mainScreen.size
-          const [flowrWidth, flowrHeight] = this.getSize()
-          let width = flowrWidth > mainWidth ? mainWidth: flowrWidth
-          let height = flowrHeight > mainHeight ? mainHeight: flowrHeight
+          let [width, height] = this.getSize()
           const previousSize = store.get('windowBounds')
           const deltaWidth = Math.abs(previousSize.width - width)
           const deltaHeight = Math.abs(previousSize.height - height)
@@ -61,7 +56,6 @@ export class FlowrWindow extends KeyboardMixin(BrowserWindow) {
               width = mainWidth
             }
           }
-          this.logger.warn(`SIZE: ${width}: ${height}`)
           this.setSize(width, height)
           store.set('windowBounds', { width, height })
         }
