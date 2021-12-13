@@ -57,7 +57,9 @@ export class FlowrWindow extends KeyboardMixin(BrowserWindow) {
           } else { // respect the max width of screen
             height = toRatioHeight(16, 9)(flowrWidth)
           }
-          this.setSize(width <= mainWidth ? width: mainWidth, height<= mainHeight ? height: mainHeight)
+          width = width <= mainWidth ? width: mainWidth
+          height = height<= mainHeight ? height: mainHeight
+          this.setSize(width, height)
           store.set('windowBounds', { width, height })
         }
       }, 150)
