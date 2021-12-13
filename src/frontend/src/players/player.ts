@@ -99,4 +99,21 @@ export class Player extends AbstractPlayer {
       this.playPipelineTail.setSubtitlesFromPid(subtitlesPid)
     }
   }
+
+  /* Should bo instantiate in FLOW-5509 Bedside FlowR v5 | Barco | Play/Pause*/
+  /* eslint-disable @typescript-eslint/no-unused-vars */
+  backToLive(event: Electron.IpcMainEvent): void | Promise<void> {
+    throw "not available"
+    return undefined;
+  }
+  /* eslint-disable @typescript-eslint/no-unused-vars */
+  pause(event: Electron.IpcMainEvent): void | Promise<void> {
+    throw "not available"
+    return undefined;
+  }
+  /* eslint-disable @typescript-eslint/no-unused-vars */
+  resume(event: Electron.IpcMainEvent): void | Promise<void> {
+    throw "not available"
+    return undefined;
+  }
 }
