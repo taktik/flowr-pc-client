@@ -15,7 +15,7 @@ function toRatioHeight(width: number, height: number) {
 }
 
 function toRatioWidth(width: number, height: number) {
-  return (value: number) => Math.floor((value + width) * width / height)
+  return (value: number) => Math.floor(value * (width / height))
 }
 
 const targetResolution = 16/9
@@ -57,8 +57,7 @@ export class FlowrWindow extends KeyboardMixin(BrowserWindow) {
           } else { // respect the max width of screen
             height = toRatioHeight(16, 9)(flowrWidth)
           }
-          width = width <= mainWidth ? width: mainWidth
-          height = height<= mainHeight ? height: mainHeight
+          this.logger.warn(`SIZE: ${width}: ${height}`)
           this.setSize(width, height)
           store.set('windowBounds', { width, height })
         }
