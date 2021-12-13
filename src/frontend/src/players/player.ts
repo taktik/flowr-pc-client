@@ -100,7 +100,7 @@ export class Player extends AbstractPlayer {
     }
   }
 
-  /* Should bo instantiate in FLOW-5509 Bedside FlowR v5 | Barco | Play/Pause*/
+  /* Should be implemented in FLOW-5509 Bedside FlowR v5 | Barco | Play/Pause*/
   /* eslint-disable @typescript-eslint/no-unused-vars */
   backToLive(event: Electron.IpcMainEvent): void | Promise<void> {
     throw "not available"
