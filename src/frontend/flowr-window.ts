@@ -49,13 +49,20 @@ export class FlowrWindow extends KeyboardMixin(BrowserWindow) {
           this.logger.warn(`MainScreen: ${mainScreen.size.width} x ${mainScreen.size.height}`)
           const { width: mainWidth, height: mainHeight } = mainScreen.size
           const mainResolution = mainWidth/mainHeight
-          const [flowrWidth, flowrHeigth] = this.getSize()
-          this.logger.warn(`FlowrSize: ${flowrWidth} x ${flowrHeigth}`)
-          let [width, height] = [flowrWidth, flowrHeigth]
+          let [width, height] = this.getSize()
+          this.logger.warn(`FlowrSize: ${width} x ${height}`)
           if (mainResolution >= targetResolution) { // respect the max height of screen
-            width = toRatioWidth(16, 9)(flowrHeigth)
+            const newHeight = toRatioHeight(16, 9)(width)
+            if (newHeight > mainHeight) {
+              width = toRatioWidth(16, 9)(mainHeight)
+            }
+            height = toRatioHeight(16, 9)(width)
           } else { // respect the max width of screen
-            height = toRatioHeight(16, 9)(flowrWidth)
+            const newWidth = toRatioWidth(16, 9)(height)
+            if (newWidth > mainWidth) {
+              height = toRatioHeight(16, 9)(mainWidth)
+            }
+            width = toRatioWidth(16, 9)(height)
           }
           this.logger.warn(`SIZE: ${width}: ${height}`)
           this.setSize(width, height)
