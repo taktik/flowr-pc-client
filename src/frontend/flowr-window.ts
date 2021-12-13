@@ -54,11 +54,19 @@ export class FlowrWindow extends KeyboardMixin(BrowserWindow) {
           let height = flowrHeight > mainHeight ? mainHeight: flowrHeight
           this.logger.warn(`FlowrSize: ${width} x ${height}`)
           const previousSize = store.get('windowBounds')
-            if (width != previousSize.width) {
-              height = toRatioHeight(16, 9)(width)
-            } else {
-              width = toRatioWidth(16, 9)(height)
+          if (width !== previousSize.width) {
+            height = toRatioHeight(16, 9)(width)
+            if (height > mainHeight) { // respect the max height
+              width = toRatioWidth(16, 9)(mainHeight)
+              height = mainHeight
             }
+          } else {
+            width = toRatioWidth(16, 9)(height)
+            if (width > mainWidth) {
+              height = toRatioHeight(16, 9)(mainWidth)
+              width = mainWidth
+            }
+          }
           this.logger.warn(`SIZE: ${width}: ${height}`)
           this.setSize(width, height)
           store.set('windowBounds', { width, height })
