@@ -10,15 +10,9 @@ import { IPlayer } from './src/players/abstractPlayer'
 import { IPlayerStore, PipelineType } from './src/interfaces/playerStore'
 import { VlcPlayer } from './src/players/vlc/player'
 
-function toRatioHeight(width: number, height: number) {
+function toRatio(width: number, height: number) {
   return (value: number) => Math.floor((value - width) * height / width)
 }
-
-function toRatioWidth(width: number, height: number) {
-  return (value: number) => Math.floor(value * (width / height))
-}
-
-const targetResolution = 16/9
 
 export class FlowrWindow extends KeyboardMixin(BrowserWindow) {
   private resizeTimeout?: number
@@ -35,7 +29,7 @@ export class FlowrWindow extends KeyboardMixin(BrowserWindow) {
 
     this.on('unmaximize', () => {
       const width = this.store.get('windowBounds').width
-      const height = toRatioHeight(16, 9)(width)
+      const height = toRatio(16, 9)(width)
       this.setSize(width, height + 40)
     })
 
@@ -48,22 +42,22 @@ export class FlowrWindow extends KeyboardMixin(BrowserWindow) {
           const mainScreen = screen.getPrimaryDisplay()
           this.logger.warn(`MainScreen: ${mainScreen.size.width} x ${mainScreen.size.height}`)
           const { width: mainWidth, height: mainHeight } = mainScreen.size
-          const mainResolution = mainWidth/mainHeight
           const [flowrWidth, flowrHeight] = this.getSize()
           let width = flowrWidth > mainWidth ? mainWidth: flowrWidth
           let height = flowrHeight > mainHeight ? mainHeight: flowrHeight
-          this.logger.warn(`FlowrSize: ${width} x ${height}`)
           const previousSize = store.get('windowBounds')
-          if (width !== previousSize.width) {
-            height = toRatioHeight(16, 9)(width)
+          const deltaWidth = Math.abs(previousSize.width - width)
+          const deltaHeight = Math.abs(previousSize.height - height)
+          if (deltaWidth > deltaHeight) {
+            height = toRatio(16, 9)(width)
             if (height > mainHeight) { // respect the max height
-              width = toRatioWidth(16, 9)(mainHeight)
+              width = toRatio(9, 16)(mainHeight)
               height = mainHeight
             }
           } else {
-            width = toRatioWidth(16, 9)(height)
+            width = toRatio(9, 16)(height)
             if (width > mainWidth) {
-              height = toRatioHeight(16, 9)(mainWidth)
+              height = toRatio(16, 9)(mainWidth)
               width = mainWidth
             }
           }
