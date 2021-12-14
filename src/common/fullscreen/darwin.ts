@@ -6,7 +6,7 @@ export class DarwinFullScreen implements IFullScreenManager{
   fullscreenable = false
 
   applyDefaultActionOnWindow(browserWindow: BrowserWindow): void {
-    this.setFullScreen(browserWindow, true)
+    this.setFullScreen(browserWindow, false)
   }
 
   isFullScreen(browserWindow: BrowserWindow): boolean {

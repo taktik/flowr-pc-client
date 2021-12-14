@@ -1,4 +1,4 @@
-import { BrowserWindow, BrowserWindowConstructorOptions } from 'electron'
+import { BrowserWindow, BrowserWindowConstructorOptions, screen } from 'electron'
 import { Store } from './src/store'
 import { KeyboardMixin } from '../keyboard/keyboardMixin'
 import { IFlowrStore } from './src/interfaces/flowrStore'
@@ -33,7 +33,6 @@ export class FlowrWindow extends KeyboardMixin(BrowserWindow) {
     this.on('unmaximize', () => {
       const width = this.store.get('windowBounds').width
       const height = toRatio(16, 9)(width)
-
       this.setSize(width, height + 40)
     })
 
@@ -43,10 +42,26 @@ export class FlowrWindow extends KeyboardMixin(BrowserWindow) {
       }
       this.resizeTimeout = setTimeout(() => {
         if (!this.isMaximized() && !FullScreenManager.isFullScreen(this)) {
-          const size = this.getSize()
-          const width = size[0]
-          const height = toRatio(16, 9)(width)
-          this.setSize(width, height + 40)
+          const mainScreen = screen.getPrimaryDisplay()
+          const { width: mainWidth, height: mainHeight } = mainScreen.size
+          let [width, height] = this.getSize()
+          const previousSize = store.get('windowBounds')
+          const deltaWidth = Math.abs(previousSize.width - width)
+          const deltaHeight = Math.abs(previousSize.height - height)
+          if (deltaWidth > deltaHeight) {
+            height = toRatio(16, 9)(width)
+            if (height > mainHeight) { // respect the max height
+              width = toRatio(9, 16)(mainHeight)
+              height = mainHeight
+            }
+          } else {
+            width = toRatio(9, 16)(height)
+            if (width > mainWidth) {
+              height = toRatio(16, 9)(mainWidth)
+              width = mainWidth
+            }
+          }
+          this.setSize(width, height)
           store.set('windowBounds', { width, height })
         }
       }, 150)
