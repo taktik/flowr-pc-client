@@ -5,9 +5,10 @@ import { Store } from '../frontend/src/store'
 import { BaseEncodingOptions, Dirent, PathLike, readdir, readFile } from 'fs'
 import { FlowrWindow } from '../frontend/flowr-window'
 import { buildApplicationPreloadPath, buildFilePath, getApplicationIndexUrl } from './helpers'
-import { getLogger } from '../frontend/src/logging/loggers'
+import { getLogger, setLevel } from '../frontend/src/logging/loggers'
 import { IFlowrStore } from '../frontend/src/interfaces/flowrStore'
 import { ApplicationCanOpenConfig, ApplicationInitConfig, ApplicationInitializer, ApplicationOpenConfig, FlowrApplicationInitializer, FlowrApplicationWindow, WindowTypes } from './types'
+import {LogSeverity} from "../frontend/src/logging/types";
 
 function readdirPromise(path: PathLike, options: BaseEncodingOptions & {withFileTypes: true}): Promise<Dirent[]> {
   return new Promise((resolve, reject) => {
@@ -234,6 +235,10 @@ export class ApplicationManager {
       err = (e as Error).message
     }
     event.returnValue = { err }
+  }
+
+  setLevelLogFromFlowrAdmin(logLevel: LogSeverity): void {
+    setLevel(logLevel)
   }
 
   canOpenApplication(event: IpcMainEvent, openConfig: ApplicationCanOpenConfig): void {

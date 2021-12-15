@@ -76,6 +76,11 @@ export class VlcPlayer extends AbstractPlayer {
     /* eslint-enable @typescript-eslint/unbound-method */
     this.startKeepAlive(process, url)
     this.process = process
+
+    const logLevel = this.flowrWindow.store.get('logLevel')
+    if (logLevel !== undefined) this.messaging.send(MessageType.LOG, {type: logLevel})
+
+
   }
 
   private clear(process: ChildProcess) {
