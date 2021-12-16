@@ -61,8 +61,8 @@ export class VlcPlayer extends AbstractPlayer {
       app.quit()
     }
 
-    //const path = this.store.get('pipeline')?.metadata?.applicationPath
-    const path = "C:\\Users\\Jonathan-Win\\Dotnet\\VlcController\\VlcForm\\bin\\Debug\\netcoreapp3.1\\VlcForm.exe"
+    const path = this.store.get('pipeline')?.metadata?.applicationPath
+ 
     if (!path) {
       throw Error('No path is defined for VLC executable. Please configure it in flowr-admin\'s settings')
     }
@@ -127,6 +127,7 @@ export class VlcPlayer extends AbstractPlayer {
       case VLCLogLevel.ERROR:
         return this.log.error.bind(this.log) as ILogger['error']
       case VLCLogLevel.INFO:
+        return this.log.info.bind(this.log) as ILogger['info']
       default:
         return this.log.info.bind(this.log) as ILogger['info']
     }
