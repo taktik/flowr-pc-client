@@ -81,7 +81,6 @@ export class VlcPlayer extends AbstractPlayer {
     const logLevel = this.flowrWindow.store.get('logLevel')
     if (logLevel !== undefined) this.messaging.send(MessageType.LOG, {value: logLevel})
 
-
   }
 
   private clear(process: ChildProcess) {
