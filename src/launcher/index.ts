@@ -22,7 +22,6 @@ import { cloneDeep, mergeWith } from 'lodash'
 import { FullScreenManager } from '../common/fullscreen'
 import { IFlowrDesktopConfig } from '../frontend/src/interfaces/IFlowrDesktopConfig'
 import { WexondOptions } from '../wexond/main/app-window'
-import {LogSeverity} from "../frontend/src/logging/types";
 
 const FlowrDataDir = resolve(homedir(), '.flowr')
 
@@ -196,7 +195,6 @@ async function main() {
           maxTab : 0,
         })
       })
-      ipcMain.on('logLevelFromWebSocket',(e: Event, logLevel: LogSeverity) => applicationManager.setLevelLogFromFlowrAdmin(logLevel))
       ipcMain.on('flowrLanguageChanged', (e: Event, lang: string) => applicationManager.languageChanged(lang))
     } catch (e) {
       console.error('Error in init', e)
