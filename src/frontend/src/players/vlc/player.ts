@@ -1,12 +1,12 @@
-import {ChildProcess, spawn} from 'child_process'
-import {app, IpcMainEvent, WebContents} from 'electron'
-import {IPlayerStore, PlayerPosition} from '../../interfaces/playerStore'
-import {ILogger, LogSeverity} from '../../logging/types'
-import {Store} from '../../store'
-import {AbstractPlayer, PlayProps} from '../abstractPlayer'
-import {IMessage, LogMessage, MessageDataType, MessageType, ProcessMessaging, VLCLogLevel} from './messaging'
-import {ResetableTimeout} from './resetableTimeout'
-import {FlowrWindow} from "../../../flowr-window";
+import { ChildProcess, spawn } from 'child_process'
+import { app, IpcMainEvent, WebContents } from 'electron'
+import { IPlayerStore, PlayerPosition } from '../../interfaces/playerStore'
+import { ILogger, LogSeverity } from '../../logging/types'
+import { Store } from '../../store'
+import { AbstractPlayer, PlayProps } from '../abstractPlayer'
+import { IMessage, LogMessage, MessageDataType, MessageType, ProcessMessaging, VLCLogLevel } from './messaging'
+import { ResetableTimeout } from './resetableTimeout'
+import { FlowrWindow } from "../../../flowr-window";
 
 type ResizeProps = {
   width: number
