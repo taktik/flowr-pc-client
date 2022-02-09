@@ -103,8 +103,53 @@ Translation are located in `src/wexdond/local`.
 We used [i18n-manager](https://github.com/gilmarsquinelato/i18n-manager) to edit local directory.
 
 
-## <a id="build"></a> Build and publish
+# <a id="build"></a> Build and publish
+**/!\\ Widevine builds require special attention. Please check the dedicated [section below](#widevine) /!\\**
+## Installation
+When making several builds, always ensure that the modules are properly installed.
+```
+$ rm -rf node_modules # if setup was already done, just to be sure
+$ npm run setup # (Regular)
+$ npm run setup-widevine # (Widevine linux/OSX)
+$ npm run setup-widevine-win # (Widevine Windows)
+```
+## Actual build
+```
+$ npm run compile-$platform # (Regular)
+$ npm run compile-widevine-$platform # (Widevine)
+```
+Where $platform is one of [win32, darwin, linux].
 
+The builds may automatically be published on github. For this you need to setup a GH_TOKEN env variable with a [Github auth token](https://docs.github.com/en/authentication/keeping-your-account-and-data-secure/creating-a-personal-access-token), and then add the following flag to the build command: "--publish always".
+```
+$ npm run compile-win32 -- --publish always # note the additional "--" to pass the flag to the actual command
+```
+### Helpers (linux/OSX only)
 Two script are available to help build and publish
-`./script/build help`
-`./script/maven help`
+```
+$ ./script/build help # build for a given platform
+$ ./script/maven help # publish to taktik's maven repository
+```
+## <a id="widevine"></a> Special notes on widevine builds
+OSX and Windows builds require VMP signing for Widevine CDM support. Please read the below section(s) first, but if you need it more info can be found [here](https://github.com/castlabs/electron-releases/wiki/EVS).
+
+### Installation
+Python 3.7+ **MUST** be installed.
+A requirement for the build scripts to work on all platforms is to define the PYTHON3 environment variable to target the location of the python3 executable.
+Then
+```
+$ PYTHON3 -m pip install --upgrade castlabs-evs
+```
+
+An account has already been created, log in (its credentials can be found the usual Taktik way).
+This operation is to be renewed periodically (at least once every month).
+```
+$ PYTHON3 -m castlabs_evs.account reauth
+```
+
+However if you ever need to create a new account then use
+```
+$ PYTHON3 -m castlabs_evs.account signup
+```
+
+Once this is done, the build may be performed accordingly to described in the sections above

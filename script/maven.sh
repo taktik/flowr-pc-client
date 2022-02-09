@@ -8,7 +8,7 @@ Help () {
    echo 'publish archive on taktik maven repository.'
    echo Note set environment variable MV_USER and MV_PASS with your maven credential.
    echo
-   echo example: pubish dist/flowr-desktop_0.1.8_amd64.deb
+   echo example: publish dist/flowr-desktop_0.1.8_amd64.deb
 }
 
 PubilshDebianPackage ()
