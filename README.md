@@ -135,7 +135,7 @@ OSX and Windows builds require VMP signing for Widevine CDM support. Please read
 
 ### Installation
 Python 3.7+ **MUST** be installed.
-A requirement for the build scripts to work on all platforms is to define the PYTHON3 environment variable to target the location of the python3 executable.
+A requirement for the build scripts to work on all platforms is to define the PYTHON3 environment variable to target the python3 executable (example: "/usr/local/bin/python3").
 Then
 ```
 $ PYTHON3 -m pip install --upgrade castlabs-evs
