@@ -84,8 +84,12 @@ const webpackModule = {
     rules: [
         {
             // If you see a file that ends in .ejs, just send it to the raw-loader.
-            test: /\.(ejs|html)$/,
+            test: /\.ejs$/,
             use: 'raw-loader',
+        },
+        {
+            test: /\.html$/,
+            use: 'html-loader',
         },
         {
             test: /\.(ts|tsx)$/,
@@ -128,8 +132,11 @@ const webpackModule = {
     ],
 }
 
+const publicPath =  path.resolve(__dirname, `../${OUTPUT_DIR}`)
+
 const output = {
-    path: path.resolve(__dirname, `../${OUTPUT_DIR}`),
+    path: publicPath,
+    publicPath,
 }
 
 function preload(name, path, mode, optimization) {

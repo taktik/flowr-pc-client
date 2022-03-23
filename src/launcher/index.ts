@@ -63,9 +63,8 @@ async function main() {
 
   const openBrowserWindow = async (
     flowrStore: Store<IFlowrStore>,
-    event: Event,
     options: Omit<WexondOptions, 'enableVirtualKeyboard'>,
-  ): Promise<BrowserWindow> => {
+  ): Promise<void> => {
 
     browserWindow?.close()
 
@@ -89,8 +88,6 @@ async function main() {
       flowrWindow?.webContents.setAudioMuted(false)
       flowrWindow?.show()
     })
-
-    return browserWindow
   }
 
   function onReady() {
@@ -132,7 +129,7 @@ async function main() {
 
     // eslint-disable-next-line @typescript-eslint/no-misused-promises
     ipcMain.on('open-browser', async (event: Event, options: Omit<WexondOptions, 'enableVirtualKeyboard'>) => {
-      await openBrowserWindow(flowrStore, event, options)
+      await openBrowserWindow(flowrStore, options)
     })
 
     ipcMain.on('close-browser', () => {
@@ -182,15 +179,15 @@ async function main() {
         flowrWindow = null
       })
 
-      // eslint-disable-next-line @typescript-eslint/no-misused-promises
-      flowrWindow.webContents.on('new-window', async (event, url) => {
-        event.preventDefault()
-
-        await openBrowserWindow(store, event, {
+      flowrWindow.webContents.setWindowOpenHandler(({ url }) => {
+        openBrowserWindow(store, {
           clearBrowsingDataAtClose: false,
           openUrl: url,
           maxTab : 0,
+        }).catch(e => {
+          log.error('Failed to open window at url', url, ':', e)
         })
+        return { action: 'deny' }
       })
 
       ipcMain.on('flowrLanguageChanged', (e: Event, lang: string) => applicationManager.languageChanged(lang))

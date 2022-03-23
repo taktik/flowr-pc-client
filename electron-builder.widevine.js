@@ -25,9 +25,9 @@ module.exports = {
   artifactName: '${productName}-${version}-${os}-${arch}-widevine.${ext}',
   afterPack: signIf('darwin'),
   afterSign: signIf('win32'),
-  electronVersion: '11.1.1',
+  electronVersion: '17.1.2',
   electronDownload: {
-    version: '11.1.1-wvvmp',
+    version: '17.1.2-wvvmp',
     mirror: 'https://github.com/castlabs/electron-releases/releases/download/v'
   }
 }

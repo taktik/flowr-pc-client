@@ -12,12 +12,12 @@ import { parse } from 'tldts'
 import { buildPreloadPath } from '../../common/preload'
 
 export class View extends BrowserView {
-  public title: string = ''
-  public url: string = ''
+  public title = ''
+  public url = ''
   public tabId: number
   public homeUrl: string
 
-  constructor(id: number, url: string) {
+  constructor(id: number, viewUrl: string) {
     super({
       webPreferences: {
         preload: buildPreloadPath('view-preload.js'),
@@ -25,12 +25,11 @@ export class View extends BrowserView {
         additionalArguments: [`--tab-id=${id}`],
         contextIsolation: true,
         partition: 'persist:view',
-        nativeWindowOpen: true,
         plugins: true,
       },
     })
 
-    this.homeUrl = url
+    this.homeUrl = viewUrl
     this.tabId = id
 
     this.webContents.on('context-menu', (e, params) => {
@@ -174,6 +173,7 @@ export class View extends BrowserView {
           {
             label: 'Close',
             click: () => {
+              // eslint-disable-next-line @typescript-eslint/no-floating-promises
               this.webContents.executeJavaScript('document.exitFullscreen()')
               appWindow.webContents.send('remove-tab', this.tabId)
             },
@@ -226,9 +226,11 @@ export class View extends BrowserView {
           ...parse(url),
         })
 
+        // eslint-disable-next-line @typescript-eslint/no-floating-promises
         this.webContents.insertCSS(styles)
 
         for (const script of scripts) {
+          // eslint-disable-next-line @typescript-eslint/no-floating-promises
           this.webContents.executeJavaScript(script)
         }
       }
@@ -255,7 +257,7 @@ export class View extends BrowserView {
       })
     })
 
-    this.webContents.addListener('did-finish-load', async () => {
+    this.webContents.addListener('did-finish-load', () => {
       this.emitWebNavigationEvent('onCompleted', {
         tabId: this.tabId,
         url: this.webContents.getURL(),
@@ -265,49 +267,51 @@ export class View extends BrowserView {
       })
     })
 
-    this.webContents.addListener(
-      'new-window',
-      (e, url, frameName, disposition) => {
-        if (disposition === 'new-window') {
-          if (frameName === '_self') {
-            e.preventDefault()
-            appWindow.viewManager.selected.webContents.loadURL(url)
-          } else if (frameName === '_blank') {
-            e.preventDefault()
-            this.webContents.executeJavaScript('document.exitFullscreen()')
-            appWindow.webContents.send(
-              'api-tabs-create',
-              {
-                url,
-                active: true,
-              },
-              true,
-            )
-          }
-        } else if (disposition === 'foreground-tab') {
-          e.preventDefault()
+    this.webContents.setWindowOpenHandler(({ disposition, frameName, url }) => {
+      let action: 'allow' | 'deny' = 'allow'
+
+      if (disposition === 'new-window') {
+        if (frameName === '_self') {
+          action = 'deny'
+          // eslint-disable-next-line @typescript-eslint/no-floating-promises
+          appWindow.viewManager.selected.webContents.loadURL(url)
+        } else if (frameName === '_blank') {
+          action = 'deny'
+          // eslint-disable-next-line @typescript-eslint/no-floating-promises
+          this.webContents.executeJavaScript('document.exitFullscreen()')
           appWindow.webContents.send(
             'api-tabs-create',
-            { url, active: true },
-            true,
-          )
-        } else if (disposition === 'background-tab') {
-          e.preventDefault()
-          appWindow.webContents.send(
-            'api-tabs-create',
-            { url, active: false },
+            {
+              url,
+              active: true,
+            },
             true,
           )
         }
+      } else if (disposition === 'foreground-tab') {
+        action = 'deny'
+        appWindow.webContents.send(
+          'api-tabs-create',
+          { url, active: true },
+          true,
+        )
+      } else if (disposition === 'background-tab') {
+        action = 'deny'
+        appWindow.webContents.send(
+          'api-tabs-create',
+          { url, active: false },
+          true,
+        )
+      }
 
-        this.emitWebNavigationEvent('onCreatedNavigationTarget', {
-          tabId: this.tabId,
-          url,
-          sourceFrameId: 0,
-          timeStamp: Date.now(),
-        })
-      },
-    )
+      this.emitWebNavigationEvent('onCreatedNavigationTarget', {
+        tabId: this.tabId,
+        url,
+        sourceFrameId: 0,
+        timeStamp: Date.now(),
+      })
+      return { action }
+    })
 
     this.webContents.addListener('dom-ready', () => {
       this.emitWebNavigationEvent('onDOMContentLoaded', {
@@ -321,7 +325,7 @@ export class View extends BrowserView {
 
     this.webContents.addListener(
       'page-favicon-updated',
-      async (e, favicons) => {
+      (e, favicons) => {
         appWindow.webContents.send(
           `browserview-favicon-updated-${this.tabId}`,
           favicons[0],
@@ -336,16 +340,15 @@ export class View extends BrowserView {
       )
     });
 
-    (this.webContents as any).addListener(
+    this.webContents.addListener(
       'certificate-error',
       (
         event: Electron.Event,
-        url: string,
-        error: string,
-        certificate: Electron.Certificate,
-        callback: Function,
+        _: string,
+        _2: string,
+        _3: Electron.Certificate,
+        callback: (response: boolean) => unknown,
       ) => {
-        console.log(certificate, error, url)
         // TODO: properly handle insecure websites.
         event.preventDefault()
         callback(true)
@@ -356,10 +359,11 @@ export class View extends BrowserView {
       width: true,
       height: true,
     })
-    this.webContents.loadURL(url)
+    // eslint-disable-next-line @typescript-eslint/no-floating-promises
+    this.webContents.loadURL(viewUrl)
   }
 
-  public updateNavigationState = () => {
+  public updateNavigationState = (): void => {
     if (!this.webContents || this.webContents.isDestroyed()) return
 
     if (appWindow.viewManager.selectedId === this.tabId) {
@@ -370,7 +374,7 @@ export class View extends BrowserView {
     }
   }
 
-  public emitWebNavigationEvent = (name: string, ...data: any[]) => {
+  public emitWebNavigationEvent = (name: string, ...data: any[]): void => {
     this.webContents.send(`api-emit-event-webNavigation-${name}`, ...data)
     sendToAllExtensions(`api-emit-event-webNavigation-${name}`, ...data)
   }
