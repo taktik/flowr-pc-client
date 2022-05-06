@@ -1,7 +1,7 @@
 import { IFlowrConfig } from './flowrConfig'
 import { IChannelData } from './channelData'
-import { IPlayerStore } from './playerStore'
 import { LogSeverity } from '../logging/types'
+import { AudioStorePreferences } from './audioStore'
 
 export interface IFlowrStore {
   windowBounds: { width: number, height: number }
@@ -13,10 +13,10 @@ export interface IFlowrStore {
   flowrMonitoringTime?: number
   deinterlacing: boolean
   flowrConfig?: IFlowrConfig
-  player?: IPlayerStore
   enableVirtualKeyboard: boolean
   useRealMacAddress?: boolean
   phoneServer?: string
   messagingNumber?: string
   logLevel: LogSeverity
+  audioDevices?: AudioStorePreferences
 }

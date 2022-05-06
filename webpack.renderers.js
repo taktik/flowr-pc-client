@@ -102,7 +102,6 @@ module.exports = (env) => {
             ...basePlugins,
             ...flowrPhoneConfig.plugins,
             ...keyboardConfig.plugins,
-            new CleanWebpackPlugin(),
         ]
     }
 }
