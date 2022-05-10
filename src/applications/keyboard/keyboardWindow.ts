@@ -1,5 +1,5 @@
 import { BrowserWindow, ipcMain, IpcMainEvent, KeyboardInputEvent, screen, Rectangle, WebContents } from 'electron'
-import { getLogger } from 'src/frontend/src/logging/loggers'
+import { getLogger } from '../../frontend/src/logging/loggers'
 import { buildApplicationPreloadPath, getApplicationIndexUrl } from '../../application-manager/helpers'
 
 function buildPositionFromParents(parentRectangle: Rectangle): Rectangle {
