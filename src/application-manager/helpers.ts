@@ -63,11 +63,11 @@ export const monitorActivity = (browserWindow: BrowserWindow, timeout: number, c
   log.info(`Activity monitor enabled (timeout value: ${timeout}ms)`)
 
   const watchDogTimeout = 30000 // ping every 30 s
-  let pingPingTimer: number | undefined
+  let pingPongTimer: number | undefined
   let watchDogTimer: number | undefined
 
   const start = () => {
-    pingPingTimer = setTimeout(() => {
+    pingPongTimer = setTimeout(() => {
       ipcMain.on('pong', refresh)
       browserWindow.webContents.send('ping')
       watchDogTimer = setTimeout(() => {
@@ -78,8 +78,8 @@ export const monitorActivity = (browserWindow: BrowserWindow, timeout: number, c
   }
 
   const cancel = () => {
-    if (pingPingTimer) {
-      clearTimeout(pingPingTimer)
+    if (pingPongTimer) {
+      clearTimeout(pingPongTimer)
     }
     if (watchDogTimer) {
       clearTimeout(watchDogTimer)
