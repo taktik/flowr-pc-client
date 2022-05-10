@@ -35,9 +35,9 @@
     "lint": "lint-staged",
     "lint-fix": "prettier --write \"src/**/*.ts*\" && lint-staged",
     "install-app-deps": "electron-builder install-app-deps",
-    "install-widevine": "npm install \"https://github.com/castlabs/electron-releases#v17.1.2-wvvmp\" --no-save",
-    "copy-header": "cp -r $HOME/.electron-gyp/17.1.2 $HOME/.electron-gyp/17.1.2-wvvmp",
-    "copy-header-win": "copy %USERPROFILE%\\.electron-gyp\\17.1.2 %USERPROFILE%\\.electron-gyp\\17.1.2-wvvmp"
+    "install-widevine": "npm install \"https://github.com/castlabs/electron-releases#v17.4.3+wvcus\" --no-save",
+    "copy-header": "cp -r $HOME/.electron-gyp/17.4.3 $HOME/.electron-gyp/17.4.3+wvcus",
+    "copy-header-win": "copy %USERPROFILE%\\.electron-gyp\\17.4.3 \"%USERPROFILE%\\.electron-gyp\\17.4.3+wvcus\""
   },
   "devDependencies": {
     "@types/axios": "0.14.0",
@@ -63,7 +63,7 @@
     "copy-webpack-plugin": "10.2.4",
     "cross-env": "5.2.0",
     "css-loader": "6.7.1",
-    "electron": "17.1.2",
+    "electron": "17.4.3",
     "electron-builder": "22.14.13",
     "eslint": "7.32.0",
     "eslint-config-prettier": "8.3.0",

@@ -94,7 +94,7 @@ export function createFlowrWindow(flowrStore: Store<IFlowrStore>): FlowrWindow {
 
   function loadOtherPage(name: string, url: string) {
     return (): void => {
-      reloadTimer.clear()
+      reloadTimer?.clear()
       cancelActivityMonitor?.()
       mainWindow.loadURL(url)
         .catch(e => {
