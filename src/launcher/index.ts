@@ -192,7 +192,6 @@ async function main() {
           maxTab : 0,
         })
       })
-
       ipcMain.on('flowrLanguageChanged', (e: Event, lang: string) => applicationManager.languageChanged(lang))
     } catch (e) {
       console.error('Error in init', e)

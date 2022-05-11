@@ -1,7 +1,7 @@
 import { ChildProcess, spawn } from 'child_process'
 import { app, IpcMainEvent, WebContents } from 'electron'
 import { IPlayerStore, PlayerPosition } from '../../interfaces/playerStore'
-import { ILogger } from '../../logging/types'
+import { ILogger, LogSeverity } from '../../logging/types'
 import { Store } from '../../store'
 import { AbstractPlayer, PlayProps } from '../abstractPlayer'
 import { IMessage, LogMessage, MessageDataType, MessageType, ProcessMessaging, VLCLogLevel } from './messaging'
@@ -25,6 +25,7 @@ export class VlcPlayer extends AbstractPlayer {
   private playerPosition: ResizeProps = { x: 0, y: 0, width: 0, height: 0 }
   private keepAliveTimeout?: ResetableTimeout
   private frontendWebView?: WebContents
+  private logLevel: LogSeverity = LogSeverity.INFO;
 
   constructor(private readonly flowrWindow: FlowrWindow, store: Store<IPlayerStore>) {
     super(store)
@@ -33,10 +34,13 @@ export class VlcPlayer extends AbstractPlayer {
     this.onError = this.onError.bind(this)
     this.onMessage = this.onMessage.bind(this)
     this.resize = this.resize.bind(this)
+    this.setLogLevel = this.setLogLevel.bind(this)
     /* eslint-enable @typescript-eslint/no-unsafe-assignment */
 
     // eslint-disable-next-line @typescript-eslint/unbound-method
     this.registerEvent('resize', this.resize)
+    // eslint-disable-next-line @typescript-eslint/unbound-method
+    this.registerEvent('setlogLevel',this.setLogLevel)
   }
 
   private resetKeepAlive() {
@@ -62,10 +66,11 @@ export class VlcPlayer extends AbstractPlayer {
     }
 
     const path = this.store.get('pipeline')?.metadata?.applicationPath
+ 
     if (!path) {
       throw Error('No path is defined for VLC executable. Please configure it in flowr-admin\'s settings')
     }
-    const args = [url, toRectangle(this.playerPosition), this.store.get('position')]
+    const args = [url, toRectangle(this.playerPosition), this.store.get('position'),this.flowrWindow.store.get('logLevel')]
     const process = spawn(path, args)
 
     /* eslint-disable @typescript-eslint/unbound-method */
@@ -121,6 +126,7 @@ export class VlcPlayer extends AbstractPlayer {
       case VLCLogLevel.ERROR:
         return this.log.error.bind(this.log) as ILogger['error']
       case VLCLogLevel.INFO:
+        return this.log.info.bind(this.log) as ILogger['info']
       default:
         return this.log.info.bind(this.log) as ILogger['info']
     }
@@ -187,6 +193,11 @@ export class VlcPlayer extends AbstractPlayer {
 
   setSubtitles(): void {
     // not required now, maybe later
+  }
+
+  setLogLevel(_: IpcMainEvent, logLevel: LogSeverity): void {
+    this.logLevel = logLevel
+    this.messaging.send(MessageType.LOG, {value: this.logLevel})
   }
 
   resize(_: IpcMainEvent, { x, y, width, height }: ResizeProps): void {

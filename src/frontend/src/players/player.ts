@@ -90,6 +90,7 @@ export class Player extends AbstractPlayer {
     if (!this.playPipelineHeadOutput && this.playPipelineTail) {
       return
     }
+
     this.log.info('--------- SETTING SUBTITLE PID', subtitlesPid, '---------')
     if (this.playPipelineTail === this.transmuxer) {
       // Switch to FFMPEG
