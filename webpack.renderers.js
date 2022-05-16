@@ -2,6 +2,7 @@
 
 const HtmlWebpackPlugin = require('html-webpack-plugin')
 const CopyWebpackPlugin = require('copy-webpack-plugin')
+const { CleanWebpackPlugin } = require('clean-webpack-plugin')
 const path = require('path')
 const {
     webpackModule,
@@ -9,7 +10,6 @@ const {
     output,
     resolve,
     Mode,
-    RENDERER_SERVER_PORT,
 } = require('./webpack/utils')
 
 module.exports = (env) => {
@@ -32,6 +32,11 @@ module.exports = (env) => {
             patterns: [
                 {
                     from: './static/pages',
+                    filter: (path) => {
+                        // We must not emit app.html that is handled by the HtmlWebpackPlugin above
+                        // ... otherwise an error is thrown
+                        return !path.endsWith('app.html')
+                    }
                 },
             ]
         })
@@ -43,13 +48,6 @@ module.exports = (env) => {
         mode,
         optimization,
         module: webpackModule,
-        devServer: {
-            disableHostCheck: true,
-            contentBase: path.join(__dirname),
-            host: '0.0.0.0',
-            port: RENDERER_SERVER_PORT,
-            writeToDisk: true,
-        },
         externals: {
             fs: 'commonjs fs',
             path: 'commonjs path',

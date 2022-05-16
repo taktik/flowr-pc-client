@@ -1,7 +1,6 @@
 /* eslint-disable */
 
 const { DefinePlugin } = require('webpack')
-const { CleanWebpackPlugin } = require('clean-webpack-plugin')
 const { getOptimization, webpackModule, resolve, Mode, output, RENDERER_SERVER_PORT } = require('./webpack/utils')
 
 module.exports = async (env) => {
@@ -23,7 +22,6 @@ module.exports = async (env) => {
                 new DefinePlugin({
                     __RENDERER_SERVER_PORT__: JSON.stringify(RENDERER_SERVER_PORT),
                 }),
-                new CleanWebpackPlugin(),
             ],
             externals: {
                 fs: 'commonjs fs',

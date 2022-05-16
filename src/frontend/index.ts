@@ -64,6 +64,8 @@ export function createFlowrWindow(flowrStore: Store<IFlowrStore>): FlowrWindow {
   let flowrFrontendURL: string
 
   try {
+    // Ensure validity of stored URL
+    new URL(storedUrl)
     flowrFrontendURL = storedUrl
   } catch (e) {
     isLaunchedUrlCorrect = false
@@ -92,7 +94,7 @@ export function createFlowrWindow(flowrStore: Store<IFlowrStore>): FlowrWindow {
 
   function loadOtherPage(name: string, url: string) {
     return (): void => {
-      reloadTimer.clear()
+      reloadTimer?.clear()
       cancelActivityMonitor?.()
       mainWindow.loadURL(url)
         .catch(e => {
@@ -196,7 +198,7 @@ export function createFlowrWindow(flowrStore: Store<IFlowrStore>): FlowrWindow {
 
   const _ipcEvents: { [key: string]: (...args: any[]) => void } = {
     FlowrIsInitializing: () => {
-      reloadTimer.clear()
+      reloadTimer?.clear()
       isLaunchedUrlCorrect = true
       cancelActivityMonitor?.()
       cancelActivityMonitor = monitorActivity(mainWindow, flowrStore.get('flowrMonitoringTime'), reload)
@@ -330,6 +332,9 @@ export function createFlowrWindow(flowrStore: Store<IFlowrStore>): FlowrWindow {
       evt.sender.send('receiveScreenCapture', image.toDataURL())
     },
     openConfigMode: displayHiddenMenu,
+    getAudioDevicesPreferences: (evt: IpcMainEvent) => {
+      evt.sender.send('receiveAudioDevicesPreferences', flowrStore.get('audioDevices'))
+    }
   }
   Object.entries(_ipcEvents).forEach(event => ipcMain.on(...event))
   mainWindow.on('close', () => Object.entries(_ipcEvents).forEach(event => ipcMain.removeListener(...event)))

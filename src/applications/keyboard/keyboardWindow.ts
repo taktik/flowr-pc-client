@@ -1,4 +1,5 @@
 import { BrowserWindow, ipcMain, IpcMainEvent, KeyboardInputEvent, screen, Rectangle, WebContents } from 'electron'
+import { getLogger } from '../../frontend/src/logging/loggers'
 import { buildApplicationPreloadPath, getApplicationIndexUrl } from '../../application-manager/helpers'
 
 function buildPositionFromParents(parentRectangle: Rectangle): Rectangle {
@@ -14,6 +15,7 @@ function buildPositionFromParents(parentRectangle: Rectangle): Rectangle {
 }
 
 export class KeyboardWindow extends BrowserWindow {
+  private log = getLogger('Keyboard window')
   capsLock = false
 
   get webContentsToSend(): WebContents | undefined {
@@ -40,11 +42,11 @@ export class KeyboardWindow extends BrowserWindow {
       ...(parent ? buildPositionFromParents(parent.getBounds()) : {}),
     })
     const url = getApplicationIndexUrl('keyboard')
-    this.loadURL(url)
+    this.loadURL(url).catch(e => this.log.error('Failed to open keyboard url', url, e))
 
     const ipcEvents = {
-      keyPress: this.onKeyPress.bind(this),
-      keyUp: this.onKeyUp.bind(this),
+      keyPress: this.onKeyPress.bind(this) as this['onKeyPress'],
+      keyUp: this.onKeyUp.bind(this) as this['onKeyUp'],
     }
     Object.entries(ipcEvents).forEach(event => ipcMain.on(...event))
     this.on('close', () => Object.entries(ipcEvents).forEach(event => ipcMain.removeListener(...event)))
@@ -70,7 +72,7 @@ export class KeyboardWindow extends BrowserWindow {
     this.webContentsToSend?.sendInputEvent(keyUp)
   }
 
-  setParentWindow(parent: BrowserWindow | null) {
+  setParentWindow(parent: BrowserWindow | null): void {
     if (parent) {
       const { x, y, width, height } = buildPositionFromParents(parent.getBounds())
       this.setSize(width, height)

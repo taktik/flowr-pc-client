@@ -81,7 +81,7 @@ export class ApplicationManager {
       const { create, packageJSON, canOpen } = (await import(`../applications/${name}/index.ts`)) as ApplicationInitializer
       const preload = buildApplicationPreloadPath(name)
       const index = getApplicationIndexUrl(name)
-      const store = storeManager.createStore<Record<string, any>>(name)
+      const store = storeManager.createStore<Record<string, any>>(name, { defaults: {} })
       const clearStore = this.flowrStore?.get('clearAppDataOnStart') ?? false
 
       if (clearStore) {
