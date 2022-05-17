@@ -65,13 +65,6 @@ export class PhoneWindow extends KeyboardMixin(BrowserWindow) {
       'phone-hide': this.hide.bind(this),
       'register-props': this.updateRegisterProps.bind(this),
       'phone-mute': this.mute.bind(this),
-      setDebugMode: (evt: any, debugMode: boolean) => {
-        if (debugMode) {
-          this.webContents.openDevTools()
-        } else {
-          this.webContents.closeDevTools()
-        }
-      },
       'update-phone-store': this.updateStore.bind(this),
         initProps: () => {
           const { username, host } =  props.registerProps

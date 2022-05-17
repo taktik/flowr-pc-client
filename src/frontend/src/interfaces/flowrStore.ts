@@ -1,4 +1,4 @@
-import { IFlowrConfig } from './flowrConfig'
+import { FlowrConfig } from './flowrConfig'
 import { IChannelData } from './channelData'
 import { LogSeverity } from '../logging/types'
 import { AudioStorePreferences } from './audioStore'
@@ -12,11 +12,14 @@ export interface IFlowrStore {
   isKiosk: boolean
   flowrMonitoringTime?: number
   deinterlacing: boolean
-  flowrConfig?: IFlowrConfig
+  flowrConfig?: FlowrConfig
   enableVirtualKeyboard: boolean
   useRealMacAddress?: boolean
   phoneServer?: string
   messagingNumber?: string
   logLevel: LogSeverity
   audioDevices?: AudioStorePreferences
+  debugMode?: boolean
 }
+
+export type ModifiableConfig = Pick<IFlowrStore, 'debugMode' |  'deinterlacing' |  'extUrl' |  'flowrMonitoringTime' |  'isKiosk' |  'clearAppDataOnStart' |  'enableVirtualKeyboard' |  'flowrConfig'>

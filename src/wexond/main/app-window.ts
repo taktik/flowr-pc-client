@@ -11,6 +11,7 @@ import { KeyboardMixin } from '../../keyboard/keyboardMixin'
 import { watchForInactivity } from '../../inactivity/window'
 import { buildPreloadPath } from '../../common/preload'
 import { Point, Rectangle } from 'electron/main'
+import { buildFileUrl } from '../../application-manager/helpers'
 
 const containsPoint = (bounds: Rectangle, point: Point) => {
   return (
@@ -73,12 +74,10 @@ export class AppWindow extends KeyboardMixin(BrowserWindow) {
     this.on('restore', resize)
     this.on('unmaximize', resize)
 
-    let urlString: string
+    const urlString = buildFileUrl('app.html')
+
     if (process.env.ENV === 'dev') {
       this.webContents.openDevTools({ mode: 'detach' })
-      urlString = `http://localhost:${__RENDERER_SERVER_PORT__}/app.html`
-    } else {
-      urlString = join('file://', app.getAppPath(), 'build/app.html')
     }
     const url = new URL(urlString)
     Object.entries(options).forEach(([key, value]) => {
@@ -135,29 +134,8 @@ export class AppWindow extends KeyboardMixin(BrowserWindow) {
             this.isWindowHidden = true
           }
         },
-        setDebugMode: (evt: any, debugMode: boolean) => {
-          if (debugMode) {
-            this.webContents.openDevTools({ mode: 'detach' })
-          } else {
-            this.webContents.closeDevTools()
-          }
-        },
       }
       this.activateWindowCapturing(ipcEvents)
-    } else {
-      const ipcEvents = {
-        setDebugMode: (evt: any, debugMode: boolean) => {
-          if (debugMode) {
-            this.webContents.openDevTools({ mode: 'detach' })
-          } else {
-            this.webContents.closeDevTools()
-          }
-        },
-      }
-      this.on('close', () => {
-        Object.entries(ipcEvents).forEach(event => ipcMain.removeListener(...event))
-      })
-      Object.entries(ipcEvents).forEach(event => ipcMain.on(...event))
     }
 
     if (options.closeAfterInactivity) {

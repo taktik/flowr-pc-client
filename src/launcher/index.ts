@@ -22,6 +22,7 @@ import { cloneDeep, mergeWith } from 'lodash'
 import { FullScreenManager } from '../common/fullscreen'
 import { IFlowrDesktopConfig } from '../frontend/src/interfaces/IFlowrDesktopConfig'
 import { WexondOptions } from '../wexond/main/app-window'
+import { openDevTools } from '../common/devTools'
 
 const FlowrDataDir = resolve(homedir(), '.flowr')
 
@@ -41,7 +42,6 @@ async function main() {
   ipcMain.setMaxListeners(0)
 
   let flowrWindow: FlowrWindow | null = null
-
   let browserWindow: BrowserWindow | null = null
 
   const gotTheLock = app.requestSingleInstanceLock()
@@ -111,7 +111,7 @@ async function main() {
     // eslint-disable-next-line @typescript-eslint/no-misused-promises
     ipcMain.on('flowr-desktop-config', async (event: IpcMainEvent, desktopConfig?: IFlowrDesktopConfig) => {
       const currentFlowrStore = cloneDeep(flowrStore.data)
-      delete currentFlowrStore.player
+
       if (desktopConfig) {
         /**
          * Merge config from ozone over default one
@@ -170,8 +170,19 @@ async function main() {
   function initFlowr(store: Store<IFlowrStore>) {
     applicationManager.flowrStore = store
 
+    function setDebugMode(debugMode: boolean) {
+      applicationManager.setDebugMode(debugMode)
+
+      if (flowrWindow) {
+        openDevTools(flowrWindow.webContents, debugMode)
+      }
+      if (browserWindow) {
+        openDevTools(browserWindow.webContents, debugMode)
+      }
+    }
+
     try {
-      flowrWindow = createFlowrWindow(store)
+      flowrWindow = createFlowrWindow(store, setDebugMode)
       FullScreenManager.applyDefaultActionOnWindow(flowrWindow)
       applicationManager.flowrWindow = flowrWindow
 

@@ -8,6 +8,7 @@ import { buildApplicationPreloadPath, buildFilePath, getApplicationIndexUrl } fr
 import { getLogger } from '../frontend/src/logging/loggers'
 import { IFlowrStore } from '../frontend/src/interfaces/flowrStore'
 import { ApplicationCanOpenConfig, ApplicationInitConfig, ApplicationInitializer, ApplicationOpenConfig, FlowrApplicationInitializer, FlowrApplicationWindow, WindowTypes } from './types'
+import { openDevTools } from '../common/devTools'
 
 function readdirPromise(path: PathLike, options: BaseEncodingOptions & {withFileTypes: true}): Promise<Dirent[]> {
   return new Promise((resolve, reject) => {
@@ -266,6 +267,10 @@ export class ApplicationManager {
     if (propertyDescriptor?.set) {
       Reflect.set(appWindow, name, value)
     }
+  }
+
+  setDebugMode(debugMode: boolean): void {
+    Object.values(this.activeWindows).forEach(browserWindow => openDevTools(browserWindow.webContents, debugMode))
   }
 
   destroy(): void {

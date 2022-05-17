@@ -12,22 +12,51 @@ const {
     Mode,
 } = require('./webpack/utils')
 
+function reactAppConfig(name, mainEntryPath, extraEntries) {
+    const filename = `${name}.html`
+    const entry = {
+        [name]: mainEntryPath,
+        ...extraEntries,
+    }
+    const plugins = [
+        new HtmlWebpackPlugin({
+            template: path.resolve(__dirname, `static/pages/${filename}`),
+            filename,
+            chunks: [name],
+        }),
+    ]
+    return { entry, filename, plugins }
+}
+
 module.exports = (env) => {
-    const mode = (env && env.production) ? Mode.PRODUCTION : Mode.DEVELOPMENT
+    const mode = env?.production ? Mode.PRODUCTION : Mode.DEVELOPMENT
     const optimization = getOptimization(mode)
-    const baseEntry = {
-        app: './src/wexond/renderer/app/index.tsx',
-        exportNode: './src/frontend/preloads/exportNode.ts',
+
+    const {
+        entry: appEntry,
+        plugins: appPlugins,
+        filename: appFilename,
+    } = reactAppConfig('app', './src/wexond/renderer/app/index.tsx', {
         'view-preload': './src/wexond/preloads/view-preload.ts',
         'background-preload': './src/wexond/preloads/background-preload.ts',
+    })
+    const {
+        entry: configEntry,
+        plugins: configPlugins,
+        filename: configFilename,
+    } = reactAppConfig('config', './src/config/index.tsx', { 'config-preload': './src/config/preload.ts' })
+
+    const baseEntry = {
+        exportNode: './src/frontend/preloads/exportNode.ts',
         'inactivity-preload': './src/inactivity/preload.ts',
+        ...appEntry,
+        ...configEntry,
     }
+
+    const fileNamesToFilter = [appFilename, configFilename]
     const basePlugins = [
-        new HtmlWebpackPlugin({
-            template: path.resolve(__dirname, 'static/pages/app.html'),
-            filename: 'app.html',
-            chunks: ['app'],
-        }),
+        ...appPlugins,
+        ...configPlugins,
         new CopyWebpackPlugin({
             patterns: [
                 {
@@ -35,7 +64,7 @@ module.exports = (env) => {
                     filter: (path) => {
                         // We must not emit app.html that is handled by the HtmlWebpackPlugin above
                         // ... otherwise an error is thrown
-                        return !path.endsWith('app.html')
+                        return !fileNamesToFilter.some(name => path.endsWith(name))
                     }
                 },
             ]
