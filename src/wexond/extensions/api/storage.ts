@@ -9,10 +9,10 @@ let api: API;
 
 const sendStorageOperation = (
   extensionId: string,
-  arg: any,
+  arg: unknown,
   area: string,
   type: string,
-  callback: any,
+  callback: (data: {[key: string]: unknown}) => void,
 ) => {
   const id = makeId(32);
   ipcRenderer.send('api-storage-operation', {
@@ -26,8 +26,8 @@ const sendStorageOperation = (
   if (callback) {
     ipcRenderer.once(
       `api-storage-operation-${id}`,
-      (e: any, ...data: any[]) => {
-        callback(data[0]);
+      (e: any, data?: {[key: string]: unknown}) => {
+        callback(data);
       },
     );
   }
@@ -40,19 +40,19 @@ export class StorageArea {
     this._area = area;
   }
 
-  public set = (arg: any, cb: any) => {
+  public set = (arg: unknown, cb: (data: {[key: string]: unknown}) => void): void => {
     sendStorageOperation(api.runtime.id, arg, this._area, 'set', cb);
   };
 
-  public get = (arg: any, cb: any) => {
+  public get = (arg: unknown, cb: (data: {[key: string]: unknown}) => void): void => {
     sendStorageOperation(api.runtime.id, arg, this._area, 'get', cb);
   };
 
-  public remove = (arg: any, cb: any) => {
+  public remove = (arg: unknown, cb: (data: {[key: string]: unknown}) => void): void => {
     sendStorageOperation(api.runtime.id, arg, this._area, 'remove', cb);
   };
 
-  public clear = (arg: any, cb: any) => {
+  public clear = (arg: unknown, cb: (data: {[key: string]: unknown}) => void): void => {
     sendStorageOperation(api.runtime.id, arg, this._area, 'clear', cb);
   };
 }

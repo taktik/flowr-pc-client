@@ -1,10 +1,11 @@
 import * as React from 'react';
-import { observable, computed } from 'mobx';
+import { observable } from 'mobx';
 
 import { TabsStore } from './tabs';
 import { TabGroupsStore } from './tab-groups';
 import { AddTabStore } from './add-tab';
-import { ipcRenderer, IpcMessageEvent, remote } from 'electron';
+import { ipcRenderer, IpcRendererEvent } from 'electron';
+import { webContents, process } from '@electron/remote'
 import { OverlayStore } from './overlay';
 import { HistoryStore } from './history';
 import { FaviconsStore } from './favicons';
@@ -13,7 +14,7 @@ import { ExtensionsStore } from './extensions';
 import { extname } from 'path';
 import { BookmarksStore } from './bookmarks';
 import { readFileSync, writeFile } from 'fs';
-import { getPath } from '~/shared/utils/paths';
+import { getPath } from '~/shared/utils/paths/renderer';
 import { Settings } from '../models/settings';
 import { DownloadsStore } from './downloads';
 import { lightTheme, darkTheme } from '~/renderer/constants/themes';
@@ -76,7 +77,7 @@ export class Store {
     this.tabs = new TabsStore(options.maxTab);
     ipcRenderer.on(
       'update-navigation-state',
-      (e: IpcMessageEvent, data: any) => {
+      (e: IpcRendererEvent, data: { canGoBack: boolean, canGoForward: boolean }) => {
         this.navigationState = data;
       },
     );
@@ -91,7 +92,7 @@ export class Store {
 
     ipcRenderer.on(
       'update-available',
-      (e: IpcMessageEvent, version: string) => {
+      (e: IpcRendererEvent, version: string) => {
         this.updateInfo.version = version;
         this.updateInfo.available = true;
       },
@@ -99,8 +100,8 @@ export class Store {
 
     ipcRenderer.on(
       'api-tabs-query',
-      (e: IpcMessageEvent, webContentsId: number) => {
-        const sender = remote.webContents.fromId(webContentsId);
+      (e: IpcRendererEvent, webContentsId: number) => {
+        const sender = webContents.fromId(webContentsId);
 
         sender.send(
           'api-tabs-query',
@@ -112,7 +113,7 @@ export class Store {
     ipcRenderer.on(
       'api-browserAction-setBadgeText',
       (
-        e: IpcMessageEvent,
+        e: IpcRendererEvent,
         senderId: number,
         extensionId: string,
         details: chrome.browserAction.BadgeTextDetails,
@@ -135,7 +136,7 @@ export class Store {
               item.badgeText = details.text;
             });
         }
-        const contents = remote.webContents.fromId(senderId);
+        const contents = webContents.fromId(senderId);
         contents.send('api-browserAction-setBadgeText');
       },
     );
@@ -149,8 +150,8 @@ export class Store {
     ipcRenderer.send('update-check');
 
     requestAnimationFrame(() => {
-      if (remote.process.argv.length > 1 && remote.process.env.ENV !== 'dev') {
-        const path = remote.process.argv[1];
+      if (process.argv.length > 1 && process.env.ENV !== 'dev') {
+        const path = process.argv[1];
         const ext = extname(path);
 
         if (ext === '.html') {
@@ -167,14 +168,14 @@ export class Store {
 
     this.settings = {
       ...this.settings,
-      ...JSON.parse(readFileSync(getPath('settings.json'), 'utf8')),
+      ...JSON.parse(readFileSync(getPath('settings.json'), 'utf8')) as Settings,
     };
 
     this.theme = this.settings.isDarkTheme ? darkTheme : lightTheme;
     ipcRenderer.send('settings', { ...this.settings });
   }
 
-  public saveSettings() {
+  public saveSettings(): void {
     ipcRenderer.send('settings', { ...this.settings });
 
     writeFile(getPath('settings.json'), JSON.stringify(this.settings), err => {

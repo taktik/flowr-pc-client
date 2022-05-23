@@ -1,5 +1,5 @@
 import { BrowserWindow, app, ipcMain, globalShortcut, screen, BrowserWindowConstructorOptions } from 'electron'
-import { resolve, join } from 'path'
+import { resolve } from 'path'
 import { platform } from 'os'
 import { windowManager, Window } from 'node-window-manager'
 import mouseEvents from 'mouse-hooks'
@@ -58,7 +58,6 @@ export class AppWindow extends KeyboardMixin(BrowserWindow) {
         plugins: true,
         nodeIntegration: true,
         contextIsolation: false,
-        enableRemoteModule: true, // TODO: FLOW-8215
         experimentalFeatures: true,
         preload: buildPreloadPath('inactivity-preload.js'),
       },

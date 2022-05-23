@@ -15,8 +15,7 @@ import {
   TabContainer,
 } from './style';
 import { shadeBlendConvert } from '../../utils';
-import { transparency } from '~/renderer/constants';
-import { ipcRenderer, remote } from 'electron';
+import { Menu } from '@electron/remote'
 import Ripple from '~/renderer/components/Ripple';
 import { onTabClick } from '../../utils/dials'
 
@@ -62,7 +61,7 @@ const onMouseUp = (tab: Tab) => (e: React.MouseEvent<HTMLDivElement>) => {
 const onContextMenu = (tab: Tab) => () => {
   const { tabs } = store.tabGroups.currentGroup;
 
-  const menu = remote.Menu.buildFromTemplate([
+  const menu = Menu.buildFromTemplate([
     {
       label: 'New tab',
       click: () => {
@@ -75,7 +74,7 @@ const onContextMenu = (tab: Tab) => () => {
     {
       label: 'Reload',
       click: () => {
-        tab.callViewMethod('webContents.reload');
+        tab.callViewMethod('webContents.reload').catch(console.error);
       },
     },
     {

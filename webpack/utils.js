@@ -83,9 +83,8 @@ const resolve = {
 const webpackModule = {
     rules: [
         {
-            // If you see a file that ends in .ejs, just send it to the raw-loader.
             test: /\.ejs$/,
-            use: 'raw-loader',
+            type: 'asset/source',
         },
         {
             test: /\.html$/,
@@ -112,27 +111,20 @@ const webpackModule = {
         },
         {
             test: /\.(png|jpg|gif)$/,
-            use: [
-                {
-                    loader: 'url-loader',
-                    options: {
-                        limit: 8192,
-                    },
-                },
-            ],
+            type: 'asset/inline',
         },
         {
             test: /\.(eot|svg|ttf|woff|woff2|otf)$/i,
-            loader: 'file-loader',
+            type: 'asset/resource',
         },
         {
             test: /\.node$/,
-            use: 'file-loader',
+            type: 'asset/resource',
         },
     ],
 }
 
-const publicPath =  path.resolve(__dirname, `../${OUTPUT_DIR}`)
+const publicPath =  `${path.resolve(__dirname, `../${OUTPUT_DIR}`)}/`
 
 const output = {
     path: publicPath,

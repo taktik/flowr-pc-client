@@ -2,7 +2,7 @@ import { observable, computed, action } from 'mobx';
 
 import { TabGroup } from '~/renderer/app/models';
 import store from '.';
-import { ipcRenderer, remote } from 'electron';
+import { ipcRenderer } from 'electron';
 import { colors } from '~/renderer/constants';
 import { closeWindow } from '../utils';
 
@@ -17,14 +17,16 @@ export class TabGroupsStore {
 
   constructor() {
     for (const key in colors) {
-      if ((colors as any)[key]['500'] && key !== 'yellow' && key !== 'lime') {
-        this.palette.push((colors as any)[key]['500']);
+      const value = colors[key][500]
+
+      if (value && key !== 'yellow' && key !== 'lime') {
+        this.palette.push(value);
       }
     }
   }
 
   @computed
-  public get currentGroupId() {
+  public get currentGroupId(): number {
     return this._currentGroupId;
   }
 
@@ -49,12 +51,12 @@ export class TabGroupsStore {
     });
   }
 
-  public get currentGroup() {
+  public get currentGroup(): TabGroup | undefined {
     return this.getGroupById(this.currentGroupId);
   }
 
   @action
-  public removeGroup(id: number) {
+  public removeGroup(id: number): void {
     const group = this.getGroupById(id);
     const index = this.list.indexOf(group);
 
@@ -80,12 +82,12 @@ export class TabGroupsStore {
     }
   }
 
-  public getGroupById(id: number) {
+  public getGroupById(id: number): TabGroup | undefined {
     return this.list.find(x => x.id === id);
   }
 
   @action
-  public addGroup() {
+  public addGroup(): void {
     const tabGroup: TabGroup = new TabGroup();
     this.list.push(tabGroup);
     this.currentGroupId = tabGroup.id;

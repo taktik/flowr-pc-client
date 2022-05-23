@@ -1,10 +1,12 @@
 import { ipcMain, session } from 'electron'
 import { TOOLBAR_HEIGHT } from '~/renderer/app/constants/design'
+import { enable } from '@electron/remote/main'
 import { appWindow } from '.'
 import { View } from './view'
 import { clearBrowsingData } from '~/main/clearBrowsingData'
 import { watchForInactivity } from '../../inactivity/window'
 import { IInactivityConfig } from '../../inactivity/utils'
+import { getValue } from '../../common/getValue'
 
 export class ViewManager {
   public views: { [key: number]: View } = {}
@@ -13,7 +15,7 @@ export class ViewManager {
 
   public isHidden = false
 
-  public get fullscreen() {
+  public get fullscreen(): boolean {
     return this._fullscreen
   }
 
@@ -26,7 +28,7 @@ export class ViewManager {
 
   constructor(private inactivityConfig?: IInactivityConfig) {
     this._ipcEvents = {
-      'browserview-create': (e: Electron.IpcMessageEvent, { tabId, url }: any) => {
+      'browserview-create': (e: Electron.IpcMessageEvent, { tabId, url }: { tabId: number, url: string }) => {
         this.create(tabId, url)
 
         const webContents = this.views[tabId].webContents
@@ -48,19 +50,14 @@ export class ViewManager {
       'browserview-destroy': (e: Electron.IpcMessageEvent, id: number) => {
         this.destroy(id)
       },
-      'browserview-call': async (e: any, data: any) => {
+      'browserview-call': async (e: any, data: { tabId: number, scope?: string, args: any[], callId?: string }) => {
         const view = this.views[data.tabId]
         if (!view) return
-        let scope: any = view
+        const scope: unknown = getValue(view, data.scope)
 
-        if (data.scope && data.scope.trim() !== '') {
-          const scopes = data.scope.split('.')
-          for (const s of scopes) {
-            scope = scope[s]
-          }
-        }
+        if (!scope || typeof scope !== 'function') return
 
-        let result = scope.apply(view.webContents, data.args)
+        let result = scope?.apply(view.webContents, data.args) as unknown
 
         if (result instanceof Promise) {
           result = await result
@@ -101,18 +98,19 @@ export class ViewManager {
     })
   }
 
-  public get selected() {
+  public get selected(): View | undefined {
     return this.views[this.selectedId]
   }
 
-  public create(tabId: number, url: string) {
+  public create(tabId: number, url: string): void {
     const view = new View(tabId, url)
+    enable(view.webContents)
     this.views[tabId] = view
 
     if (this.inactivityConfig) {
       const { timeout, callback } = this.inactivityConfig
       try {
-        watchForInactivity(view, timeout, async (browserView) => {
+        watchForInactivity(view, timeout, (browserView) => {
           const selectedView = this.views[this.selectedId]
           if (selectedView && selectedView.webContents.id === browserView.webContents.id) {
             callback()
@@ -124,7 +122,7 @@ export class ViewManager {
     }
   }
 
-  public clear() {
+  public clear(): void {
     if (appWindow) {
       appWindow.setBrowserView(null)
     }
@@ -134,7 +132,7 @@ export class ViewManager {
     Object.entries(this._ipcEvents).forEach(event => ipcMain.removeListener(event[0], event[1]))
   }
 
-  public select(tabId: number) {
+  public select(tabId: number): void {
     const view = this.views[tabId]
     this.selectedId = tabId
 
@@ -162,7 +160,7 @@ export class ViewManager {
     this.fixBounds()
   }
 
-  public fixBounds() {
+  public fixBounds(): void {
     const view = this.views[this.selectedId]
 
     if (!view) return
@@ -180,17 +178,17 @@ export class ViewManager {
     })
   }
 
-  public hideView() {
+  public hideView(): void {
     this.isHidden = true
     appWindow.setBrowserView(null)
   }
 
-  public showView() {
+  public showView(): void {
     this.isHidden = false
     this.select(this.selectedId)
   }
 
-  public destroy(tabId: number) {
+  public destroy(tabId: number): void {
     const view = this.views[tabId]
 
     if (!view || view.webContents?.isDestroyed()) {
@@ -203,12 +201,13 @@ export class ViewManager {
     }
 
     // Undocumented electron API: https://github.com/electron/electron/issues/26929#issuecomment-754294324
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-call
     (view.webContents as any).destroy()
 
     delete this.views[tabId]
   }
 
-  sendToAll(name: string, ...args: any[]) {
+  sendToAll(name: string, ...args: any[]): void {
     for (const key in this.views) {
       const view = this.views[key]
       view.webContents.send(name, ...args)

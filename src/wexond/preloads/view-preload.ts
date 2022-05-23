@@ -1,4 +1,5 @@
-import { ipcRenderer, webFrame, remote, IpcRendererEvent } from 'electron'
+import { ipcRenderer, webFrame, IpcRendererEvent } from 'electron'
+import { webContents } from '@electron/remote'
 import { readFileSync } from 'fs'
 import { join } from 'path'
 import { getAPI } from '~/shared/utils/extensions'
@@ -6,24 +7,63 @@ import { format, parse } from 'url'
 import { IpcExtension } from '~/shared/models'
 import { runInThisContext } from 'vm'
 import { setupInactivityListeners } from '../../inactivity/setupListeners'
+import { API } from '../extensions'
 
-const extensions: { [key: string]: IpcExtension } = ipcRenderer.sendSync(
+export type ExecuteScriptProps = {
+  tabId: number
+  details: { code: string }
+  extensionId: string
+  responseId: number
+}
+
+type Script = {
+  matches: string[]
+  js: { url: string, code: string }[]
+  css: { url: string, code: string }[]
+  runAt: string
+}
+
+type CustomWindow = {
+  chrome: API
+  wexond: API
+  browser: API
+}
+
+type DoNotUnderstandWhichWindow = {
+  chrome: {
+    webstorePrivate: { install: () => void }
+    app: {
+      isInstalled: false,
+      getIsInstalled: () => false
+      getDetails: () => void
+      installState: () => void
+    }
+  }
+}
+
+const extensions = ipcRenderer.sendSync(
   'get-extensions',
-)
+) as { [key: string]: IpcExtension }
 
 webFrame.executeJavaScript('window', false)
-  .then(w => {
+  .then((w: DoNotUnderstandWhichWindow) => {
     w.chrome = {
       webstorePrivate: {
-        install: () => {},
+        install: () => {
+          // purposefully empty (?)
+        },
       },
       app: {
         isInstalled: false,
         getIsInstalled: () => {
           return false
         },
-        getDetails: () => {},
-        installState: () => {},
+        getDetails: () => {
+          // purposefully empty (?)
+        },
+        installState: () => {
+          // purposefully empty (?)
+        },
       },
     }
   })
@@ -33,7 +73,7 @@ ipcRenderer.on(
   'execute-script-isolated',
   (
     e: IpcRendererEvent,
-    { details, extensionId, responseId }: any,
+    { details, extensionId, responseId }: ExecuteScriptProps,
     webContentsId: number,
   ) => {
     const worldId = getIsolatedWorldId(extensionId)
@@ -48,7 +88,7 @@ ipcRenderer.on(
       ],
       false)
       .then((result: any) => {
-        remote.webContents
+        webContents
           .fromId(webContentsId)
           .send(`api-tabs-executeScript-${responseId}`, result)
       })
@@ -153,7 +193,7 @@ const matchesPattern = (pattern: string, url: string) => {
 const injectChromeApi = (extension: IpcExtension, worldId: number) => {
   const context = getAPI(extension, tabId)
 
-  webFrame.setIsolatedWorldInfo(worldId, { name })
+  webFrame.setIsolatedWorldInfo(worldId, { name: window.name })
   webFrame.executeJavaScriptInIsolatedWorld(
     worldId,
     [
@@ -162,7 +202,7 @@ const injectChromeApi = (extension: IpcExtension, worldId: number) => {
       },
     ],
     false)
-    .then((window: any) => {
+    .then((window: CustomWindow) => {
       window.chrome = window.wexond = window.browser = context
     })
     .catch(console.error)
@@ -187,7 +227,7 @@ const runContentScript = (
         pathname: parsed.pathname,
       }),
     },
-  ])
+  ]).catch(console.error)
 }
 
 const runStylesheet = (url: string, code: string) => {
@@ -201,12 +241,34 @@ const runStylesheet = (url: string, code: string) => {
     filename: url,
     lineOffset: 1,
     displayErrors: true,
-  })
+  }) as (code: string) => void
 
-  return compiledWrapper.call(window, code)
+  return compiledWrapper.call(window, code) as ReturnType<typeof compiledWrapper>
 }
 
-const injectContentScript = (script: any, extension: IpcExtension) => {
+function registerListeners({ runAt }: Script, cb: () => (...args: any[]) => unknown): void {
+  const fire = cb()
+  function makeOnce<T extends (...args: any[]) => unknown>(callback: T): T {
+    let called = false
+
+    return ((...args: any[]): void => {
+      if (!called) {
+        callback(...args)
+        called = true
+      }
+    }) as T
+  }
+
+  if (runAt === 'document_start') {
+    process.on('document-start', makeOnce(fire))
+  } else if (runAt === 'document_end') {
+    process.on('document-end', makeOnce(fire))
+  } else {
+    document.addEventListener('DOMContentLoaded', fire)
+  }
+}
+
+const injectContentScript = (script: Script, extension: IpcExtension) => {
   if (
     !script.matches.some((x: string) =>
       matchesPattern(
@@ -221,41 +283,26 @@ const injectContentScript = (script: any, extension: IpcExtension) => {
   process.setMaxListeners(0)
 
   if (script.js) {
-    script.js.forEach((js: any) => {
-      const fire = runContentScript.bind(
+    script.js.forEach((js) => {
+      registerListeners(script, () => runContentScript.bind(
         window,
         js.url,
         js.code,
         extension,
         getIsolatedWorldId(extension.id),
-      )
-
-      if (script.runAt === 'document_start') {
-        (process as any).once('document-start', fire)
-      } else if (script.runAt === 'document_end') {
-        (process as any).once('document-end', fire)
-      } else {
-        document.addEventListener('DOMContentLoaded', fire)
-      }
+      ) as typeof runContentScript)
     })
   }
 
   if (script.css) {
-    script.css.forEach((css: any) => {
-      const fire = runStylesheet.bind(window, css.url, css.code)
-      if (script.runAt === 'document_start') {
-        (process as any).once('document-start', fire)
-      } else if (script.runAt === 'document_end') {
-        (process as any).once('document-end', fire)
-      } else {
-        document.addEventListener('DOMContentLoaded', fire)
-      }
+    script.css.forEach((css) => {
+      registerListeners(script, () => runStylesheet.bind(window, css.url, css.code) as typeof runStylesheet)
     })
   }
 }
 
 let nextIsolatedWorldId = 1000
-const isolatedWorldsRegistry: any = {}
+const isolatedWorldsRegistry: {[id: string]: number} = {}
 
 const getIsolatedWorldId = (id: string) => {
   if (isolatedWorldsRegistry[id]) {
@@ -265,7 +312,7 @@ const getIsolatedWorldId = (id: string) => {
   return (isolatedWorldsRegistry[id] = nextIsolatedWorldId)
 }
 
-const setImmediateTemp: any = setImmediate
+const setImmediateTemp = setImmediate
 
 process.once('loaded', () => {
   global.setImmediate = setImmediateTemp
@@ -280,9 +327,10 @@ process.once('loaded', () => {
         code: readFileSync(join(extension.path, relativePath), 'utf8'),
       })
 
+      
       try {
         manifest.content_scripts.forEach(script => {
-          const newScript = {
+          const newScript: Script = {
             matches: script.matches,
             js: script.js ? script.js.map(readArrayOfFiles) : [],
             css: script.css ? script.css.map(readArrayOfFiles) : [],

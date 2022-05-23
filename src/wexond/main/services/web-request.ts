@@ -1,25 +1,21 @@
-import { ipcMain, session, webContents, app, IpcMessageEvent } from 'electron'
+import { ipcMain, session, webContents, OnBeforeSendHeadersListenerDetails, OnBeforeRequestListenerDetails, Response, OnHeadersReceivedListenerDetails, IpcMainEvent, BeforeSendResponse, HeadersReceivedResponse } from 'electron'
 import { makeId } from '~/shared/utils/string'
-import { AppWindow } from '../app-window'
 import { matchesPattern } from '~/shared/utils/url'
 import { USER_AGENT } from '~/shared/constants'
 import { existsSync, readFile, writeFile, mkdirSync } from 'fs'
 import { resolve } from 'path'
 import { appWindow, settings } from '..'
 import Axios from 'axios'
-
 import {
   FiltersEngine,
   makeRequest,
   updateResponseHeadersWithCSP,
-  parseFilters,
 } from '@cliqz/adblocker'
 import { parse } from 'tldts'
-import { requestURL } from '~/renderer/app/utils/network'
-import { getPath } from '~/shared/utils/paths'
-import { rejects } from 'assert'
+import { getPath } from '~/shared/utils/paths/main'
+import type { AppWindow } from '../app-window'
 
-const lists: any = {
+const lists: {[key: string]: string} = {
   easylist: 'https://easylist.to/easylist/easylist.txt',
   easyprivacy: 'https://easylist.to/easylist/easyprivacy.txt',
   malwaredomains: 'http://mirror1.malwaredomains.com/files/justdomains',
@@ -37,7 +33,7 @@ const lists: any = {
 
 export let engine: FiltersEngine
 
-const eventListeners: any = {}
+const eventListeners: {[name: string]: { id: number, filters: string[], webContentsId: number }[]} = {}
 
 export const loadFilters = (): Promise<void> => {
   if (!existsSync(getPath('adblock'))) {
@@ -66,13 +62,13 @@ export const loadFilters = (): Promise<void> => {
 
       engine = FiltersEngine.parse(data)
 
-      return new Promise((res, rej) => {
+      return new Promise((resolveProm, rej) => {
         writeFile(path, engine.serialize(), err => {
           if (err) {
             console.error(err)
             return rej(err)
           }
-          res()
+          resolveProm()
         })
       })
     })
@@ -113,15 +109,27 @@ const getTabByWebContentsId = (window: AppWindow, id: number) => {
   return -1
 }
 
-const getRequestType = (type: string): any => {
+const getRequestType = (type: string): string => {
   if (type === 'mainFrame') return 'main_frame'
   if (type === 'subFrame') return 'sub_frame'
   if (type === 'cspReport') return 'csp_report'
   return type
 }
 
-const getDetails = (details: any, window: AppWindow, isTabRelated: boolean) => {
-  const newDetails = {
+export type ExtraDetails = Omit<OnBeforeRequestListenerDetails, 'uploadData'> & {
+  requestId: string
+  frameId: number
+  parentFrameId: number
+  type: string
+  timeStamp: number
+  tabId: number
+  error: string
+  requestHeaders?: Record<string, string[]>
+  responseHeaders?: Record<string, string[]>
+}
+
+const getDetails = (details: Omit<OnBeforeRequestListenerDetails, 'uploadData'>, window: AppWindow, isTabRelated: boolean): ExtraDetails => {
+  return {
     ...details,
     requestId: details.id.toString(),
     frameId: 0,
@@ -133,22 +141,12 @@ const getDetails = (details: any, window: AppWindow, isTabRelated: boolean) => {
       : -1,
     error: '',
   }
-
-  return newDetails
 }
 
-const arrayToObject = (arr: any[]) => {
-  const obj: any = {}
-  arr.forEach((item: any) => {
-    arr[item.name] = item.value
-  })
-  return obj
-}
-
-const matchesFilter = (filter: any, url: string): boolean => {
-  if (filter && Array.isArray(filter.urls)) {
-    for (const item of filter.urls) {
-      if (matchesPattern(item, url)) {
+const matchesFilter = (filters: string[], url: string): boolean => {
+  if (filters && Array.isArray(filters)) {
+    for (const filter of filters) {
+      if (matchesPattern(filter, url)) {
         return true
       }
     }
@@ -156,19 +154,35 @@ const matchesFilter = (filter: any, url: string): boolean => {
   return false
 }
 
-const getCallback = (callback: any) => {
-  return function cb(data: any) {
-    if (!cb.prototype.callbackCalled) {
+const getCallback = <T> (callback: (d: T) => void) => {
+  let callbackCalled = false
+
+  return function cb(data: T) {
+    if (!callbackCalled) {
       callback(data)
-      cb.prototype.callbackCalled = true
+      callbackCalled = true
     }
   }
 }
 
+type AnyResponse = Response | BeforeSendResponse | HeadersReceivedResponse
+
+function isResponse(response: AnyResponse): response is Response {
+  return !!(response as Response).redirectURL
+}
+
+function isBeforeSendResponse(response: AnyResponse): response is BeforeSendResponse {
+  return !!(response as BeforeSendResponse).requestHeaders
+}
+
+function isHeadersReceivedResponse(response: AnyResponse): response is HeadersReceivedResponse {
+  return !!(response as HeadersReceivedResponse).responseHeaders
+}
+
 const interceptRequest = (
   eventName: string,
-  details: any,
-  callback: any = null,
+  details: ExtraDetails,
+  callback: (beforeSendResponse: AnyResponse) => void = null,
 ) => {
   let isIntercepted = false
 
@@ -189,32 +203,29 @@ const interceptRequest = (
 
       ipcMain.once(
         `api-webRequest-response-${eventName}-${event.id}-${id}`,
-        (e: any, res: any) => {
+        (e: any, res: AnyResponse) => {
           if (res) {
             if (res.cancel) {
               return cb({ cancel: true })
             }
 
-            if (res.redirectURL) {
+            if (isResponse(res)) {
               return cb({
                 cancel: false,
-                redirectURL: res.redirectUrl,
+                redirectURL: res.redirectURL,
               })
             }
 
             if (
-              res.requestHeaders &&
-              (eventName === 'onBeforeSendHeaders' ||
-                eventName === 'onSendHeaders')
+              isBeforeSendResponse(res) && (eventName === 'onBeforeSendHeaders' || eventName === 'onSendHeaders')
             ) {
-              const requestHeaders = arrayToObject(res.requestHeaders)
-              return cb({ cancel: false, requestHeaders })
+              return cb({ cancel: false, requestHeaders: res.requestHeaders })
             }
 
-            if (res.responseHeaders) {
+            if (isHeadersReceivedResponse(res)) {
               const responseHeaders = {
                 ...details.responseHeaders,
-                ...arrayToObject(res.responseHeaders),
+                ...res.responseHeaders,
               }
 
               return cb({
@@ -244,32 +255,31 @@ const interceptRequest = (
   }
 }
 
-export const runWebRequestService = (window: AppWindow) => {
+export const runWebRequestService = (window: AppWindow): void => {
   const webviewRequest = session.fromPartition('persist:view').webRequest
 
   // onBeforeSendHeaders
 
-  const onBeforeSendHeaders = async (details: any, callback: any) => {
-
+  const onBeforeSendHeaders = (details: OnBeforeSendHeadersListenerDetails, callback: (beforeSendResponse: BeforeSendResponse) => void) => {
     interceptRequest('onBeforeSendHeaders', getDetails(details, window, true), callback)
   }
 
-  webviewRequest.onBeforeSendHeaders(async (details: any, callback: any) => {
+  webviewRequest.onBeforeSendHeaders((details: OnBeforeSendHeadersListenerDetails, callback: (beforeSendResponse: BeforeSendResponse) => void) => {
     details.requestHeaders['User-Agent'] = USER_AGENT
     details.requestHeaders['DNT'] = '1'
 
-    await onBeforeSendHeaders(details, callback)
+    onBeforeSendHeaders(details, callback)
   })
 
   // onBeforeRequest
 
-  const onBeforeRequest = async (details: any, callback: any) => {
-    const newDetails: any = getDetails(details, window, true)
+  const onBeforeRequest = (details: OnBeforeRequestListenerDetails, callback: (response: Response) => void) => {
+    const newDetails = getDetails(details, window, true)
     interceptRequest('onBeforeRequest', newDetails, callback)
   }
 
   webviewRequest.onBeforeRequest(
-    async (details: Electron.OnBeforeRequestDetails, callback: any) => {
+    (details: OnBeforeRequestListenerDetails, callback: (response: Response) => void) => {
       const tabId = getTabByWebContentsId(window, details.webContentsId)
 
       if (engine && settings.isShieldToggled) {
@@ -290,14 +300,14 @@ export const runWebRequestService = (window: AppWindow) => {
         }
       }
 
-      await onBeforeRequest(details, callback)
+      onBeforeRequest(details, callback)
     },
   )
 
   // onHeadersReceived
 
-  const onHeadersReceived = async (details: any, callback: any) => {
-    const newDetails: any = {
+  const onHeadersReceived = (details: OnHeadersReceivedListenerDetails, callback: any) => {
+    const newDetails: ExtraDetails = {
       ...getDetails(details, window, true),
       responseHeaders: details.responseHeaders,
     }
@@ -305,12 +315,12 @@ export const runWebRequestService = (window: AppWindow) => {
   }
 
   webviewRequest.onHeadersReceived(
-    async (details: Electron.OnHeadersReceivedDetails, callback: any) => {
+    (details: OnHeadersReceivedListenerDetails, callback: any) => {
       if (engine) {
         updateResponseHeadersWithCSP(
           {
             url: details.url,
-            type: details.resourceType as any,
+            type: details.resourceType as chrome.webRequest.ResourceType,
             tabId: getTabByWebContentsId(window, details.webContentsId),
             method: details.method,
             statusCode: details.statusCode,
@@ -333,49 +343,49 @@ export const runWebRequestService = (window: AppWindow) => {
         )
       }
 
-      await onHeadersReceived(details, callback)
+      onHeadersReceived(details, callback)
     },
   )
 
   // onSendHeaders
 
-  const onSendHeaders = async (details: any) => {
+  const onSendHeaders = (details: any) => {
 
     interceptRequest('onSendHeaders', getDetails(details, window, true))
   }
 
-  webviewRequest.onSendHeaders(async (details: any) => {
-    await onSendHeaders(details)
+  webviewRequest.onSendHeaders((details: any) => {
+    onSendHeaders(details)
   })
 
   // onCompleted
 
-  const onCompleted = async (details: any) => {
-    const newDetails: any = getDetails(details, window, true)
+  const onCompleted = (details: any) => {
+    const newDetails = getDetails(details, window, true)
     interceptRequest('onCompleted', newDetails)
   }
 
-  webviewRequest.onCompleted(async (details: any) => {
-    await onCompleted(details)
+  webviewRequest.onCompleted((details: any) => {
+    onCompleted(details)
   })
 
   // onErrorOccurred
 
-  const onErrorOccurred = async (details: any) => {
-    const newDetails: any = getDetails(details, window, true)
+  const onErrorOccurred = (details: any) => {
+    const newDetails = getDetails(details, window, true)
     interceptRequest('onErrorOccurred', newDetails)
   }
 
-  webviewRequest.onErrorOccurred(async (details: any) => {
-    await onErrorOccurred(details)
+  webviewRequest.onErrorOccurred((details: any) => {
+    onErrorOccurred(details)
   })
 
   // Handle listener add and remove.
 
-  ipcMain.on('api-add-webRequest-listener', (e: any, data: any) => {
+  ipcMain.on('api-add-webRequest-listener', (e: IpcMainEvent, data: { id: number, name: string, filters: string[] }) => {
     const { id, name, filters } = data
 
-    const item: any = {
+    const item = {
       id,
       filters,
       webContentsId: e.sender.id,
@@ -388,11 +398,11 @@ export const runWebRequestService = (window: AppWindow) => {
     }
   })
 
-  ipcMain.on('api-remove-webRequest-listener', (e: any, data: any) => {
+  ipcMain.on('api-remove-webRequest-listener', (e: IpcMainEvent, data: { id: number, name: string }) => {
     const { id, name } = data
     if (eventListeners[name]) {
       eventListeners[name] = eventListeners[name].filter(
-        (x: any) => x.id !== id && x.webContentsId !== e.sender.id,
+        (x) => x.id !== id && x.webContentsId !== e.sender.id,
       )
     }
   })

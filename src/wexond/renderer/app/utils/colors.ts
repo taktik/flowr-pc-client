@@ -1,10 +1,9 @@
 // https://stackoverflow.com/a/13542669
 export const shadeBlendConvert = function (
-  this: any,
-  p: any,
-  from: any,
-  to: any = null,
-) {
+  p: number,
+  from: string,
+  to: unknown = null,
+): string | null {
   if (
     typeof p !== 'number' ||
     p < -1 ||
@@ -13,42 +12,42 @@ export const shadeBlendConvert = function (
     (from[0] !== 'r' && from[0] !== '#') ||
     (to && typeof to !== 'string')
   ) {
-    return null;
+    return null
   } // ErrorCheck
-  if (!(this as any).sbcRip) {
-    this.sbcRip = (d: any) => {
-      const l = d.length;
-      const RGB: any = {};
 
-      if (l > 9) {
-        d = d.split(',');
-        if (d.length < 3 || d.length > 4) return null; // ErrorCheck
-        (RGB[0] = i(d[0].split('(')[1])),
-          (RGB[1] = i(d[1])),
-          (RGB[2] = i(d[2])),
-          (RGB[3] = d[3] ? parseFloat(d[3]) : -1);
-      } else {
-        if (l === 8 || l === 6 || l < 4) return null; // ErrorCheck
-        if (l < 6) {
-          d = `#${d[1]}${d[1]}${d[2]}${d[2]}${d[3]}${d[3]}${
-            l > 4 ? `${d[4]}${d[4]}` : ''
-          }`;
-        } // 3 or 4 digit
-        (d = i(d.slice(1), 16)),
-          (RGB[0] = (d >> 16) & 255),
-          (RGB[1] = (d >> 8) & 255),
-          (RGB[2] = d & 255),
-          (RGB[3] = -1);
-        if (l === 9 || l === 5) {
-          (RGB[3] = r((RGB[2] / 255) * 10000) / 10000),
-            (RGB[2] = RGB[1]),
-            (RGB[1] = RGB[0]),
-            (RGB[0] = (d >> 24) & 255);
-        }
+  const sbcRip = (d: string) => {
+    const l = d.length;
+    const RGB: {[index: number]: number} = {};
+
+    if (l > 9) {
+      const split = d.split(',');
+      if (split.length < 3 || split.length > 4) return null; // ErrorCheck
+      (RGB[0] = i(split[0].split('(')[1])),
+        (RGB[1] = i(split[1])),
+        (RGB[2] = i(split[2])),
+        (RGB[3] = split[3] ? parseFloat(split[3]) : -1);
+    } else {
+      if (l === 8 || l === 6 || l < 4) return null; // ErrorCheck
+      if (l < 6) {
+        d = `#${d[1]}${d[1]}${d[2]}${d[2]}${d[3]}${d[3]}${
+          l > 4 ? `${d[4]}${d[4]}` : ''
+        }`;
+      } // 3 or 4 digit
+      const asInt = i(d.slice(1), 16)
+
+      RGB[0] = (asInt >> 16) & 255
+      RGB[1] = (asInt >> 8) & 255
+      RGB[2] = asInt & 255
+      RGB[3] = -1
+      if (l === 9 || l === 5) {
+        (RGB[3] = r((RGB[2] / 255) * 10000) / 10000),
+          (RGB[2] = RGB[1]),
+          (RGB[1] = RGB[0]),
+          (RGB[0] = (asInt >> 24) & 255);
       }
-      return RGB;
-    };
-  }
+    }
+    return RGB;
+  };
   const i = parseInt;
   const r = Math.round;
   let h = from.length > 9;
@@ -63,8 +62,8 @@ export const shadeBlendConvert = function (
   const b = p < 0;
   p = b ? p * -1 : p;
   to = to && to !== 'c' ? to : b ? '#000000' : '#FFFFFF';
-  const f = this.sbcRip(from);
-  const t = this.sbcRip(to);
+  const f = sbcRip(from);
+  const t = sbcRip(to as string);
   if (!f || !t) return null; // ErrorCheck
   if (h) {
     return `rgb${f[3] > -1 || t[3] > -1 ? 'a(' : '('}${r(
@@ -99,26 +98,24 @@ export const shadeBlendConvert = function (
     .slice(1, f[3] > -1 || t[3] > -1 ? undefined : -2)}`;
 };
 
-export const getColorBrightness = (color: any) => {
-  let r;
-  let g;
-  let b;
+export const getColorBrightness = (color: string): number => {
+  let r: number
+  let g: number
+  let b: number
 
-  if (color.match(/^rgb/)) {
-    color = color.match(
-      /^rgba?\((\d+),\s*(\d+),\s*(\d+)(?:,\s*(\d+(?:\.\d+)?))?\)$/,
-    );
+  if (/^rgb/.test(color)) {
+    const matches = /^rgba?\((\d+),\s*(\d+),\s*(\d+)(?:,\s*(\d+(?:\.\d+)?))?\)$/.exec(color)
 
-    r = color[1];
-    g = color[2];
-    b = color[3];
+    r = parseInt(matches[1])
+    g = parseInt(matches[2])
+    b = parseInt(matches[3])
   } else {
-    color = +`0x${color.slice(1).replace(color.length < 5 && /./g, '$&$&')}`;
+    const asNumber = +`0x${color.slice(1).replace(color.length < 5 && /./g, '$&$&')}`
 
-    r = color >> 16;
-    g = (color >> 8) & 255;
-    b = color & 255;
+    r = asNumber >> 16
+    g = (asNumber >> 8) & 255
+    b = asNumber & 255
   }
 
-  return Math.sqrt(0.299 * (r * r) + 0.587 * (g * g) + 0.114 * (b * b));
-};
+  return Math.sqrt(0.299 * (r * r) + 0.587 * (g * g) + 0.114 * (b * b))
+}

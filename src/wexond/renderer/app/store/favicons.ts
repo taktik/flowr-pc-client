@@ -1,22 +1,18 @@
 import * as Datastore from 'nedb';
+import { parse } from 'icojs/browser'
+import * as fileType from 'file-type'
 
 import { Favicon } from '../models';
-import { getPath } from '~/shared/utils/paths';
+import { getPath } from '~/shared/utils/paths/renderer';
 import { requestURL } from '../utils/network';
 import { observable } from 'mobx';
 
-const icojs = require('icojs');
-const fileType = require('file-type');
-
-const convertIcoToPng = (icoData: Buffer) => {
-  return new Promise((resolve: (b: Buffer) => void) => {
-    icojs.parse(icoData, 'image/png').then((images: any) => {
-      resolve(images[0].buffer);
-    });
-  });
+const convertIcoToPng = async (icoData: ArrayBuffer) => {
+  const images = await parse(icoData, 'image/png')
+  return images[0]?.buffer
 };
 
-const readImage = (buffer: Buffer) => {
+const readImage = (buffer: ArrayBuffer) => {
   return new Promise((resolve: (b: Buffer) => void) => {
     const reader = new FileReader();
 
@@ -43,7 +39,7 @@ export class FaviconsStore {
     this.load();
   }
 
-  public getFavicons = (query: Favicon = {}) => {
+  public getFavicons = (query: Favicon = {}): Promise<Favicon[]> => {
     return new Promise((resolve: (favicons: Favicon[]) => void, reject) => {
       this.db.find(query, (err: any, docs: Favicon[]) => {
         if (err) return reject(err);
@@ -52,51 +48,45 @@ export class FaviconsStore {
     });
   };
 
-  public addFavicon = async (url: string) => {
-    return new Promise(async (resolve: (a: any) => void, reject: any) => {
-      if (!this.favicons[url]) {
-        try {
-          const res = await requestURL(url);
-
-          if (res.statusCode === 404) {
-            throw new Error('404 favicon not found');
-          }
-
-          let data = Buffer.from(res.data, 'binary');
-
-          const type = fileType(data);
-
-          if (type && type.ext === 'ico') {
-            data = await readImage(await convertIcoToPng(data));
-          }
-
-          const str = `data:png;base64,${data.toString('base64')}`;
-
-          this.db.insert({
-            url,
-            data: str,
-          });
-
-          this.favicons[url] = str;
-
-          resolve(str);
-        } catch (e) {
-          reject(e);
-        }
-      } else {
-        resolve(this.favicons[url]);
+  public addFavicon = async (url: string): Promise<string> => {
+      if (this.favicons[url]) {
+        return this.favicons[url]
       }
-    });
+
+      const res = await requestURL(url);
+
+      if (res.statusCode === 404) {
+        throw new Error('404 favicon not found');
+      }
+
+      let data = Buffer.from(res.data, 'binary');
+
+      const type = fileType(data);
+
+      if (type && type.ext === 'ico') {
+        data = await readImage(await convertIcoToPng(data));
+      }
+
+      const str = `data:png;base64,${data.toString('base64')}`;
+
+      this.db.insert({
+        url,
+        data: str,
+      });
+
+      this.favicons[url] = str;
+
+      return str
   };
 
-  public async load() {
-    await this.db.find({}, (err: any, docs: Favicon[]) => {
+  public load(): void {
+    this.db.find({}, (err: any, docs: Favicon[]) => {
       if (err) return console.warn(err);
 
       docs.forEach(favicon => {
         const { data } = favicon;
 
-        if (this.favicons[favicon.url] == null) {
+        if (this.favicons[favicon.url] === null) {
           this.favicons[favicon.url] = data;
         }
       });

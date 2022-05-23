@@ -1,6 +1,6 @@
 import { existsSync, readFileSync } from 'fs-extra'
 import { join } from 'path'
-import { app, remote } from 'electron'
+import { app } from 'electron'
 import { IFlowrStore } from '../../frontend/src/interfaces/flowrStore'
 
 type OldMissingRootKeys = 'extUrl' | 'isKiosk'
@@ -8,7 +8,7 @@ type OldUserPreferences = Omit<IFlowrStore, OldMissingRootKeys> & { extUrl: { ur
 
 export function getMigrateUserPreferences(configName: string): IFlowrStore | null {
   try {
-    const userDataPath: string = (app || remote.app).getPath('userData')
+    const userDataPath: string = app.getPath('userData')
     // We'll use the `configName` property to set the file name and path.join to bring it all together as a string
     const oldPath = join(userDataPath, '../flowrclient', configName)
     if (existsSync(oldPath)) {

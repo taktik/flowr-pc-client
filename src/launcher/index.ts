@@ -23,11 +23,15 @@ import { FullScreenManager } from '../common/fullscreen'
 import { IFlowrDesktopConfig } from '../frontend/src/interfaces/IFlowrDesktopConfig'
 import { WexondOptions } from '../wexond/main/app-window'
 import { openDevTools } from '../common/devTools'
+import { initialize } from '@electron/remote/main'
 
 const FlowrDataDir = resolve(homedir(), '.flowr')
 
 export const storeManager = new StoreManager(FlowrDataDir)
 const applicationManager = new ApplicationManager()
+
+// https://www.npmjs.com/package/@electron/remote
+let remoteModuleInitialized = false
 
 async function main() {
   const migrateUserPreferences = getMigrateUserPreferences(`${FRONTEND_CONFIG_NAME}.json`)
@@ -67,6 +71,10 @@ async function main() {
   ): Promise<void> => {
 
     browserWindow?.close()
+    if (!remoteModuleInitialized) {
+      initialize()
+      remoteModuleInitialized = true
+    }
 
     const wexondOptions = {
       ...options,

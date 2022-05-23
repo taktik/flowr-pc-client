@@ -1,7 +1,7 @@
 import * as Datastore from 'nedb';
 import { observable, computed, action } from 'mobx';
 import { HistoryItem, HistorySection } from '../models';
-import { getPath } from '~/shared/utils/paths';
+import { getPath } from '~/shared/utils/paths/renderer';
 import { countVisitedTimes, compareDates, getSectionLabel } from '../utils';
 
 export type QuickRange =
@@ -34,7 +34,7 @@ export class HistoryStore {
   public selectedItems: string[] = [];
 
   @computed
-  public get topSites() {
+  public get topSites(): HistoryItem[] {
     const top1 = countVisitedTimes(this.items);
     const newItems: HistoryItem[] = [];
 
@@ -51,16 +51,16 @@ export class HistoryStore {
     this.load();
   }
 
-  public resetLoadedItems() {
+  public resetLoadedItems(): void {
     this.itemsLoaded = this.getDefaultLoaded();
   }
 
-  public getById(id: string) {
+  public getById(id: string): HistoryItem | undefined {
     return this.items.find(x => x._id === id);
   }
 
-  public async load() {
-    await this.db.find({}).exec((err: any, items: HistoryItem[]) => {
+  public load(): void {
+    this.db.find({}).exec((err: any, items: HistoryItem[]) => {
       if (err) return console.warn(err);
 
       items = items.sort(
@@ -71,7 +71,7 @@ export class HistoryStore {
     });
   }
 
-  public addItem(item: HistoryItem) {
+  public addItem(item: HistoryItem): Promise<string> {
     return new Promise((resolve: (id: string) => void) => {
       this.db.insert(item, (err: any, doc: HistoryItem) => {
         if (err) return console.error(err);
@@ -82,13 +82,15 @@ export class HistoryStore {
     });
   }
 
-  public clear() {
+  public clear(): void {
     this.items = [];
 
-    this.db.remove({}, { multi: true }, (err, num) => {});
+    this.db.remove({}, { multi: true }, () => {
+      // purposefully emtpy (??)
+    });
   }
 
-  public removeItem(id: string) {
+  public removeItem(id: string): void {
     this.items = this.items.filter(x => x._id !== id);
 
     this.db.remove({ _id: id }, err => {
@@ -97,7 +99,7 @@ export class HistoryStore {
   }
 
   @computed
-  public get sections() {
+  public get sections(): HistorySection[] {
     const list: HistorySection[] = [];
     let section: HistorySection;
     let loaded = 0;
@@ -121,6 +123,7 @@ export class HistoryStore {
         if (date.getTime() <= this.range.min) break;
       }
 
+      // eslint-disable-next-line @typescript-eslint/prefer-optional-chain
       if (compareDates(section && section.date, date)) {
         section.items.push(item);
       } else {
@@ -139,7 +142,7 @@ export class HistoryStore {
   }
 
   @computed
-  public get range() {
+  public get range(): false | { min: number, max: number } {
     const current = new Date();
     const day = current.getDate();
     const month = current.getMonth();
@@ -189,17 +192,17 @@ export class HistoryStore {
   }
 
   @action
-  public search(str: string) {
+  public search(str: string): void {
     this.searched = str.toLowerCase().toLowerCase();
     this.itemsLoaded = this.getDefaultLoaded();
   }
 
-  public getDefaultLoaded() {
+  public getDefaultLoaded(): number {
     return Math.floor(window.innerHeight / 56);
   }
 
   @action
-  public deleteSelected() {
+  public deleteSelected(): void {
     for (const item of this.selectedItems) {
       this.removeItem(item);
     }
