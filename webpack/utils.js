@@ -124,11 +124,8 @@ const webpackModule = {
     ],
 }
 
-const publicPath =  `${path.resolve(__dirname, `../${OUTPUT_DIR}`)}/`
-
 const output = {
-    path: publicPath,
-    publicPath,
+    path: path.resolve(__dirname, `../${OUTPUT_DIR}`),
 }
 
 function preload(name, path, mode, optimization) {
