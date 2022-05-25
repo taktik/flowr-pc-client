@@ -129,7 +129,6 @@ export class ViewManager {
     for (const key in this.views) {
       this.destroy(parseInt(key, 10))
     }
-    Object.entries(this._ipcEvents).forEach(event => ipcMain.removeListener(event[0], event[1]))
   }
 
   public select(tabId: number): void {
@@ -212,5 +211,10 @@ export class ViewManager {
       const view = this.views[key]
       view.webContents.send(name, ...args)
     }
+  }
+
+  close(): void {
+    this.clear()
+    Object.entries(this._ipcEvents).forEach(event => ipcMain.removeListener(event[0], event[1]))
   }
 }

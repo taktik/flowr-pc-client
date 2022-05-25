@@ -125,7 +125,7 @@
     "pretty-bytes": "5.2.0",
     "react": "16.8.6",
     "react-dom": "16.8.6",
-    "react-hook-form": "^7.31.1",
+    "react-hook-form": "7.31.1",
     "run-parallel": "1.1.9",
     "simple-keyboard": "2.30.29",
     "styled-components": "4.2.0",

@@ -422,7 +422,7 @@ export class AppWindow extends KeyboardMixin(BrowserWindow) {
   }
 
   close(): void {
-    this.viewManager.clear()
+    this.viewManager.close()
     super.close()
   }
 }
