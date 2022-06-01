@@ -83,7 +83,7 @@ export function Config({ config, lastError, isLaunchedUrlCorrect }: ConfigProps)
           register={register}
           path="extUrl"
           validate={validateExtUrl}
-        ></LabeledInput>
+        />
         {urlError ? (
           <span className="error"> Invalid url*</span>
         ) : (
@@ -97,41 +97,41 @@ export function Config({ config, lastError, isLaunchedUrlCorrect }: ConfigProps)
           min="0"
           max="10000000"
           valueAsNumber
-        ></LabeledInput>
+        />
 
         <LabeledInput
           label="Activate Kiosk Mode"
           type="checkbox"
           register={register}
           path="isKiosk"
-        ></LabeledInput>
+        />
 
         <h3>Configuration</h3>
         <LabeledInput
           label="Ozone API"
           register={register}
           path="flowrConfig.ozoneApi.hostProxy"
-        ></LabeledInput>
+        />
         <LabeledInput
           label="Flowr API"
           register={register}
           path="flowrConfig.flowrApi.hostProxy"
-        ></LabeledInput>
+        />
         <LabeledInput
           label="Socket API"
           register={register}
           path="flowrConfig.socketApi.host"
-        ></LabeledInput>
+        />
         <LabeledInput
           label="Push vod socket API"
           register={register}
           path="flowrConfig.pushVodSocketApi.host"
-        ></LabeledInput>
+        />
         <LabeledInput
           label="Anevia vod socket API"
           register={register}
           path="flowrConfig.aneviaVodSocketApi.host"
-        ></LabeledInput>
+        />
 
         <h3>Deinterlacing</h3>
         <LabeledInput
@@ -139,7 +139,7 @@ export function Config({ config, lastError, isLaunchedUrlCorrect }: ConfigProps)
           type="checkbox"
           register={register}
           path="deinterlacing"
-        ></LabeledInput>
+        />
 
         <h3>Applications</h3>
         <LabeledInput
@@ -147,7 +147,7 @@ export function Config({ config, lastError, isLaunchedUrlCorrect }: ConfigProps)
           type="checkbox"
           register={register}
           path="clearAppDataOnStart"
-        ></LabeledInput>
+        />
 
         <h3>Virtual keyboard</h3>
         <LabeledInput
@@ -155,7 +155,7 @@ export function Config({ config, lastError, isLaunchedUrlCorrect }: ConfigProps)
           type="checkbox"
           register={register}
           path="enableVirtualKeyboard"
-        ></LabeledInput>
+        />
 
         <h3>Debug</h3>
         <LabeledInput
@@ -163,7 +163,7 @@ export function Config({ config, lastError, isLaunchedUrlCorrect }: ConfigProps)
           type="checkbox"
           register={register}
           path="debugMode"
-        ></LabeledInput>
+        />
 
         <FlexRowDiv>{ buttons }</FlexRowDiv>
       </ColumnForm>
