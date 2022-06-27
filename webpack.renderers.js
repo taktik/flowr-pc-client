@@ -28,6 +28,37 @@ function reactAppConfig(name, mainEntryPath, extraEntries) {
     return { entry, filename, plugins }
 }
 
+function appConfig(name, fileType, packageJSON) {
+    const entry = {
+        [name]: {
+            import: `./src/applications/${name}/views/index.${fileType}`,
+            filename: `${name}/[name].js`,
+        },
+        [`${name}-preload`]: {
+            import: `./src/applications/${name}/preload.ts`,
+            filename: `${name}/preload.js`,
+        },
+    }
+    const plugins = [
+        new HtmlWebpackPlugin({
+            template: path.resolve(__dirname, `./src/applications/${name}/views/index.html`),
+            filename: `${name}/index.html`,
+            chunks: [name]
+        }),
+    ]
+    if (packageJSON) {
+        plugins.push(new CopyWebpackPlugin({
+            patterns: [
+                {
+                    from: `./src/applications/${name}/package.json`,
+                    to: `${name}/package.json`,
+                },
+            ]
+        }))
+    }
+    return { entry, plugins }
+}
+
 module.exports = (env) => {
     const mode = env?.production ? Mode.PRODUCTION : Mode.DEVELOPMENT
     const optimization = getOptimization(mode)
@@ -70,7 +101,11 @@ module.exports = (env) => {
             ]
         })
     ]
-    const rendererConfig = {
+
+    const flowrPhoneConfig = appConfig('FlowrPhone', 'tsx', true)
+    const keyboardConfig = appConfig('keyboard', 'ts')
+
+    return {
         output,
         target: 'electron-renderer',
         resolve,
@@ -84,44 +119,6 @@ module.exports = (env) => {
             process: 'commonjs process',
             electron: 'commonjs electron',
         },
-    }
-
-    function appConfig(name, fileType, packageJSON) {
-        const entry = {
-            [name]: {
-                import: `./src/applications/${name}/views/index.${fileType}`,
-                filename: `${name}/[name].js`,
-            },
-            [`${name}-preload`]: {
-                import: `./src/applications/${name}/preload.ts`,
-                filename: `${name}/preload.js`,
-            },
-        }
-        const plugins = [
-            new HtmlWebpackPlugin({
-                template: path.resolve(__dirname, `./src/applications/${name}/views/index.html`),
-                filename: `${name}/index.html`,
-                chunks: [name]
-            }),
-        ]
-        if (packageJSON) {
-            plugins.push(new CopyWebpackPlugin({
-                patterns: [
-                    {
-                        from: `./src/applications/${name}/package.json`,
-                        to: `${name}/package.json`,
-                    },
-                ]
-            }))
-        }
-        return { entry, plugins }
-    }
-
-    const flowrPhoneConfig = appConfig('FlowrPhone', 'tsx', true)
-    const keyboardConfig = appConfig('keyboard', 'ts')
-
-    return {
-        ...rendererConfig,
         entry: {
             ...baseEntry,
             ...flowrPhoneConfig.entry,

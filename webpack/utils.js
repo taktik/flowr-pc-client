@@ -76,7 +76,8 @@ function getOptimization(mode) {
 const resolve = {
     extensions: ['.ts', '.tsx', '.js', '.jsx', '.html', '.node'],
     alias: {
-        '~': path.resolve(__dirname, '../src/wexond')
+        '~': path.resolve(__dirname, '../src/wexond'),
+        'src': path.resolve(__dirname, '../src'),
     }
 }
 
@@ -143,15 +144,15 @@ function preload(name, path, mode, optimization) {
 }
 
 module.exports = {
-    Mode,
-    OUTPUT_DIR,
-    resolve,
-    webpackModule,
-    output,
-    deleteFile,
     cleanDir,
     deleteDir,
+    deleteFile,
     getOptimization,
+    Mode,
+    output,
+    OUTPUT_DIR,
     preload,
     RENDERER_SERVER_PORT,
+    resolve,
+    webpackModule,
 }
