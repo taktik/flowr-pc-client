@@ -6,14 +6,14 @@ import { Store } from '../frontend/src/store'
 
 export type ConfigWindowProps = {
     flowrStore: Store<IFlowrStore>
-    isDebugMode(): boolean
+    debugMode: boolean
     lastError: string | undefined
     isLaunchedUrlCorrect: boolean
     parent: BrowserWindow
     done(shouldRelaunch: boolean): void
 }
 
-export function openConfigWindow({ flowrStore, isDebugMode, lastError, isLaunchedUrlCorrect, parent, done }: ConfigWindowProps): Promise<void> {
+export function openConfigWindow({ flowrStore, debugMode, lastError, isLaunchedUrlCorrect, parent, done }: ConfigWindowProps): Promise<void> {
     const configWindow = new BrowserWindow({
         parent,
         webPreferences: {
@@ -23,7 +23,7 @@ export function openConfigWindow({ flowrStore, isDebugMode, lastError, isLaunche
     const _ipcEvents: { [key: string]: (...args: any[]) => void } = {
         getAppConfig: (evt: IpcMainEvent) => {
             const config: ModifiableConfig = {
-                debugMode: isDebugMode(),
+                debugMode,
                 deinterlacing: flowrStore.get('deinterlacing'),
                 extUrl: flowrStore.get('extUrl'),
                 flowrMonitoringTime: flowrStore.get('flowrMonitoringTime'),

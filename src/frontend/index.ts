@@ -1,7 +1,7 @@
 import { ipcMain, app, BrowserWindowConstructorOptions, IpcMainEvent } from 'electron'
 import { extend } from 'lodash'
 import { networkEverywhere } from 'network-everywhere'
-import { homedir } from 'os'
+import { homedir, platform } from 'os'
 import { resolve, join } from 'path'
 import { URL } from 'url'
 
@@ -51,13 +51,14 @@ export function buildBrowserWindowConfig(flowrStore: Store<IFlowrStore>, options
   return extend(options, defaultBrowserWindowOptions(flowrStore))
 }
 
-export function createFlowrWindow(flowrStore: Store<IFlowrStore>, setDebugMode: (debugMode: boolean) => void): FlowrWindow {
+export function createFlowrWindow(flowrStore: Store<IFlowrStore>, isDebugMode: () => boolean, setDebugMode: (debugMode: boolean) => void): FlowrWindow {
   let reloadTimer: Timer | undefined
   let cancelActivityMonitor: (() => void) | undefined
 
   // Pre instantiate the player store to check if we have a stored value for player position
   const playerStore = storeManager.createStore<IPlayerStore>('player', { defaults: DEFAULT_PLAYER_STORE})
   const position: PlayerPosition = playerStore.get('position')
+  const isPlayerInBackground = position === PlayerPosition.BACKGROUND
 
   // Create the browser window.
   const opts = buildBrowserWindowConfig(flowrStore, {
@@ -68,11 +69,17 @@ export function createFlowrWindow(flowrStore: Store<IFlowrStore>, setDebugMode: 
       partition: 'persist:flowr', // needed to display webcam image
       preload: buildPreloadPath('exportNode.js'),
     },
-    transparent: position === PlayerPosition.BACKGROUND,
-    frame: position !== PlayerPosition.BACKGROUND
+    transparent: isPlayerInBackground,
+    frame: !isPlayerInBackground,
   })
 
   const mainWindow = new FlowrWindow(flowrStore, opts)
+
+  if (platform() === 'win32' && isPlayerInBackground) {
+    // Workaround because some versions of Windows handles transparent background as click through by default
+    // This allows for the main window to remain clickable
+    mainWindow.setBackgroundColor('#01ffffff')
+  }
 
   function loadOtherPage(name: string, loader: () => Promise<void>) {
     return (): Promise<void> => {
@@ -92,13 +99,9 @@ export function createFlowrWindow(flowrStore: Store<IFlowrStore>, setDebugMode: 
     setDebugMode(flowrStore.get('debugMode'))
   }
 
-  function isDebugMode() {
-    return process.env.ENV === 'dev' || flowrStore.get('debugMode')
-  }
-
   const loadConfigPage = loadOtherPage('configuration', () => openConfigWindow({
     flowrStore,
-    isDebugMode,
+    debugMode: isDebugMode(),
     lastError,
     isLaunchedUrlCorrect,
     parent: mainWindow,
@@ -159,7 +162,7 @@ export function createFlowrWindow(flowrStore: Store<IFlowrStore>, setDebugMode: 
   }
 
   function reload() {
-    reloadTimer.clear()
+    reloadTimer?.clear()
     cancelActivityMonitor?.()
     void loadFlowr()
   }
@@ -173,10 +176,10 @@ export function createFlowrWindow(flowrStore: Store<IFlowrStore>, setDebugMode: 
     },
     getErrorLoadingFlowr: (evt: IpcMainEvent) => {
         const errorData: any = {
-          remainingTime: reloadTimer.remainingTime,
+          remainingTime: reloadTimer?.remainingTime,
           url: flowrStore.get('extUrl') || 'Flowr URL has not been configured !',
           lastError,
-          }
+        }
         evt.sender.send('receiveErrorLoadingFlowr', errorData)
     },
     getMacAddress: async (evt: IpcMainEvent) => {

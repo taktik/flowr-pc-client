@@ -50,7 +50,7 @@ export class AppWindow extends KeyboardMixin(BrowserWindow) {
   constructor(options: WexondOptions, parent?: BrowserWindow, defaultBrowserWindow: BrowserWindowConstructorOptions = {}) {
     super({
       ...defaultBrowserWindow,
-      frame: process.env.ENV === 'dev' || platform() === 'darwin',
+      frame: platform() === 'darwin',
       show: false,
       parent,
       fullscreen: false,
@@ -75,9 +75,6 @@ export class AppWindow extends KeyboardMixin(BrowserWindow) {
 
     const urlString = buildFileUrl('app.html')
 
-    if (process.env.ENV === 'dev') {
-      this.webContents.openDevTools({ mode: 'detach' })
-    }
     const url = new URL(urlString)
     Object.entries(options).forEach(([key, value]) => {
       if (typeof value !== 'boolean' || value) {
@@ -313,14 +310,16 @@ export class AppWindow extends KeyboardMixin(BrowserWindow) {
       }
     }
 
+    const draggedWindow = this.draggedWindow
+
     if (
       !this.isMinimized() &&
-      this.draggedWindow &&
-      this.draggedWindow.getOwner().id === 0 &&
-      !this.windows.find(x => x.id === this.draggedWindow.id)
+      draggedWindow &&
+      draggedWindow.getOwner().id === 0 &&
+      !this.windows.find(x => x.id === draggedWindow.id)
     ) {
-      const winBounds = this.draggedWindow.getBounds()
-      const { lastBounds } = this.draggedWindow
+      const winBounds = draggedWindow.getBounds()
+      const { lastBounds } = draggedWindow
       const contentBounds = this.getContentArea()
       const cursor = screen.getCursorScreenPoint()
 
@@ -335,14 +334,14 @@ export class AppWindow extends KeyboardMixin(BrowserWindow) {
         (winBounds.x !== lastBounds.x || winBounds.y !== lastBounds.y)
       ) {
         if (!this.draggedIn) {
-          const title = this.draggedWindow.getTitle()
+          const title = draggedWindow.getTitle()
 
           try {
-            const icon = await app.getFileIcon(this.draggedWindow.path)
-            this.draggedWindow.lastTitle = title
+            const icon = await app.getFileIcon(draggedWindow.path)
+            draggedWindow.lastTitle = title
 
             this.webContents.send('add-tab', {
-              id: this.draggedWindow.id,
+              id: draggedWindow.id,
               title,
               icon: icon.toPNG(),
             })
@@ -354,7 +353,7 @@ export class AppWindow extends KeyboardMixin(BrowserWindow) {
           }
         }
       } else if (this.draggedIn && !this.detached) {
-        this.webContents.send('remove-tab', this.draggedWindow.id)
+        this.webContents.send('remove-tab', draggedWindow.id)
 
         this.draggedIn = false
         this.willAttachWindow = false
