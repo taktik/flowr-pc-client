@@ -127,7 +127,8 @@
     "react-dom": "16.8.6",
     "react-hook-form": "7.31.1",
     "run-parallel": "1.1.9",
-    "simple-keyboard": "2.30.29",
+    "simple-keyboard": "3.4.107",
+    "simple-keyboard-layouts": "3.1.123",
     "styled-components": "4.2.0",
     "tldts": "4.0.6",
     "typescript-state-machine": "0.9.4"

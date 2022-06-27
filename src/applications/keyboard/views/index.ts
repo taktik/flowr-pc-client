@@ -1,4 +1,5 @@
 import Keyboard from 'simple-keyboard'
+import frenchLayout from 'simple-keyboard-layouts/build/layouts/french'
 import 'simple-keyboard/build/css/index.css'
 import './style.css'
 import { KeyEvents, SimpleKeyboardKeys } from '../../../keyboard/events'
@@ -31,8 +32,9 @@ const eventsToFilterOut: string[] = [
 export class KeyboardView {
   private state = KeyboardState.DEFAULT
   private keyboard = new Keyboard({
-    onKeyPress: this.onKeyPress.bind(this),
-    onKeyReleased: this.onKeyUp.bind(this),
+    onKeyPress: this.onKeyPress.bind(this) as KeyboardView['onKeyPress'],
+    onKeyReleased: this.onKeyUp.bind(this) as KeyboardView['onKeyUp'],
+    ...frenchLayout,
   })
 
   private formatKeyCode(keyCode: string): string {
@@ -95,7 +97,7 @@ export class KeyboardView {
 
   private sendEvent(eventName: 'keyPress' | 'keyUp', keyCode: string): void {
     if (this.isToSend(keyCode)) {
-      window.ipcRenderer.send(eventName, this.formatKeyCode(keyCode))
+      ipc.send(eventName, this.formatKeyCode(keyCode))
     }
   }
 
