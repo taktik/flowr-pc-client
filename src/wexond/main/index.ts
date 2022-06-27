@@ -11,6 +11,7 @@ import { Settings } from '../renderer/app/models/settings';
 import { makeId } from '../shared/utils/string';
 import * as electronLog from 'electron-log'
 import { enable } from '@electron/remote/main'
+import { getLogger } from 'src/frontend/src/logging/loggers';
 
 export let settings: Settings = {};
 export let appWindow: AppWindow | null
@@ -18,6 +19,9 @@ export let log = electronLog
 export function setWexondLog(logger: typeof log): void {
   log = logger
 }
+
+const flowrLog = getLogger('Wexond')
+
 ipcMain.on('settings', (e: any, s: Settings) => {
   settings = { ...settings, ...s };
 });
@@ -107,8 +111,16 @@ export async function createWexondWindow(wexondOptions: WexondOptions, parentWin
       });
     });
 
-  await loadFilters()
-  await loadExtensions()
+  try {
+    await loadFilters()
+  } catch (error) {
+    flowrLog.warn('Failed to load filters', error)
+  }
+  try {
+    await loadExtensions()
+  } catch (error) {
+    flowrLog.warn('Failed to load extensions', error)
+  }
   runWebRequestService(appWindow)
   return appWindow
 }

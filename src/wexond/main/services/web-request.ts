@@ -14,11 +14,11 @@ import {
 import { parse } from 'tldts'
 import { getPath } from '~/shared/utils/paths/main'
 import type { AppWindow } from '../app-window'
+import { getLogger } from 'src/frontend/src/logging/loggers'
 
 const lists: {[key: string]: string} = {
   easylist: 'https://easylist.to/easylist/easylist.txt',
   easyprivacy: 'https://easylist.to/easylist/easyprivacy.txt',
-  malwaredomains: 'http://mirror1.malwaredomains.com/files/justdomains',
   nocoin:
     'https://raw.githubusercontent.com/hoshsadiq/adblock-nocoin-list/master/nocoin.txt',
   'ublock-filters':
@@ -35,6 +35,8 @@ export let engine: FiltersEngine
 
 const eventListeners: {[name: string]: { id: number, filters: string[], webContentsId: number }[]} = {}
 
+const log = getLogger('Load filters')
+
 export const loadFilters = (): Promise<void> => {
   if (!existsSync(getPath('adblock'))) {
     mkdirSync(getPath('adblock'))
@@ -50,19 +52,19 @@ export const loadFilters = (): Promise<void> => {
     const ops = []
 
     for (const key in lists) {
-      ops.push(Axios.get(lists[key]))
+      ops.push(Axios.get(lists[key]).catch(error => log.warn('Failed to load filter at', lists[key], error)))
     }
 
     return Axios.all(ops).then(res => {
       let data = ''
 
       for (const res1 of res) {
-        data += res1.data
+        if (res1) data += res1.data
       }
 
       engine = FiltersEngine.parse(data)
 
-      return new Promise((resolveProm, rej) => {
+      return new Promise<void>((resolveProm, rej) => {
         writeFile(path, engine.serialize(), err => {
           if (err) {
             console.error(err)

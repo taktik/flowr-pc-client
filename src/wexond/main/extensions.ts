@@ -4,10 +4,9 @@ import {
   ipcMain,
   IpcMainEvent,
 } from 'electron'
-import * as fs from 'fs'
+import { mkdir, readFile, readdir } from 'fs/promises'
 import { format } from 'url'
 import { resolve } from 'path'
-import { promisify } from 'util'
 
 import { getPath } from '~/shared/utils/paths/main'
 import { Extension, StorageArea } from './models'
@@ -16,6 +15,7 @@ import { appWindow } from '.'
 import { buildPreloadPath } from '../../common/preload'
 import { RuntimeMessageConnect, RuntimeMessageSent } from '../shared/utils/extensions'
 import { ExecuteScriptProps } from '../preloads/view-preload'
+import { getLogger } from 'src/frontend/src/logging/loggers'
 
 type StorageOperationDetails = {
   extensionId: string
@@ -25,12 +25,8 @@ type StorageOperationDetails = {
   area: string
 }
 
-const readFile = promisify(fs.readFile)
-const readdir = promisify(fs.readdir)
-const stat = promisify(fs.stat)
-const exists = promisify(fs.exists)
-
 export const extensions: { [key: string]: Extension } = {}
+const log = getLogger('Load extensions')
 
 export const getIpcExtension = (id: string): IpcExtension => {
   const ipcExtension: Extension = {
@@ -73,7 +69,7 @@ export const startBackgroundPage = async (extension: Extension): Promise<void> =
        * WebContents.create's static function exists as a private method.
        * Do not know why it was used by original writer though,
        * thus the awful typing and the lint disable.
-       * May be a cause of crash at some point, this is why it's try/catch
+       * May be a cause of crash at some point, this is why we try/catch it
        */
       // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-call
       const contents: WebContents = (webContents as any).create({
@@ -114,62 +110,78 @@ export const startBackgroundPage = async (extension: Extension): Promise<void> =
 
 export const loadExtensions = async (): Promise<void> => {
   const extensionsPath = getPath('extensions')
-  const files = await readdir(extensionsPath)
+  let files: string[] = []
+
+  try {
+    files = await readdir(extensionsPath)
+  } catch (error) {
+    if ((error as NodeJS.ErrnoException).code === 'ENOENT') {
+      // Create dir if it does not exist and continue: it will be empty anyway
+      await mkdir(extensionsPath)
+    } else {
+      throw error
+    }
+  }
 
   for (const dir of files) {
     const extensionPath = resolve(extensionsPath, dir)
-    const stats = await stat(extensionPath)
+    const manifestPath = resolve(extensionPath, 'manifest.json')
 
-    if (stats.isDirectory()) {
-      const manifestPath = resolve(extensionPath, 'manifest.json')
-
-      if (await exists(manifestPath)) {
-        const manifest = JSON.parse(
-          await readFile(manifestPath, 'utf8'),
-        ) as chrome.runtime.Manifest
-
-        const id = dir.toLowerCase()
-
-        if (extensions[id]) {
-          return
-        }
-
-        const storagePath = getPath('storage/extensions', id)
-        const local = new StorageArea(resolve(storagePath, 'local'))
-        const sync = new StorageArea(resolve(storagePath, 'sync'))
-        const managed = new StorageArea(resolve(storagePath, 'managed'))
-
-        const extension: Extension = {
-          manifest,
-          alarms: [],
-          databases: { local, sync, managed },
-          path: extensionPath,
-          id,
-        }
-
-        extensions[id] = extension
-
-        if (typeof manifest.default_locale === 'string') {
-          const defaultLocalePath = resolve(
-            extensionPath,
-            '_locales',
-            manifest.default_locale,
-          )
-
-          if (await exists(defaultLocalePath)) {
+    try {
+          const manifest = JSON.parse(
+            await readFile(manifestPath, 'utf8'),
+          ) as chrome.runtime.Manifest
+  
+          const id = dir.toLowerCase()
+  
+          if (extensions[id]) {
+            continue
+          }
+  
+          const storagePath = getPath('storage/extensions', id)
+          const local = new StorageArea(resolve(storagePath, 'local'))
+          const sync = new StorageArea(resolve(storagePath, 'sync'))
+          const managed = new StorageArea(resolve(storagePath, 'managed'))
+  
+          const extension: Extension = {
+            manifest,
+            alarms: [],
+            databases: { local, sync, managed },
+            path: extensionPath,
+            id,
+          }
+  
+          extensions[id] = extension
+  
+          if (typeof manifest.default_locale === 'string') {
+            const defaultLocalePath = resolve(
+              extensionPath,
+              '_locales',
+              manifest.default_locale,
+            )
+  
             const messagesPath = resolve(defaultLocalePath, 'messages.json')
-            const messageStats = await stat(messagesPath)
 
-            if ((await exists(messagesPath)) && !messageStats.isDirectory()) {
+            try {
               const data = await readFile(messagesPath, 'utf8')
               const locale = JSON.parse(data) as string // Not sure about this type, and no info to be found anywhere...
-
+  
               extension.locale = locale
+            } catch (error) {
+              const errorCode = (error as NodeJS.ErrnoException).code
+              // ignore error if file does not exist
+              if (errorCode !== 'ENOENT') {
+                throw error
+              }
             }
           }
-        }
-
-        await startBackgroundPage(extension)
+  
+          await startBackgroundPage(extension)
+    } catch (error) {
+      const errorCode = (error as NodeJS.ErrnoException).code
+      
+      if (errorCode !== 'ENOENT') {
+        log.warn('Failed to load extension at path', extensionPath, error)
       }
     }
   }

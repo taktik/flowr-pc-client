@@ -109,7 +109,7 @@
 
     //timer displayed when the user does nothing, we show him the next reload in a timer
     function runTimer(remainingTime) {
-        let timeLeft = Math.floor(remainingTime / 1000)
+        let timeLeft = remainingTime ? Math.floor(remainingTime / 1000) : 120
 
         Timer = setInterval(function() {
             if (timeLeft < 0) {
