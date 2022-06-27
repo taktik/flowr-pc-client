@@ -13,6 +13,8 @@ interface IFlowrDesktopConfigUserPreferences {
   deinterlacing?: boolean | null
   logLevel?: string | null
   windowBounds?: IFlowrDesktopConfigWindowDimensions
+  flowrMonitoringTime?: number
+  enableVirtualKeyboard: boolean
 }
 
 export interface IFlowrDesktopConfig {
