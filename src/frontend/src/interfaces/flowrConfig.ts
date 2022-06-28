@@ -1,7 +1,12 @@
-export interface IFlowrConfig {
-  ozoneApi: Record<string, unknown>
-  flowrApi: Record<string, unknown>
-  socketApi: Record<string, unknown>
-  pushVodSocketApi: Record<string, unknown>
-  aneviaVodSocketApi: Record<string, unknown>
+export type FlowrApiConfig = {
+  host?: string
+  hostProxy?: string
+}
+
+export type FlowrConfig = {
+  ozoneApi: FlowrApiConfig
+  flowrApi: FlowrApiConfig
+  socketApi: FlowrApiConfig
+  pushVodSocketApi: FlowrApiConfig
+  aneviaVodSocketApi: FlowrApiConfig
 }

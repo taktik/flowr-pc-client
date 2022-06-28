@@ -1,5 +1,5 @@
 import { BrowserWindow, app, ipcMain, globalShortcut, screen, BrowserWindowConstructorOptions } from 'electron'
-import { resolve, join } from 'path'
+import { resolve } from 'path'
 import { platform } from 'os'
 import { windowManager, Window } from 'node-window-manager'
 import mouseEvents from 'mouse-hooks'
@@ -11,6 +11,7 @@ import { KeyboardMixin } from '../../keyboard/keyboardMixin'
 import { watchForInactivity } from '../../inactivity/window'
 import { buildPreloadPath } from '../../common/preload'
 import { Point, Rectangle } from 'electron/main'
+import { buildFileUrl } from '../../application-manager/helpers'
 
 const containsPoint = (bounds: Rectangle, point: Point) => {
   return (
@@ -49,7 +50,7 @@ export class AppWindow extends KeyboardMixin(BrowserWindow) {
   constructor(options: WexondOptions, parent?: BrowserWindow, defaultBrowserWindow: BrowserWindowConstructorOptions = {}) {
     super({
       ...defaultBrowserWindow,
-      frame: process.env.ENV === 'dev' || platform() === 'darwin',
+      frame: platform() === 'darwin',
       show: false,
       parent,
       fullscreen: false,
@@ -57,7 +58,6 @@ export class AppWindow extends KeyboardMixin(BrowserWindow) {
         plugins: true,
         nodeIntegration: true,
         contextIsolation: false,
-        enableRemoteModule: true, // TODO: FLOW-8215
         experimentalFeatures: true,
         preload: buildPreloadPath('inactivity-preload.js'),
       },
@@ -73,13 +73,8 @@ export class AppWindow extends KeyboardMixin(BrowserWindow) {
     this.on('restore', resize)
     this.on('unmaximize', resize)
 
-    let urlString: string
-    if (process.env.ENV === 'dev') {
-      this.webContents.openDevTools({ mode: 'detach' })
-      urlString = `http://localhost:${__RENDERER_SERVER_PORT__}/app.html`
-    } else {
-      urlString = join('file://', app.getAppPath(), 'build/app.html')
-    }
+    const urlString = buildFileUrl('app.html')
+
     const url = new URL(urlString)
     Object.entries(options).forEach(([key, value]) => {
       if (typeof value !== 'boolean' || value) {
@@ -135,29 +130,8 @@ export class AppWindow extends KeyboardMixin(BrowserWindow) {
             this.isWindowHidden = true
           }
         },
-        setDebugMode: (evt: any, debugMode: boolean) => {
-          if (debugMode) {
-            this.webContents.openDevTools({ mode: 'detach' })
-          } else {
-            this.webContents.closeDevTools()
-          }
-        },
       }
       this.activateWindowCapturing(ipcEvents)
-    } else {
-      const ipcEvents = {
-        setDebugMode: (evt: any, debugMode: boolean) => {
-          if (debugMode) {
-            this.webContents.openDevTools({ mode: 'detach' })
-          } else {
-            this.webContents.closeDevTools()
-          }
-        },
-      }
-      this.on('close', () => {
-        Object.entries(ipcEvents).forEach(event => ipcMain.removeListener(...event))
-      })
-      Object.entries(ipcEvents).forEach(event => ipcMain.on(...event))
     }
 
     if (options.closeAfterInactivity) {
@@ -336,14 +310,16 @@ export class AppWindow extends KeyboardMixin(BrowserWindow) {
       }
     }
 
+    const draggedWindow = this.draggedWindow
+
     if (
       !this.isMinimized() &&
-      this.draggedWindow &&
-      this.draggedWindow.getOwner().id === 0 &&
-      !this.windows.find(x => x.id === this.draggedWindow.id)
+      draggedWindow &&
+      draggedWindow.getOwner().id === 0 &&
+      !this.windows.find(x => x.id === draggedWindow.id)
     ) {
-      const winBounds = this.draggedWindow.getBounds()
-      const { lastBounds } = this.draggedWindow
+      const winBounds = draggedWindow.getBounds()
+      const { lastBounds } = draggedWindow
       const contentBounds = this.getContentArea()
       const cursor = screen.getCursorScreenPoint()
 
@@ -358,14 +334,14 @@ export class AppWindow extends KeyboardMixin(BrowserWindow) {
         (winBounds.x !== lastBounds.x || winBounds.y !== lastBounds.y)
       ) {
         if (!this.draggedIn) {
-          const title = this.draggedWindow.getTitle()
+          const title = draggedWindow.getTitle()
 
           try {
-            const icon = await app.getFileIcon(this.draggedWindow.path)
-            this.draggedWindow.lastTitle = title
+            const icon = await app.getFileIcon(draggedWindow.path)
+            draggedWindow.lastTitle = title
 
             this.webContents.send('add-tab', {
-              id: this.draggedWindow.id,
+              id: draggedWindow.id,
               title,
               icon: icon.toPNG(),
             })
@@ -377,7 +353,7 @@ export class AppWindow extends KeyboardMixin(BrowserWindow) {
           }
         }
       } else if (this.draggedIn && !this.detached) {
-        this.webContents.send('remove-tab', this.draggedWindow.id)
+        this.webContents.send('remove-tab', draggedWindow.id)
 
         this.draggedIn = false
         this.willAttachWindow = false
@@ -445,7 +421,7 @@ export class AppWindow extends KeyboardMixin(BrowserWindow) {
   }
 
   close(): void {
-    this.viewManager.clear()
+    this.viewManager.close()
     super.close()
   }
 }

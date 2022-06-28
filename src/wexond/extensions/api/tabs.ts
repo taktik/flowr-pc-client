@@ -1,4 +1,4 @@
-import { ipcRenderer } from 'electron';
+import { ipcRenderer, IpcRendererEvent } from 'electron';
 import { readFileSync } from 'fs';
 import { join } from 'path';
 import { API } from '.';
@@ -22,13 +22,13 @@ export class Tabs {
     currentTabId = tabId;
   }
 
-  public get = (tabId: number, callback: (tab: chrome.tabs.Tab) => void) => {
+  public get = (tabId: number, callback: (tab: chrome.tabs.Tab) => void): void => {
     this.query({}, tabs => {
       callback(tabs.find(x => x.id === tabId));
     });
   };
 
-  public getCurrent = (callback: (tab: chrome.tabs.Tab) => void) => {
+  public getCurrent = (callback: (tab: chrome.tabs.Tab) => void): void => {
     this.get(currentTabId, tab => {
       callback(tab);
     });
@@ -37,25 +37,25 @@ export class Tabs {
   public query = (
     queryInfo: chrome.tabs.QueryInfo,
     callback: (tabs: chrome.tabs.Tab[]) => void,
-  ) => {
+  ): void => {
     ipcRenderer.send('api-tabs-query');
 
     ipcRenderer.once(
       'api-tabs-query',
-      (e: Electron.IpcMessageEvent, data: chrome.tabs.Tab[]) => {
-        const readProperty = (obj: any, prop: string) => obj[prop];
+      (e: IpcRendererEvent, data: chrome.tabs.Tab[]) => {
+        const readProperty = <T extends chrome.tabs.Tab | chrome.tabs.QueryInfo, U extends keyof T>(obj: T, prop: U) => obj[prop];
 
         callback(
           data.filter(tab => {
             for (const key in queryInfo) {
-              const tabProp = readProperty(tab, key);
-              const queryInfoProp = readProperty(queryInfo, key);
+              const tabProp = readProperty(tab, key as keyof chrome.tabs.Tab) // I know, wrong type assertion...
+              const queryInfoProp = readProperty(queryInfo, key as keyof chrome.tabs.QueryInfo)
 
               if (key === 'url' && queryInfoProp === '<all_urls>') {
                 return true;
               }
 
-              if (tabProp == null || queryInfoProp !== tabProp) {
+              if (tabProp === null || queryInfoProp !== tabProp) {
                 return false;
               }
             }
@@ -70,22 +70,22 @@ export class Tabs {
   public create = (
     createProperties: chrome.tabs.CreateProperties,
     callback: (tab: chrome.tabs.Tab) => void = null,
-  ) => {
+  ): void => {
     ipcRenderer.send('api-tabs-create', createProperties);
 
     if (callback) {
       ipcRenderer.once(
         'api-tabs-create',
-        (e: Electron.IpcMessageEvent, data: chrome.tabs.Tab) => {
+        (e: IpcRendererEvent, data: chrome.tabs.Tab) => {
           callback(data);
         },
       );
     }
   };
 
-  public insertCSS = (arg1: any = null, arg2: any = null, arg3: any = null) => {
-    const insertCSS = (tabId: number, details: any, callback: any) => {
-      if (details.hasOwnProperty('file')) {
+  public insertCSS = (arg1: any = null, arg2: any = null, arg3: any = null): void => {
+    const insertCSS = (tabId: number, details: chrome.tabs.InjectDetails, callback: () => void) => {
+      if (Object.prototype.hasOwnProperty.call(details, 'file')) {
         details.code = readFileSync(
           join(api._extension.path, details.file),
           'utf8',
@@ -114,9 +114,9 @@ export class Tabs {
     arg1: any = null,
     arg2: any = null,
     arg3: any = null,
-  ) => {
-    const executeScript = (tabId: number, details: any, callback: any) => {
-      if (details.hasOwnProperty('file')) {
+  ): void => {
+    const executeScript = (tabId: number, details: chrome.tabs.InjectDetails, callback: (res: any) => void) => {
+      if (Object.prototype.hasOwnProperty.call(details, 'file')) {
         details.code = readFileSync(
           join(api._extension.path, details.file),
           'utf8',
@@ -133,7 +133,7 @@ export class Tabs {
 
       ipcRenderer.once(
         `api-tabs-executeScript-${responseId}`,
-        (e: Electron.IpcMessageEvent, result: any) => {
+        (e: IpcRendererEvent, result: any) => {
           if (callback) {
             callback(result);
           }
@@ -156,7 +156,7 @@ export class Tabs {
     tabId: number,
     zoomFactor: number,
     callback: () => void,
-  ) => {
+  ): void => {
     ipcRenderer.send('api-tabs-setZoom', tabId, zoomFactor);
 
     ipcRenderer.once('api-tabs-setZoom', () => {
@@ -166,12 +166,12 @@ export class Tabs {
     });
   };
 
-  public getZoom = (tabId: number, callback: (zoomFactor: number) => void) => {
+  public getZoom = (tabId: number, callback: (zoomFactor: number) => void): void => {
     ipcRenderer.send('api-tabs-getZoom', tabId);
 
     ipcRenderer.once(
       'api-tabs-getZoom',
-      (e: Electron.IpcMessageEvent, zoomFactor: number) => {
+      (e: IpcRendererEvent, zoomFactor: number) => {
         if (callback) {
           callback(zoomFactor);
         }
@@ -182,12 +182,12 @@ export class Tabs {
   public detectLanguage = (
     tabId: number,
     callback: (language: string) => void,
-  ) => {
+  ): void => {
     ipcRenderer.send('api-tabs-detectLanguage', tabId);
 
     ipcRenderer.once(
       'api-tabs-detectLanguage',
-      (e: Electron.IpcMessageEvent, language: string) => {
+      (e: IpcRendererEvent, language: string) => {
         if (callback) {
           callback(language);
         }
@@ -195,5 +195,7 @@ export class Tabs {
     );
   };
 
-  public update = () => {};
+  public update = (): void => {
+    // purposefully empty (?)
+  };
 }

@@ -2,8 +2,13 @@ import { HistoryItem } from '../models';
 import store from '../store';
 import { requestURL } from './network';
 
-export const countVisitedTimes = (hItems: HistoryItem[]) => {
-  const items: any[] = [];
+export type VisitedTimes = {
+  times: number
+  item: HistoryItem,
+}
+
+export const countVisitedTimes = (hItems: HistoryItem[]): VisitedTimes[] => {
+  const items: VisitedTimes[] = [];
   const historyItems = hItems.slice();
 
   for (const historyItem of historyItems) {
@@ -33,7 +38,7 @@ interface HistorySuggestion extends HistoryItem {
   isSearch?: boolean;
 }
 
-export const getHistorySuggestions = (filter: string) => {
+export const getHistorySuggestions = (filter: string): HistorySuggestion[] => {
   filter = filter.trim().toLowerCase();
 
   if (filter === '') {
@@ -104,7 +109,7 @@ export const getHistorySuggestions = (filter: string) => {
   return historyItems.slice(0, 5);
 };
 
-export const getSearchSuggestions = (filter: string) =>
+export const getSearchSuggestions = (filter: string): Promise<string[]> =>
   // eslint-disable-next-line
   new Promise(async (resolve: (suggestions: string[]) => void, reject) => {
     const input = filter.trim().toLowerCase();
@@ -120,7 +125,7 @@ export const getSearchSuggestions = (filter: string) =>
             input,
           )}`,
         )).data,
-      );
+      ) as string[]
 
       let suggestions: string[] = [];
 

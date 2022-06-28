@@ -1,17 +1,16 @@
-import { ipcRenderer, remote } from 'electron';
+import { ipcRenderer } from 'electron';
+import { getCurrentWindow } from '@electron/remote'
 import store from '~/renderer/app/store';
 
-export const getCurrentWindow = () => remote.getCurrentWindow();
-
-export const closeWindow = () => {
+export const closeWindow = (): void => {
   getCurrentWindow().close();
 };
 
-export const minimizeWindow = () => {
+export const minimizeWindow = (): void => {
   getCurrentWindow().minimize();
 };
 
-export const maximizeWindow = () => {
+export const maximizeWindow = (): void => {
   const currentWindow = getCurrentWindow();
 
   if (currentWindow.isMaximized()) {
@@ -21,7 +20,7 @@ export const maximizeWindow = () => {
   }
 };
 
-export function backToFlowr() {
+export function backToFlowr(): void {
   const param = new URLSearchParams(location.search);
   if (param.has('clearBrowsingDataAtClose')) {
     store.history.clear();

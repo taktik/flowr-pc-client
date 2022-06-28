@@ -76,16 +76,16 @@ function getOptimization(mode) {
 const resolve = {
     extensions: ['.ts', '.tsx', '.js', '.jsx', '.html', '.node'],
     alias: {
-        '~': path.resolve(__dirname, '../src/wexond')
+        '~': path.resolve(__dirname, '../src/wexond'),
+        'src': path.resolve(__dirname, '../src'),
     }
 }
 
 const webpackModule = {
     rules: [
         {
-            // If you see a file that ends in .ejs, just send it to the raw-loader.
             test: /\.ejs$/,
-            use: 'raw-loader',
+            type: 'asset/source',
         },
         {
             test: /\.html$/,
@@ -112,31 +112,21 @@ const webpackModule = {
         },
         {
             test: /\.(png|jpg|gif)$/,
-            use: [
-                {
-                    loader: 'url-loader',
-                    options: {
-                        limit: 8192,
-                    },
-                },
-            ],
+            type: 'asset/inline',
         },
         {
             test: /\.(eot|svg|ttf|woff|woff2|otf)$/i,
-            loader: 'file-loader',
+            type: 'asset/resource',
         },
         {
             test: /\.node$/,
-            use: 'file-loader',
+            type: 'asset/resource',
         },
     ],
 }
 
-const publicPath =  path.resolve(__dirname, `../${OUTPUT_DIR}`)
-
 const output = {
-    path: publicPath,
-    publicPath,
+    path: path.resolve(__dirname, `../${OUTPUT_DIR}`),
 }
 
 function preload(name, path, mode, optimization) {
@@ -154,15 +144,15 @@ function preload(name, path, mode, optimization) {
 }
 
 module.exports = {
-    Mode,
-    OUTPUT_DIR,
-    resolve,
-    webpackModule,
-    output,
-    deleteFile,
     cleanDir,
     deleteDir,
+    deleteFile,
     getOptimization,
+    Mode,
+    output,
+    OUTPUT_DIR,
     preload,
     RENDERER_SERVER_PORT,
+    resolve,
+    webpackModule,
 }

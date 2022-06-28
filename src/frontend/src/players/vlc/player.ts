@@ -7,6 +7,7 @@ import { AbstractPlayer, PlayProps } from '../abstractPlayer'
 import { IMessage, LogMessage, MessageDataType, MessageType, ProcessMessaging, VLCLogLevel } from './messaging'
 import { ResetableTimeout } from './resetableTimeout'
 import { FlowrWindow } from "../../../flowr-window";
+import { getSeverity } from '../../logging/loggers'
 
 type ResizeProps = {
   width: number
@@ -65,7 +66,7 @@ export class VlcPlayer extends AbstractPlayer {
     if (!path) {
       throw Error('No path is defined for VLC executable. Please configure it in flowr-admin\'s settings')
     }
-    const args = [url, toRectangle(this.playerPosition), this.store.get('position')]
+    const args = [url, toRectangle(this.playerPosition), this.store.get('position'), getSeverity()]
     const process = spawn(path, args)
 
     /* eslint-disable @typescript-eslint/unbound-method */

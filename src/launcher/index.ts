@@ -22,11 +22,16 @@ import { cloneDeep, mergeWith } from 'lodash'
 import { FullScreenManager } from '../common/fullscreen'
 import { IFlowrDesktopConfig } from '../frontend/src/interfaces/IFlowrDesktopConfig'
 import { WexondOptions } from '../wexond/main/app-window'
+import { openDevTools } from '../common/devTools'
+import { initialize } from '@electron/remote/main'
 
 const FlowrDataDir = resolve(homedir(), '.flowr')
 
 export const storeManager = new StoreManager(FlowrDataDir)
 const applicationManager = new ApplicationManager()
+
+// https://www.npmjs.com/package/@electron/remote
+let remoteModuleInitialized = false
 
 async function main() {
   const migrateUserPreferences = getMigrateUserPreferences(`${FRONTEND_CONFIG_NAME}.json`)
@@ -41,7 +46,6 @@ async function main() {
   ipcMain.setMaxListeners(0)
 
   let flowrWindow: FlowrWindow | null = null
-
   let browserWindow: BrowserWindow | null = null
 
   const gotTheLock = app.requestSingleInstanceLock()
@@ -63,10 +67,15 @@ async function main() {
 
   const openBrowserWindow = async (
     flowrStore: Store<IFlowrStore>,
+    debugMode: boolean,
     options: Omit<WexondOptions, 'enableVirtualKeyboard'>,
   ): Promise<void> => {
 
     browserWindow?.close()
+    if (!remoteModuleInitialized) {
+      initialize()
+      remoteModuleInitialized = true
+    }
 
     const wexondOptions = {
       ...options,
@@ -74,6 +83,7 @@ async function main() {
     }
 
     browserWindow = await createWexondWindow(wexondOptions, flowrWindow || undefined, buildBrowserWindowConfig(flowrStore, {}))
+    openDevTools(browserWindow.webContents, debugMode)
     FullScreenManager.applySameWindowState(flowrWindow, browserWindow)
     applicationManager.browserWindow = browserWindow
 
@@ -95,12 +105,16 @@ async function main() {
 
     keyboard.flowrStore = flowrStore
 
+    function isDebugMode(): boolean {
+      return process.env.ENV === 'dev' || flowrStore.get('debugMode')
+    }
+
     app.on('activate', () => {
       if (flowrWindow === null) {
-        initFlowr(flowrStore)
+        initFlowr(flowrStore, isDebugMode)
       }
     })
-    initFlowr(flowrStore)
+    initFlowr(flowrStore, isDebugMode)
 
     ipcMain.on('window-focus', () => {
       if (flowrWindow) {
@@ -111,7 +125,7 @@ async function main() {
     // eslint-disable-next-line @typescript-eslint/no-misused-promises
     ipcMain.on('flowr-desktop-config', async (event: IpcMainEvent, desktopConfig?: IFlowrDesktopConfig) => {
       const currentFlowrStore = cloneDeep(flowrStore.data)
-      delete currentFlowrStore.player
+
       if (desktopConfig) {
         /**
          * Merge config from ozone over default one
@@ -129,7 +143,7 @@ async function main() {
 
     // eslint-disable-next-line @typescript-eslint/no-misused-promises
     ipcMain.on('open-browser', async (event: Event, options: Omit<WexondOptions, 'enableVirtualKeyboard'>) => {
-      await openBrowserWindow(flowrStore, options)
+      await openBrowserWindow(flowrStore, isDebugMode(), options)
     })
 
     ipcMain.on('close-browser', () => {
@@ -167,11 +181,22 @@ async function main() {
     app.quit()
   })
 
-  function initFlowr(store: Store<IFlowrStore>) {
+  function initFlowr(store: Store<IFlowrStore>, isDebugMode: () => boolean) {
     applicationManager.flowrStore = store
 
+    function setDebugMode(debugMode: boolean) {
+      applicationManager.setDebugMode(debugMode)
+
+      if (flowrWindow) {
+        openDevTools(flowrWindow.webContents, debugMode)
+      }
+      if (browserWindow) {
+        openDevTools(browserWindow.webContents, debugMode)
+      }
+    }
+
     try {
-      flowrWindow = createFlowrWindow(store)
+      flowrWindow = createFlowrWindow(store, isDebugMode, setDebugMode)
       FullScreenManager.applyDefaultActionOnWindow(flowrWindow)
       applicationManager.flowrWindow = flowrWindow
 
@@ -180,7 +205,7 @@ async function main() {
       })
 
       flowrWindow.webContents.setWindowOpenHandler(({ url }) => {
-        openBrowserWindow(store, {
+        openBrowserWindow(store, isDebugMode(), {
           clearBrowsingDataAtClose: false,
           openUrl: url,
           maxTab : 0,

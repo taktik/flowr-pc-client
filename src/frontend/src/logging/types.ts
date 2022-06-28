@@ -25,6 +25,10 @@ const LogLevel: Map<LogSeverity, number> = new Map([
   [LogSeverity.FATAL, 4],
 ])
 
+function severityFromLevel(level: number): LogSeverity {
+  return Array.from(LogLevel.entries()).find(([, l]) => l === level)?.[0] ?? LogSeverity.INFO
+}
+
 type LogLevelParam = number | LogSeverity
 
 type LogMetadata = {
@@ -45,4 +49,5 @@ export {
   LogLevelParam,
   LogMetadata,
   Appender,
+  severityFromLevel,
 }

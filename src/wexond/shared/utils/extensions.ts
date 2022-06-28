@@ -1,13 +1,23 @@
-import { ipcRenderer, remote } from 'electron';
+import { ipcRenderer, IpcRendererEvent } from 'electron';
+import { webContents } from '@electron/remote'
 import { IpcExtension } from '../models';
 import { Port, API } from '~/extensions';
 
-export const getAPI = (extension: IpcExtension, tabId: number = null) => {
+type RuntimeMessage = {
+  extensionId: string
+  portId: string
+  sender: chrome.runtime.MessageSender
+}
+
+export type RuntimeMessageConnect = RuntimeMessage & { name: string }
+export type RuntimeMessageSent = RuntimeMessage & { message: unknown }
+
+export const getAPI = (extension: IpcExtension, tabId: number = null): API => {
   const api = new API(extension, tabId);
 
   ipcRenderer.on(
     'api-runtime-connect',
-    (e: Electron.IpcMessageEvent, data: any) => {
+    (e: IpcRendererEvent, data: RuntimeMessageConnect) => {
       const { portId, sender, name } = data;
       const port = new Port(portId, name, sender);
       api.runtime.onConnect.emit(port);
@@ -16,17 +26,17 @@ export const getAPI = (extension: IpcExtension, tabId: number = null) => {
 
   ipcRenderer.on(
     'api-runtime-sendMessage',
-    (e: Electron.IpcMessageEvent, data: any, webContentsId: number) => {
+    (e: IpcRendererEvent, data: RuntimeMessageSent, webContentsId: number) => {
       const { portId, sender, message } = data;
 
       const sendResponse = (msg: any) => {
-        remote.webContents
+        webContents
           .fromId(webContentsId)
           .send(`api-runtime-sendMessage-response-${portId}`, msg);
       };
 
       api.runtime.onMessage.emit(message, sender, sendResponse);
-      const port = new Port(portId, name, sender);
+      const port = new Port(portId, window.name, sender);
       api.runtime.onConnect.emit(port);
     },
   );

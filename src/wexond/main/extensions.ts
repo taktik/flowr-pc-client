@@ -4,23 +4,29 @@ import {
   ipcMain,
   IpcMainEvent,
 } from 'electron'
-import * as fs from 'fs'
+import { mkdir, readFile, readdir } from 'fs/promises'
 import { format } from 'url'
 import { resolve } from 'path'
-import { promisify } from 'util'
 
-import { getPath } from '~/shared/utils/paths'
+import { getPath } from '~/shared/utils/paths/main'
 import { Extension, StorageArea } from './models'
 import { IpcExtension } from '~/shared/models'
 import { appWindow } from '.'
 import { buildPreloadPath } from '../../common/preload'
+import { RuntimeMessageConnect, RuntimeMessageSent } from '../shared/utils/extensions'
+import { ExecuteScriptProps } from '../preloads/view-preload'
+import { getLogger } from 'src/frontend/src/logging/loggers'
 
-const readFile = promisify(fs.readFile)
-const readdir = promisify(fs.readdir)
-const stat = promisify(fs.stat)
-const exists = promisify(fs.exists)
+type StorageOperationDetails = {
+  extensionId: string
+  id: string
+  arg: any
+  type: string
+  area: string
+}
 
 export const extensions: { [key: string]: Extension } = {}
+const log = getLogger('Load extensions')
 
 export const getIpcExtension = (id: string): IpcExtension => {
   const ipcExtension: Extension = {
@@ -32,7 +38,7 @@ export const getIpcExtension = (id: string): IpcExtension => {
   return ipcExtension
 }
 
-export const startBackgroundPage = async (extension: Extension) => {
+export const startBackgroundPage = async (extension: Extension): Promise<void> => {
   const { manifest, path, id } = extension
 
   if (manifest.background) {
@@ -58,97 +64,124 @@ export const startBackgroundPage = async (extension: Extension) => {
       )
     }
 
-    const contents: WebContents = (webContents as any).create({
-      partition: 'persist:wexond_extension',
-      isBackgroundPage: true,
-      commandLineSwitches: ['--background-page'],
-      preload: buildPreloadPath('background-preload.js'),
-      webPreferences: {
-        webSecurity: false,
-        nodeIntegration: false,
-        contextIsolation: false,
-      },
-    })
+    try {
+      /**
+       * WebContents.create's static function exists as a private method.
+       * Do not know why it was used by original writer though,
+       * thus the awful typing and the lint disable.
+       * May be a cause of crash at some point, this is why we try/catch it
+       */
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-call
+      const contents: WebContents = (webContents as any).create({
+        partition: 'persist:wexond_extension',
+        isBackgroundPage: true,
+        commandLineSwitches: ['--background-page'],
+        preload: buildPreloadPath('background-preload.js'),
+        webPreferences: {
+          webSecurity: false,
+          nodeIntegration: false,
+          contextIsolation: false,
+        },
+      }) as WebContents
 
-    extension.backgroundPage = {
-      html,
-      fileName,
-      webContentsId: contents.id,
+      extension.backgroundPage = {
+        html,
+        fileName,
+        webContentsId: contents.id,
+      }
+
+      if (process.env.ENV === 'dev') {
+        contents.openDevTools({ mode: 'detach' })
+      }
+
+      await contents.loadURL(
+        format({
+          protocol: 'wexond-extension',
+          slashes: true,
+          hostname: id,
+          pathname: fileName,
+        }),
+      )
+    } catch(e) {
+      console.error('Failed to start extension', extension.id, 'at path', extension.path, e)
     }
-
-    if (process.env.ENV === 'dev') {
-      contents.openDevTools({ mode: 'detach' })
-    }
-
-    contents.loadURL(
-      format({
-        protocol: 'wexond-extension',
-        slashes: true,
-        hostname: id,
-        pathname: fileName,
-      }),
-    )
   }
 }
 
-export const loadExtensions = async () => {
+export const loadExtensions = async (): Promise<void> => {
   const extensionsPath = getPath('extensions')
-  const files = await readdir(extensionsPath)
+  let files: string[] = []
+
+  try {
+    files = await readdir(extensionsPath)
+  } catch (error) {
+    if ((error as NodeJS.ErrnoException).code === 'ENOENT') {
+      // Create dir if it does not exist and continue: it will be empty anyway
+      await mkdir(extensionsPath)
+    } else {
+      throw error
+    }
+  }
 
   for (const dir of files) {
     const extensionPath = resolve(extensionsPath, dir)
-    const stats = await stat(extensionPath)
+    const manifestPath = resolve(extensionPath, 'manifest.json')
 
-    if (stats.isDirectory()) {
-      const manifestPath = resolve(extensionPath, 'manifest.json')
-
-      if (await exists(manifestPath)) {
-        const manifest: chrome.runtime.Manifest = JSON.parse(
-          await readFile(manifestPath, 'utf8'),
-        )
-
-        const id = dir.toLowerCase()
-
-        if (extensions[id]) {
-          return
-        }
-
-        const storagePath = getPath('storage/extensions', id)
-        const local = new StorageArea(resolve(storagePath, 'local'))
-        const sync = new StorageArea(resolve(storagePath, 'sync'))
-        const managed = new StorageArea(resolve(storagePath, 'managed'))
-
-        const extension: Extension = {
-          manifest,
-          alarms: [],
-          databases: { local, sync, managed },
-          path: extensionPath,
-          id,
-        }
-
-        extensions[id] = extension
-
-        if (typeof manifest.default_locale === 'string') {
-          const defaultLocalePath = resolve(
-            extensionPath,
-            '_locales',
-            manifest.default_locale,
-          )
-
-          if (await exists(defaultLocalePath)) {
+    try {
+          const manifest = JSON.parse(
+            await readFile(manifestPath, 'utf8'),
+          ) as chrome.runtime.Manifest
+  
+          const id = dir.toLowerCase()
+  
+          if (extensions[id]) {
+            continue
+          }
+  
+          const storagePath = getPath('storage/extensions', id)
+          const local = new StorageArea(resolve(storagePath, 'local'))
+          const sync = new StorageArea(resolve(storagePath, 'sync'))
+          const managed = new StorageArea(resolve(storagePath, 'managed'))
+  
+          const extension: Extension = {
+            manifest,
+            alarms: [],
+            databases: { local, sync, managed },
+            path: extensionPath,
+            id,
+          }
+  
+          extensions[id] = extension
+  
+          if (typeof manifest.default_locale === 'string') {
+            const defaultLocalePath = resolve(
+              extensionPath,
+              '_locales',
+              manifest.default_locale,
+            )
+  
             const messagesPath = resolve(defaultLocalePath, 'messages.json')
-            const stats = await stat(messagesPath)
 
-            if ((await exists(messagesPath)) && !stats.isDirectory()) {
+            try {
               const data = await readFile(messagesPath, 'utf8')
-              const locale = JSON.parse(data)
-
+              const locale = JSON.parse(data) as string // Not sure about this type, and no info to be found anywhere...
+  
               extension.locale = locale
+            } catch (error) {
+              const errorCode = (error as NodeJS.ErrnoException).code
+              // ignore error if file does not exist
+              if (errorCode !== 'ENOENT') {
+                throw error
+              }
             }
           }
-        }
-
-        startBackgroundPage(extension)
+  
+          await startBackgroundPage(extension)
+    } catch (error) {
+      const errorCode = (error as NodeJS.ErrnoException).code
+      
+      if (errorCode !== 'ENOENT') {
+        log.warn('Failed to load extension at path', extensionPath, error)
       }
     }
   }
@@ -159,9 +192,9 @@ ipcMain.on('get-extension', (e: IpcMainEvent, id: string) => {
 })
 
 ipcMain.on('get-extensions', (e: IpcMainEvent) => {
-  const list = { ...extensions }
+  const list: { [key: string]: IpcExtension } = {}
 
-  for (const key in list) {
+  for (const key in extensions) {
     list[key] = getIpcExtension(key)
   }
 
@@ -185,13 +218,13 @@ ipcMain.on(
     const view = appWindow.viewManager.views[tabId]
 
     if (view) {
-      view.webContents.insertCSS(details.code)
+      view.webContents.insertCSS(details.code).catch(console.error)
       e.sender.send('api-tabs-insertCSS')
     }
   },
 )
 
-ipcMain.on('api-tabs-executeScript', (e: IpcMainEvent, data: any) => {
+ipcMain.on('api-tabs-executeScript', (e: IpcMainEvent, data: ExecuteScriptProps) => {
   const { tabId } = data
   const view = appWindow.viewManager.views[tabId]
 
@@ -211,7 +244,7 @@ ipcMain.on('api-runtime-reload', (e: IpcMainEvent, extensionId: string) => {
 
 ipcMain.on(
   'api-runtime-connect',
-  async (e: IpcMainEvent, { extensionId, portId, sender, name }: any) => {
+  (e: IpcMainEvent, { extensionId, portId, sender, name }: RuntimeMessageConnect) => {
     const { backgroundPage } = extensions[extensionId]
 
     if (e.sender.id !== backgroundPage.webContentsId) {
@@ -228,7 +261,7 @@ ipcMain.on(
   },
 )
 
-ipcMain.on('api-runtime-sendMessage', async (e: IpcMainEvent, data: any) => {
+ipcMain.on('api-runtime-sendMessage', (e: IpcMainEvent, data: RuntimeMessageSent) => {
   const { extensionId } = data
   const { backgroundPage } = extensions[extensionId]
 
@@ -243,7 +276,7 @@ ipcMain.on('api-runtime-sendMessage', async (e: IpcMainEvent, data: any) => {
 
 ipcMain.on(
   'api-port-postMessage',
-  (e: IpcMainEvent, { portId, msg }: any) => {
+  (e: IpcMainEvent, { portId, msg }: { portId: string, msg: any }) => {
     Object.keys(extensions).forEach(key => {
       const { backgroundPage } = extensions[key]
 
@@ -264,17 +297,18 @@ ipcMain.on(
 
 ipcMain.on(
   'api-storage-operation',
-  (e: IpcMainEvent, { extensionId, id, area, type, arg }: any) => {
+  (e: IpcMainEvent, { extensionId, id, area, type, arg }: StorageOperationDetails) => {
     const { databases } = extensions[extensionId]
 
     const contents = webContents.fromId(e.sender.id)
     const msg = `api-storage-operation-${id}`
 
     if (type === 'get') {
-      databases[area].get(arg, d => {
+      databases[area].get(arg, (d: {[key: string]: unknown}) => {
         for (const key in d) {
-          if (Buffer.isBuffer(d[key])) {
-            d[key] = JSON.parse(d[key].toString())
+          const dd = d[key]
+          if (Buffer.isBuffer(dd)) {
+            d[key] = JSON.parse(dd.toString()) as unknown
           }
         }
         contents.send(msg, d)
@@ -294,52 +328,6 @@ ipcMain.on(
     }
   },
 )
-
-ipcMain.on('api-alarms-operation', (e: IpcMainEvent, data: any) => {
-  const { extensionId, type } = data
-  const contents = webContents.fromId(e.sender.id)
-
-  if (type === 'create') {
-    const extension = extensions[extensionId]
-    const { alarms } = extension
-
-    const { name, alarmInfo } = data
-    const exists = alarms.findIndex(e => e.name === name) !== -1
-
-    e.returnValue = null
-    if (exists) return
-
-    let scheduledTime = 0
-
-    if (alarmInfo.when != null) {
-      scheduledTime = alarmInfo.when
-    }
-
-    if (alarmInfo.delayInMinutes != null) {
-      if (alarmInfo.delayInMinutes < 1) {
-        return console.error(
-          `Alarm delay is less than minimum of 1 minutes. In released .crx, alarm "${name}" will fire in approximately 1 minutes.`,
-        )
-      }
-
-      scheduledTime = Date.now() + alarmInfo.delayInMinutes * 60000
-    }
-
-    const alarm: chrome.alarms.Alarm = {
-      periodInMinutes: alarmInfo.periodInMinutes,
-      scheduledTime,
-      name,
-    }
-
-    alarms.push(alarm)
-
-    if (!alarm.periodInMinutes) {
-      setTimeout(() => {
-        contents.send('api-emit-event-alarms-onAlarm', alarm)
-      }, alarm.scheduledTime - Date.now())
-    }
-  }
-})
 
 ipcMain.on(
   'api-browserAction-setBadgeText',
@@ -365,7 +353,7 @@ ipcMain.on('emit-tabs-event', (e: any, name: string, ...data: any[]) => {
   sendToAllExtensions(`api-emit-event-tabs-${name}`, ...data)
 })
 
-export const sendToAllExtensions = (msg: string, ...args: any[]) => {
+export const sendToAllExtensions = (msg: string, ...args: any[]): void => {
   for (const key in extensions) {
     const ext = extensions[key]
 

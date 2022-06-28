@@ -1,4 +1,5 @@
 import { ipcRenderer } from 'electron';
+import { ExtraDetails } from '../../main/services/web-request'
 
 const hashCode = (str: string) => {
   let hash = 0;
@@ -23,7 +24,7 @@ export class WebRequestEvent {
     this.name = name;
   }
 
-  public addListener(callback: Function, filters: string[] = null) {
+  public addListener(callback: (details: ExtraDetails) => Response, filters: string[] = null): void {
     const id = hashCode(callback.toString());
     this.listeners.push(id);
 
@@ -46,7 +47,7 @@ export class WebRequestEvent {
     });
   }
 
-  public removeListener(callback: Function) {
+  public removeListener(callback: (...args: any[]) => unknown): void {
     const id = hashCode(callback.toString());
     this.listeners = this.listeners.filter(c => c !== id);
 

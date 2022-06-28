@@ -1,4 +1,6 @@
-export const colors = {
+type ColorValue = string | { [weight: string | number]: string }
+
+export const colors: {[color: string]: ColorValue} = {
   red: {
     50: '#FFEBEE',
     100: '#FFCDD2',

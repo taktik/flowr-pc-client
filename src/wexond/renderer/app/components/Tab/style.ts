@@ -1,7 +1,7 @@
-import styled, { css } from 'styled-components';
+import styled, { css, StyledComponent } from 'styled-components';
 
-import { transparency, colors } from '~/renderer/constants';
-import { icons, TABS_PADDING } from '~/renderer/app/constants';
+import { transparency } from '~/renderer/constants';
+import { icons } from '~/renderer/app/constants';
 import { centerIcon, body2 } from '~/shared/mixins';
 import { Theme } from '../../models/theme';
 
@@ -137,7 +137,8 @@ export const StyledBorder = styled.div`
     visibility: ${visible ? 'visible' : 'hidden'};
     background-color: ${theme['toolbar.separator.color']};
   `};
-`;
+` as StyledComponent<"div", any, { visible: boolean }, never>
+
 
 export const TabContainer = styled.div`
   position: relative;

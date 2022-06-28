@@ -1,4 +1,4 @@
-import { Appender, ConsoleArg, ILogger, LogLevel, LogLevelParam, LogSeverity } from './types'
+import { Appender, ConsoleArg, ILogger, LogLevel, LogLevelParam, LogSeverity, severityFromLevel } from './types'
 
 abstract class AbstractLogger implements ILogger {
   abstract namespace: string
@@ -23,6 +23,7 @@ abstract class AbstractLogger implements ILogger {
 
     this.appenders.forEach(appender => {
       // generate a new object each time to avoid accidental mutations in appenders
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
       appender.log({ severity, date, messages: [`[${this.namespace}]`, ...args] })
     })
   }
@@ -83,6 +84,22 @@ class RootLogger extends AbstractLogger {
    * Function MUST be declared as a class property:
    *    it ensures correct scoping when exported
   */
+  getLevel = (): number => {
+    return super.getLevel()
+  }
+
+  /**
+   * Function MUST be declared as a class property:
+   *    it ensures correct scoping when exported
+  */
+  getSeverity = (): LogSeverity => {
+    return severityFromLevel(super.getLevel())
+  }
+
+  /**
+   * Function MUST be declared as a class property:
+   *    it ensures correct scoping when exported
+  */
   setLevel = (value: LogLevelParam) => {
     super.setLevel(value)
     this.loggers.forEach(logger => logger.setLevel(value))
@@ -122,11 +139,11 @@ class RootLogger extends AbstractLogger {
   }
 }
 
-// eslint-disable-next-line @typescript-eslint/unbound-method
 export const {
   getLogger,
   addAppender,
   removeAppender,
   setLevel,
   getLevel,
+  getSeverity,
 } = new RootLogger()
