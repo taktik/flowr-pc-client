@@ -90,6 +90,7 @@ export class FlowrFfmpeg {
       .outputOptions('-tune zerolatency')
       .outputOptions('-g 30')
       .outputOptions('-r 30')
+      .outputOptions('-profile:v baseline')
 
     if (subtitleStream && subtitleStream > -1) {
       log.info('-------- appendCmdWithSubtitle')
@@ -113,7 +114,7 @@ export class FlowrFfmpeg {
         '-movflags empty_moov+frag_keyframe+default_base_moof+disable_chpl',
       )
       .outputOption('-frag_duration 2200000')
-      .outputOption('-c:v copy')
+      .outputOption('-c:v libx264')
       .on('start', commandLine => {
         log.info('Spawned Ffmpeg with command: ', commandLine)
       })
@@ -155,7 +156,6 @@ export class FlowrFfmpeg {
     } else {
       ffmpegCmd
         .outputOption('-map 0:v')
-        .outputOption('-c:v copy')
     }
 
     if (process.platform !== 'darwin') {
@@ -167,6 +167,7 @@ export class FlowrFfmpeg {
       .outputOption(
         '-movflags empty_moov+frag_keyframe+default_base_moof+disable_chpl',
       )
+      .outputOption('-c:v libx264')
       .on('start', commandLine => {
         log.info('Spawned Ffmpeg with command: ', commandLine)
       })
