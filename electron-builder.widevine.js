@@ -10,7 +10,7 @@ function signIf(targetPlatform) {
     }
 
     return new Promise((resolve, reject) => {
-      exec(`${process.env.PYTHON3} -m castlabs_evs.vmp sign-pkg ${appOutDir}`, (err) => {
+      exec(`${process.env.PYTHON3 ?? 'python3'} -m castlabs_evs.vmp sign-pkg ${appOutDir}`, (err) => {
         if (err) {
           return reject(err)
         }
