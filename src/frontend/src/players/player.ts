@@ -9,6 +9,13 @@ import { IPipelineTail } from '../interfaces/playerPipeline'
 import { AbstractPlayer, PlayProps, SubtitlesProps } from './abstractPlayer'
 import { Store } from '../store'
 
+type Yo = {
+  sender: WebContents
+  pipelineHeadOutput: Readable
+  audioPid: number | undefined
+  subtitlesPid: number | undefined
+}
+
 export class Player extends AbstractPlayer {
   private replayOnErrorTimeout: number | null = null
 
@@ -25,35 +32,42 @@ export class Player extends AbstractPlayer {
     this.ffmpegWrapper = new FfmpegWrapper(this.store)
   }
 
-  plugPipelineTail(sender: WebContents, audioPid: number | undefined, subtitlesPid: number | undefined): void {
-    if (!this.playPipelineHeadOutput) {
-      return
-    }
+  plugPipelineTail({ sender, audioPid, pipelineHeadOutput, subtitlesPid }: Yo): void {
     const confPipeline = this.store.get('pipeline').use
     const useFfmpeg = (confPipeline === PipelineType.FFMPEG) || !!subtitlesPid
     this.log.info(`--------- USING FFMPEG PIPELINE: ${useFfmpeg ? 'yes' : 'no'} (pipeline from conf: ${confPipeline}, subtitles pid: ${subtitlesPid}) ---------`)
+    this.playPipelineHeadOutput = pipelineHeadOutput
     this.playPipelineTail = useFfmpeg ? this.ffmpegWrapper : this.transmuxer
     this.playPipelineTail.sender = sender
-    this.playPipelineTail.play(this.playPipelineHeadOutput, audioPid, subtitlesPid)
+    this.playPipelineTail.play(pipelineHeadOutput, audioPid, subtitlesPid)
   }
 
-  async play({ sender }: IpcMainEvent, { url, audioPid, subtitlesPid }: PlayProps): Promise<void> {
-    this.log.info('--------- PLAY', url, '---------')
+  async connectHeadAndPlugTail(sender: WebContents, { url, audioPid, subtitlesPid }: PlayProps): Promise<void> {
+    const pipelineHeadOutput = await this.playPipelineHead.connect(url)
+    this.plugPipelineTail({ sender, audioPid, pipelineHeadOutput, subtitlesPid })
+  }
+
+  async play({ sender }: IpcMainEvent, playProps: PlayProps): Promise<void> {
+    this.log.info('--------- Received play request for url:', playProps.url, '---------')
 
     if (this.replayOnErrorTimeout) {
       clearTimeout(this.replayOnErrorTimeout)
     }
 
     try {
-      this.playPipelineHeadOutput = await this.playPipelineHead.connect(url)
+      await this.connectHeadAndPlugTail(sender, playProps)
     } catch (e) {
       if (e instanceof UdpStreamerError && e.code === UdpStreamerErrors.CONNECTED) {
-        await this.playPipelineHead.clear()
-        this.playPipelineHeadOutput = await this.playPipelineHead.connect(url)
+        try {
+          await this.playPipelineHead.clear()
+          await this.connectHeadAndPlugTail(sender, playProps)
+        } catch (error) {
+          this.log.warn('Play error even after clearing stopping head', error)
+        }
+      } else {
+        this.log.warn('Play error', e)
       }
     }
-
-    this.plugPipelineTail(sender, audioPid, subtitlesPid)
   }
 
   clearPipelineTail(): void {
@@ -61,6 +75,7 @@ export class Player extends AbstractPlayer {
       return
     }
 
+    // Only if transmuxer, already done in ffmpeg
     if (this.playPipelineTail === this.transmuxer) {
       // TODO: do this in transmuxer's clear
       this.playPipelineHead?.unpipe(this.transmuxer)
@@ -87,14 +102,14 @@ export class Player extends AbstractPlayer {
   }
 
   setSubtitles({ sender }: IpcMainEvent, { audioPid, subtitlesPid }: SubtitlesProps): void {
-    if (!this.playPipelineHeadOutput && this.playPipelineTail) {
+    if (!this.playPipelineHeadOutput) {
       return
     }
     this.log.info('--------- SETTING SUBTITLE PID', subtitlesPid, '---------')
     if (this.playPipelineTail === this.transmuxer) {
       // Switch to FFMPEG
       this.clearPipelineTail()
-      this.plugPipelineTail(sender, audioPid, subtitlesPid)
+      this.plugPipelineTail({ sender, audioPid, subtitlesPid, pipelineHeadOutput: this.playPipelineHeadOutput })
     } else if (this.playPipelineTail === this.ffmpegWrapper) {
       this.playPipelineTail.setSubtitlesFromPid(subtitlesPid)
     }
@@ -103,14 +118,14 @@ export class Player extends AbstractPlayer {
   /* Should be implemented in FLOW-5509 Bedside FlowR v5 | Barco | Play/Pause*/
   /* eslint-disable @typescript-eslint/no-unused-vars */
   backToLive(event: Electron.IpcMainEvent): void | Promise<void> {
-      throw Error("not available")
+    throw Error("not available")
   }
   /* eslint-disable @typescript-eslint/no-unused-vars */
   pause(event: Electron.IpcMainEvent): void | Promise<void> {
-      throw Error("not available")
+    throw Error("not available")
   }
   /* eslint-disable @typescript-eslint/no-unused-vars */
   resume(event: Electron.IpcMainEvent): void | Promise<void> {
-      throw Error("not available")
+    throw Error("not available")
   }
 }

@@ -1,6 +1,4 @@
-import { fsm } from 'typescript-state-machine'
-import StateMachineImpl = fsm.StateMachineImpl
-import State = fsm.State
+import { State, StateMachineImpl } from 'typescript-state-machine'
 import { RegisterProps } from '../views/phone'
 import { Dispatcher } from './dispatcher'
 
@@ -46,16 +44,16 @@ export class RegisterStateMachine extends StateMachineImpl<RegisterState> {
   private _registerProps: RegisterProps | null = null
   private _registerTimeout: number | undefined
 
-  static getStateFromStatus(status: string) {
+  static getStateFromStatus(status: string): RegisterState {
     return STATUS_TO_STATE[status]
   }
 
-  get registerProps() {
+  get registerProps(): RegisterProps | null {
     return this._registerProps
   }
 
   set registerProps(props: RegisterProps | null) {
-    const isDifferent = !this.registerProps || (props && (props.host !== this._registerProps!.host || props.username !== this._registerProps!.username))
+    const isDifferent = !this.registerProps || (props && (props.host !== this._registerProps.host || props.username !== this._registerProps.username))
     this._registerProps = props
 
     if (isDifferent && this.inState(REGISTERED_STATE)) {
@@ -69,6 +67,7 @@ export class RegisterStateMachine extends StateMachineImpl<RegisterState> {
     super(REGISTER_STATES, CONNECTION_TRANSITIONS, IDLE_STATE)
     this.onEnterState(UNREGISTERED_STATE, this.attemptToRegister.bind(this))
     this.onLeaveState(UNREGISTERED_STATE, this.clearRegisterAttempts.bind(this))
+    // eslint-disable-next-line no-console
     this.onAnyTransition((from, to) => console.log(`Register transitioned from ${from.label} to ${to.label}`))
 
     this._dispatcher = dispatcher
@@ -104,7 +103,7 @@ export class RegisterStateMachine extends StateMachineImpl<RegisterState> {
     this._dispatcher.send(action, payload)
   }
 
-  setState(state: RegisterState) {
+  setState(state: RegisterState): void {
     if (!this.inState(state)) {
       super.setState(state)
     }
