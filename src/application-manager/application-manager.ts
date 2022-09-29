@@ -2,37 +2,13 @@ import { ApplicationConfig, FlowrApplication } from '@taktik/flowr-common-js'
 import { ipcMain, BrowserWindow, IpcMainEvent } from 'electron'
 import { storeManager } from '../launcher'
 import { Store } from '../frontend/src/store'
-import { BaseEncodingOptions, Dirent, PathLike, readdir, readFile } from 'fs'
+import { readdir, readFile } from 'fs/promises'
 import { FlowrWindow } from '../frontend/flowr-window'
 import { buildApplicationPreloadPath, buildFilePath, getApplicationIndexUrl } from './helpers'
 import { getLogger } from '../frontend/src/logging/loggers'
 import { IFlowrStore } from '../frontend/src/interfaces/flowrStore'
 import { ApplicationCanOpenConfig, ApplicationInitConfig, ApplicationInitializer, ApplicationOpenConfig, FlowrApplicationInitializer, FlowrApplicationWindow, WindowTypes } from './types'
 import { openDevTools } from '../common/devTools'
-
-function readdirPromise(path: PathLike, options: BaseEncodingOptions & {withFileTypes: true}): Promise<Dirent[]> {
-  return new Promise((resolve, reject) => {
-    readdir(path, options, (err, files) => {
-      if (err) {
-        reject(err)
-        return
-      }
-      resolve(files)
-    })
-  })
-}
-
-function readFilePromise(path: number | PathLike, options: {encoding?: BufferEncoding, flag?: string }): Promise<string> {
-  return new Promise((resolve, reject) => {
-    readFile(path, options, (err, file) => {
-      if (err) {
-        reject(err)
-        return
-      }
-      resolve(file as string)
-    })
-  })
-}
 
 export class ApplicationManager {
   private logger = getLogger('Applications manager')
@@ -109,12 +85,12 @@ export class ApplicationManager {
   }
 
   private async findApp(applicationName: string): Promise<string | void> {
-    const files = await readdirPromise(buildFilePath(''), { withFileTypes: true })
+    const files = await readdir(buildFilePath(''), { withFileTypes: true })
 
     for (const file of files) {
       if (file.isDirectory()) {
         try {
-          const packageJSON = JSON.parse((await readFilePromise(buildFilePath(`${file.name}/package.json`), { encoding: 'utf8' }))) as ApplicationConfig
+          const packageJSON = JSON.parse((await readFile(buildFilePath(`${file.name}/package.json`), { encoding: 'utf8' }))) as ApplicationConfig
 
           if (packageJSON.title === applicationName) {
             return file.name

@@ -31,12 +31,12 @@ const ERROR = new PipelineState(PipelineStateName.ERROR)
 const PlayingPipelineStates = { STARTING, RETRIEVING_METADATA, RETRIEVED_METADATA, PLAYING, KILLED, ERROR }
 
 const transitions = {
-  STARTING: [RETRIEVING_METADATA],
-  RETRIEVING_METADATA: [RETRIEVED_METADATA, KILLED, ERROR],
-  RETRIEVED_METADATA: [PLAYING, ERROR],
-  PLAYING: [KILLED, ERROR],
-  KILLED: [] as [],
-  ERROR: [KILLED],
+  [PipelineStateName.STARTING]: [RETRIEVING_METADATA, ERROR],
+  [PipelineStateName.RETRIEVING_METADATA]: [RETRIEVED_METADATA, KILLED, ERROR],
+  [PipelineStateName.RETRIEVED_METADATA]: [PLAYING, ERROR],
+  [PipelineStateName.PLAYING]: [KILLED, ERROR],
+  [PipelineStateName.KILLED]: [] as [],
+  [PipelineStateName.ERROR]: [KILLED],
 }
 
 type PlayingPipelineProps = {
@@ -101,29 +101,33 @@ class PlayingPipeline extends StateMachineImpl<PipelineState> {
   }
 
   private retrieveMetadata(): void {
-    this.logger.debug('Will retrieve metadata')
-    this.setState(RETRIEVING_METADATA)
-    const stream = new TrackInfoStream(true)
-    this.dispatcher.pipe(stream)
-
-    const dataCb = (trackInfo: TrackInfo) => {
-      this.logger.debug('Metadata success')
-      this.streamer.sendTrackInfo(trackInfo)
-      this.trackInfo = trackInfo
-      this.killMetadataProcess()
-      this.setState(RETRIEVED_METADATA)
+    try {
+      this.logger.debug('Will retrieve metadata')
+      this.setState(RETRIEVING_METADATA)
+      const stream = new TrackInfoStream(true)
+      this.dispatcher.pipe(stream)
+  
+      const dataCb = (trackInfo: TrackInfo) => {
+        this.logger.debug('Metadata success')
+        this.streamer.sendTrackInfo(trackInfo)
+        this.trackInfo = trackInfo
+        this.killMetadataProcess()
+        this.setState(RETRIEVED_METADATA)
+      }
+  
+      const errorCb = (e: Error) => {
+        this.logger.debug('Metadata error')
+        this.killMetadataProcess()
+        this.handleError(e)
+      }
+  
+      stream.on('data', dataCb)
+      stream.on('error', errorCb)
+  
+      this.metadataProcess = { stream, dataCb, errorCb }
+    } catch (error) {
+      this.handleError(error)
     }
-
-    const errorCb = (e: Error) => {
-      this.logger.debug('Metadata error')
-      this.killMetadataProcess()
-      this.handleError(e)
-    }
-
-    stream.on('data', dataCb)
-    stream.on('error', errorCb)
-
-    this.metadataProcess = { stream, dataCb, errorCb }
   }
 
   private getErrorHandler() {
@@ -152,6 +156,7 @@ class PlayingPipeline extends StateMachineImpl<PipelineState> {
         : this.flowrFfmpeg.getAudioMpegtsPipeline(this.input, this.getErrorHandler())
       this.streamer.currentAudioPid = audioPid
       this.command.pipe(this.streamer, { end: false })
+      this.setState(PLAYING)
       this.logger.debug('Play command executed, current stream has been set')
     } catch (e) {
       this.handleError(e)
