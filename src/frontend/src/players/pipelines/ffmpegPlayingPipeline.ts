@@ -1,7 +1,7 @@
 import { TrackInfo, TrackInfoStream } from '@taktik/mux.js'
 import { FfmpegCommand } from 'fluent-ffmpeg'
 import { PassThrough, Readable } from 'stream'
-import { State, StateMachineImpl } from 'typescript-state-machine'
+import { State, StateMachineImpl, Transitions } from 'typescript-state-machine'
 import { getLogger } from '../../logging/loggers'
 import { Dispatcher } from '../dispatcher'
 import { FlowrFfmpeg } from '../ffmpeg'
@@ -30,12 +30,12 @@ const ERROR = new PipelineState(PipelineStateName.ERROR)
 
 const PlayingPipelineStates = { STARTING, RETRIEVING_METADATA, RETRIEVED_METADATA, PLAYING, KILLED, ERROR }
 
-const transitions = {
+const transitions: Transitions<PipelineState> = {
   [PipelineStateName.STARTING]: [RETRIEVING_METADATA, ERROR],
   [PipelineStateName.RETRIEVING_METADATA]: [RETRIEVED_METADATA, KILLED, ERROR],
   [PipelineStateName.RETRIEVED_METADATA]: [PLAYING, ERROR],
   [PipelineStateName.PLAYING]: [KILLED, ERROR],
-  [PipelineStateName.KILLED]: [] as [],
+  [PipelineStateName.KILLED]: [],
   [PipelineStateName.ERROR]: [KILLED],
 }
 
