@@ -9,7 +9,7 @@ import { initConfigData, Store } from './src/store'
 import { DeviceDetailHelper } from './src/deviceDetail'
 import { FlowrWindow } from './flowr-window'
 import defaultBrowserWindowOptions from './defaultBrowserWindowOptions'
-import { IFlowrStore } from './src/interfaces/flowrStore'
+import { IFlowrStore, VirtualKeyboardMode } from './src/interfaces/flowrStore'
 import { buildPreloadPath } from '../common/preload'
 import { initializeLogging } from './src/logging'
 import { LogSeverity } from './src/logging/types'
@@ -36,6 +36,9 @@ export const DEFAULT_FRONTEND_STORE: IFlowrStore = {
   deinterlacing: false,
   enableVirtualKeyboard: false,
   logLevel: LogSeverity.INFO,
+  virtualKeyboardConfig: {
+      mode: VirtualKeyboardMode.INTERNAL,
+  },
 }
 export async function initFlowrConfig(data: IFlowrStore | null): Promise<void> {
   await initConfigData(join(FlowrDataDir, `${FRONTEND_CONFIG_NAME}.json`), data)

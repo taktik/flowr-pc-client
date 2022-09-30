@@ -30,6 +30,8 @@ module.exports = async (env) => {
                 process: 'commonjs process',
                 leveldown: 'commonjs leveldown',
                 'node-window-manager': 'commonjs node-window-manager',
+                'node:http': 'commonjs http',
+                'node:https': 'commonjs https'
             },
         }
 }

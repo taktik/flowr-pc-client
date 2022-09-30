@@ -30,6 +30,7 @@ export function openConfigWindow({ flowrStore, debugMode, lastError, isLaunchedU
                 isKiosk: flowrStore.get('isKiosk'),
                 clearAppDataOnStart: flowrStore.get('clearAppDataOnStart'),
                 enableVirtualKeyboard: flowrStore.get('enableVirtualKeyboard'),
+                virtualKeyboardConfig: flowrStore.get('virtualKeyboardConfig'),
             }
 
             const storedConfig = flowrStore.get('flowrConfig')

@@ -2,7 +2,7 @@ import * as React from 'react'
 import { SubmitErrorHandler, SubmitHandler, useForm, Validate } from 'react-hook-form'
 import { LabeledInput } from './components/LabeledInput'
 import type { ConfigProps } from './types'
-import type { ModifiableConfig } from '../frontend/src/interfaces/flowrStore'
+import { ModifiableConfig, VirtualKeyboardMode } from '../frontend/src/interfaces/flowrStore'
 import styled from 'styled-components'
 
 function flexColumn(name: keyof JSX.IntrinsicElements) {
@@ -156,6 +156,28 @@ export function Config({ config, lastError, isLaunchedUrlCorrect }: ConfigProps)
           register={register}
           path="enableVirtualKeyboard"
         />
+        <h4>Virtual keyboard mode</h4>
+        <select name='Keyboard mode' id='keyboardMode' {...register('virtualKeyboardConfig.mode')}>
+          <option value={VirtualKeyboardMode.INTERNAL}>Internal (handled by flowr-desktop)</option>
+          <option value={VirtualKeyboardMode.EXTERNAL}>External (handled through http calls)</option>
+        </select>
+        <h4>Virtual keyboard external URLs</h4>
+        <LabeledInput
+          label="Toggle"
+          register={register}
+          path="virtualKeyboardConfig.urls.toggle"
+        />
+        <LabeledInput
+          label="Open"
+          register={register}
+          path="virtualKeyboardConfig.urls.open"
+        />
+        <LabeledInput
+          label="Close"
+          register={register}
+          path="virtualKeyboardConfig.urls.close"
+        />
+
 
         <h3>Debug</h3>
         <LabeledInput
