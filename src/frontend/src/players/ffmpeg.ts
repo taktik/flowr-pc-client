@@ -39,7 +39,7 @@ function handleError(
       playerError = PlayerErrors.CONVERSION
     } else if (message.includes('Stream specifier')) {
       playerError = PlayerErrors.ERRONEOUS_STREAM
-    } else if (message.includes('SIGKILL') || message.includes('SIGTERM')) {
+    } else if (message.includes('SIGKILL') || message.includes('SIGTERM') || message.includes('Exiting normally, received signal 15')) {
       playerError = PlayerErrors.TERMINATED
     } else {
       playerError = PlayerErrors.UNKNOWN

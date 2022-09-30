@@ -15,8 +15,7 @@ import {
   ANSWERED_STATE,
   OUTGOING_STATE,
 } from '../stateMachines/callStateMachine'
-import { fsm } from 'typescript-state-machine'
-import TransitionListener = fsm.ListenerRegistration
+import { ListenerRegistration as TransitionListener } from 'typescript-state-machine'
 import { PhoneStateMachine } from '../stateMachines/factory'
 import styled from 'styled-components'
 import { Translator } from '../../../translator/translator'

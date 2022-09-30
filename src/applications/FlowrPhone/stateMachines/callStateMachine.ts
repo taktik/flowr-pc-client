@@ -1,6 +1,4 @@
-import { fsm } from 'typescript-state-machine'
-import StateMachineImpl = fsm.StateMachineImpl
-import State = fsm.State
+import { State, StateMachineImpl } from 'typescript-state-machine'
 import { Dispatcher } from './dispatcher'
 import { CallingNumber } from '../views/phone'
 
@@ -68,7 +66,7 @@ export class CallStateMachine extends StateMachineImpl<CallState> {
     this.callingNumberChanged(callerName !== caller ? { name: callerName, value: callingNumber } : { value: callingNumber })
   }
 
-  static getStateFromStatus(status: string) {
+  static getStateFromStatus(status: string): CallState {
     return STATUS_TO_STATE[status]
   }
 
@@ -99,17 +97,18 @@ export class CallStateMachine extends StateMachineImpl<CallState> {
     this.onAnyTransition(this.stateChanged.bind(this))
   }
 
-  setState(state: CallState) {
+  setState(state: CallState): void {
     if (!this.inState(state)) {
       super.setState(state)
     }
   }
 
-  terminate() {
+  terminate(): void {
     switch (this.state) {
       case OUTGOING_STATE:
         this.setState(OFF_HOOK_STATE)
-        // no break is intentional, it should also send a terminate
+        this._dispatcher.send('terminate')
+        break
       case INCOMING_STATE:
       case ANSWERED_STATE:
       case CALL_OUT_STATE:
@@ -121,12 +120,14 @@ export class CallStateMachine extends StateMachineImpl<CallState> {
     }
   }
 
-  quit() {
+  quit(): void {
+    // eslint-disable-next-line no-console
     console.log('State machine quit')
     this._dispatcher.send('quit')
   }
 
-  stateChanged(from: CallState, to: CallState) {
+  stateChanged(from: CallState, to: CallState): void {
+    // eslint-disable-next-line no-console
     console.log(`Call transitioned from ${from.label} to ${to.label}`)
     if (this._outGoingCallTimeout) {
       clearTimeout(this._outGoingCallTimeout)
@@ -134,26 +135,26 @@ export class CallStateMachine extends StateMachineImpl<CallState> {
     }
   }
 
-  call(callNumber: CallingNumber) {
+  call(callNumber: CallingNumber): void {
     this._dispatcher.send('call', { number: callNumber.value })
     this.callingNumberChanged(callNumber)
     this.setState(OUTGOING_STATE)
     this._outGoingCallTimeout = setTimeout(this.terminate.bind(this), 60000)
   }
 
-  answer() {
+  answer(): void {
     this._dispatcher.send('answer')
   }
 
-  sendKey(key: string) {
+  sendKey(key: string): void {
     this._dispatcher.send('dtmf', { number: key })
   }
 
-  isCallingState(state: CallState) {
+  isCallingState(state: CallState): boolean {
     return [ANSWERED_STATE, CALL_OUT_STATE].includes(state)
   }
 
-  isOffHookState(state: CallState) {
+  isOffHookState(state: CallState): boolean {
     return [OFF_HOOK_STATE, IDLE_STATE, CLIENT_NOT_RUNNING_STATE].includes(state)
   }
 }

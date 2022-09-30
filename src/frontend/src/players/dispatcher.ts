@@ -8,13 +8,8 @@ export interface Dispatcher {
 export class Dispatcher extends Writable {
   private _outputs: Set<Writable> = new Set()
 
-  constructor() {
-    super()
-    this.onError = this.onError.bind(this)
-  }
-
   // tslint:disable-next-line: function-name
-  _write(chunk: any, encoding: string, callback: (error?: Error | null) => void) {
+  _write(chunk: Buffer, encoding: string, callback: (error?: Error | null) => void): void {
     try {
       this._outputs.forEach(output => output.write(chunk))
       callback(null)
@@ -23,9 +18,7 @@ export class Dispatcher extends Writable {
     }
   }
 
-  onError(err: Error) {
-    this.emit('error', err)
-  }
+  onError = (err: Error): unknown => this.emit('error', err)
 
   pipe<T extends Writable>(stream: T): T {
     this._outputs.add(stream)
@@ -37,12 +30,12 @@ export class Dispatcher extends Writable {
     return stream
   }
 
-  unpipe(stream: Writable) {
+  unpipe(stream: Writable): void {
     stream.off('error', this.onError)
     this._outputs.delete(stream)
   }
 
-  clear() {
+  clear(): void {
     this._outputs.forEach(stream => stream.off('error', this.onError))
     this._outputs.clear()
   }

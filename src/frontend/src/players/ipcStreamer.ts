@@ -2,13 +2,15 @@ import { CircularBuffer } from '@taktik/buffers'
 import { IOutputTrack, TrackInfo } from '@taktik/mux.js'
 import { Writable } from 'stream'
 import { WebContents } from 'electron'
-import { IStreamerConfig } from './interfaces/ipcStreamerConfig'
+import { IStreamerConfig } from '../interfaces/ipcStreamerConfig'
+import { getLogger } from '../logging/loggers'
 
 export class IpcStreamer extends Writable {
   private _sender: WebContents | undefined
   private buffer: CircularBuffer
   private sendInterval: number | undefined
   private sendIntervalValue: number
+  private log = getLogger('Ipc streamer')
 
   currentAudioPid: number | undefined
   currentTrackInfo: TrackInfo | undefined
@@ -30,20 +32,20 @@ export class IpcStreamer extends Writable {
   }
 
   // tslint:disable-next-line: function-name
-  _write(chunk: Buffer, encoding: BufferEncoding, callback: (error: Error | null | undefined) => void) {
+  _write(chunk: Buffer, encoding: BufferEncoding, callback: (error: Error | null | undefined) => void): void {
     try {
       try {
         this.buffer.write(chunk)
       } catch (e) {
-        console.error('Could not write chunk to streamer buffer:', e)
+        this.log.error('Could not write chunk to streamer buffer:', e)
         this.attemptSend()
 
         try {
           this.buffer.write(chunk)
-        } catch (e) {
-          console.error('Ffmpeg output chunk size is bigger than streamer\'s capacity.')
-          console.error('Consider increasing streamer\'s maxCapacity and/or capacity')
-          console.error(e)
+        } catch (error) {
+          this.log.error('Ffmpeg output chunk size is bigger than streamer\'s capacity.')
+          this.log.error('Consider increasing streamer\'s maxCapacity and/or capacity')
+          this.log.error(error)
           this.sendSegment(chunk)
         }
       }
@@ -56,7 +58,7 @@ export class IpcStreamer extends Writable {
     }
   }
 
-  clear(flush: boolean = false) {
+  clear(flush = false): void {
     if (flush) {
       this.attemptSend()
     }
@@ -65,10 +67,11 @@ export class IpcStreamer extends Writable {
     this.sendInterval = undefined
     this.removeAllListeners()
     this.currentTrackInfo = undefined
+    this.log.debug('Cleared')
   }
 
   // tslint:disable-next-line: function-name
-  _final(cb: (error?: Error) => void) {
+  _final(cb: (error?: Error) => void): void {
     this.clear()
     cb()
   }
@@ -95,7 +98,7 @@ export class IpcStreamer extends Writable {
     if (this._sender) {
       this._sender.send(message, content)
     } else {
-      console.error(`No sender defined, cannot send "${message}" message`)
+      this.log.error(`No sender defined, cannot send "${message}" message`)
     }
   }
 
@@ -104,7 +107,7 @@ export class IpcStreamer extends Writable {
     this.send('segment', data)
   }
 
-  sendTrackInfo(trackInfo: TrackInfo) {
+  sendTrackInfo(trackInfo: TrackInfo): void {
     this.currentTrackInfo = trackInfo
     this.send('trackinfo', trackInfo)
   }

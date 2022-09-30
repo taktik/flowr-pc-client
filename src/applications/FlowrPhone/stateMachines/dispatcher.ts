@@ -1,7 +1,4 @@
-import { fsm } from 'typescript-state-machine'
-import StateMachineImpl = fsm.StateMachineImpl
-import State = fsm.State
-import CheckStateIs = fsm.CheckStateIs
+import { CheckStateIs, State, StateMachineImpl } from 'typescript-state-machine'
 import { CallStateMachine, CallState, OFF_HOOK_STATE, IDLE_STATE as CALL_IDLE_STATE, CLIENT_NOT_RUNNING_STATE, INCOMING_STATE } from './callStateMachine'
 import { RegisterStateMachine, RegisterState, REGISTERED_STATE, UNREGISTERED_STATE, IDLE_STATE as REGISTER_IDLE_STATE } from './registerStateMachine'
 
@@ -92,7 +89,7 @@ export class Dispatcher extends StateMachineImpl<ConnectionState> {
     this.send('status_register')
   }
 
-  get url() {
+  get url(): string {
     return this._url
   }
 
@@ -141,6 +138,7 @@ export class Dispatcher extends StateMachineImpl<ConnectionState> {
     super(CONNECTION_STATES, CONNECTION_TRANSITIONS, DISCONNECTED_STATE)
     this.onEnterState(DISCONNECTED_STATE, this.connect.bind(this))
     this.onEnterState(CONNECTED_STATE, this.onConnect.bind(this))
+    // eslint-disable-next-line no-console
     this.onAnyTransition((from, to) => console.log(`Connection transitioned from ${from.label} to ${to.label}`))
 
     this._url = phoneServer || 'ws://127.0.0.1:8001'
@@ -206,6 +204,7 @@ export class Dispatcher extends StateMachineImpl<ConnectionState> {
 
   private onError() {
     console.error('Connection error')
+    // eslint-disable-next-line no-console
     console.log('Retrying in 5s')
     this._connectionTimeout = setTimeout(this.connect.bind(this), 5000)
   }
@@ -227,11 +226,11 @@ export class Dispatcher extends StateMachineImpl<ConnectionState> {
 
     if (this._url) {
       this._websocket = new WebSocket(this._url)
-      this._websocket.onerror = this.onError.bind(this)
+      this._websocket.onerror = this.onError.bind(this) as Dispatcher['onError']
       this._websocket.onopen = () => {
         if (this._websocket) {
-          this._websocket.onclose = this.onClose.bind(this)
-          this._websocket.onmessage = this.onMessage.bind(this)
+          this._websocket.onclose = this.onClose.bind(this) as Dispatcher['onClose']
+          this._websocket.onmessage = this.onMessage.bind(this) as Dispatcher['onMessage']
         }
       }
     }
@@ -248,7 +247,7 @@ export class Dispatcher extends StateMachineImpl<ConnectionState> {
     }
   }
 
-  setup(registerStateMachine: RegisterStateMachine, callStateMachine: CallStateMachine) {
+  setup(registerStateMachine: RegisterStateMachine, callStateMachine: CallStateMachine): void {
     this._registerStateMachine = registerStateMachine
     this._callStateMachine = callStateMachine
     this._registerStateMachine.onLeaveState(REGISTERED_STATE, this._callStateMachine.terminate.bind(this._callStateMachine))
@@ -257,14 +256,14 @@ export class Dispatcher extends StateMachineImpl<ConnectionState> {
     this.connect()
   }
 
-  setState(state: ConnectionState) {
+  setState(state: ConnectionState): void {
     if (!this.inState(state)) {
       super.setState(state)
     }
   }
 
   @CheckStateIs(CONNECTED_STATE, 'Cannot send message while disconnected')
-  send(action: string, payload: {[key: string]: string} = {}) {
+  send(action: string, payload: {[key: string]: string} = {}): void {
     if (this._websocket) {
       this._websocket.send(JSON.stringify({ action, ...payload }))
     }

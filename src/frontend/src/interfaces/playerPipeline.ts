@@ -15,3 +15,10 @@ export interface IPipelineTail {
   setAudioTrackFromPid(pid: number): void
   setSubtitlesFromPid?(pid: number): void
 }
+
+export type PipelineTailConfig = {
+  sender: WebContents
+  pipelineHeadOutput: Readable
+  audioPid: number | undefined
+  subtitlesPid: number | undefined
+}
