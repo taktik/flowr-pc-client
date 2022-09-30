@@ -5,16 +5,9 @@ import { MainPipeline } from './pipelines/main'
 import { FfmpegWrapper } from './pipelines/ffmpegWrapper'
 import { Readable } from 'stream'
 import { UdpStreamerError, UdpStreamerErrors } from '@taktik/udp-streamer'
-import { IPipelineTail } from '../interfaces/playerPipeline'
 import { AbstractPlayer, PlayProps, SubtitlesProps } from './abstractPlayer'
 import { Store } from '../store'
-
-type Yo = {
-  sender: WebContents
-  pipelineHeadOutput: Readable
-  audioPid: number | undefined
-  subtitlesPid: number | undefined
-}
+import type { IPipelineTail, PipelineTailConfig } from '../interfaces/playerPipeline'
 
 export class Player extends AbstractPlayer {
   private playPipelineHead: MainPipeline
@@ -30,7 +23,7 @@ export class Player extends AbstractPlayer {
     this.ffmpegWrapper = new FfmpegWrapper(this.store)
   }
 
-  private plugPipelineTail({ sender, audioPid, pipelineHeadOutput, subtitlesPid }: Yo): void {
+  private plugPipelineTail({ sender, audioPid, pipelineHeadOutput, subtitlesPid }: PipelineTailConfig): void {
     const confPipeline = this.store.get('pipeline').use
     const useFfmpeg = (confPipeline === PipelineType.FFMPEG) || !!subtitlesPid
     this.log.info(`--------- USING FFMPEG PIPELINE: ${useFfmpeg ? 'yes' : 'no'} (pipeline from conf: ${confPipeline}, subtitles pid: ${subtitlesPid}) ---------`)
