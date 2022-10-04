@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/no-unsafe-assignment */
 import { IpcRenderer } from 'electron'
-import { debounce } from 'lodash'
+import debounce from 'lodash/debounce'
 import { VirtualKeyboardEvent } from '../../keyboard/events'
 
 declare global {
