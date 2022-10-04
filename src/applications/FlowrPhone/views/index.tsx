@@ -6,14 +6,25 @@ import { fonts } from '../fonts'
 
 const StyledPhone = styled(Phone)`
   position: absolute;
-  width: 100%;
-  height: 100%;
+  width: 80%;
+  height: 80%;
   background-color: transparent;
   display: flex;
   justify-content: center;
   align-items: center;
-  top: 0;
-  left: 0;
+  top: 10%;
+  left: 10%;
+  &:before {
+    position: fixed;
+    top: 0;
+    left: 0;
+    z-index: -1;
+    content: '';
+    height: 100%;
+    width: 100%;
+    display: block;
+    background: rgba(255,255,255,0.8);
+  }
 `
 const styleElement = document.createElement('style')
 
