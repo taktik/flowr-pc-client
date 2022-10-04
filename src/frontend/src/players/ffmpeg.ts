@@ -113,7 +113,7 @@ export class FlowrFfmpeg {
       .outputOptions(
         '-movflags empty_moov+frag_keyframe+default_base_moof+disable_chpl',
       )
-      .outputOption('-frag_duration 2200000')
+      .outputOption('-frag_duration 2200000') // (µs) 2.2s -> "ensure" a keyframe is present
       .outputOption('-c:v libx264')
       .on('start', commandLine => {
         log.info('Spawned Ffmpeg with command: ', commandLine)
