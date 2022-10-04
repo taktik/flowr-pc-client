@@ -1,6 +1,5 @@
 import * as Ffmpeg from 'fluent-ffmpeg'
 import * as ffmpegPath from 'ffmpeg-static'
-import { path as ffprobePath } from 'ffprobe-static'
 import { Readable } from 'stream'
 import { resolve } from 'path'
 import { app } from 'electron'
@@ -60,14 +59,6 @@ const log = getLogger('FlowrFfmpeg')
 export class FlowrFfmpeg {
   constructor() {
     Ffmpeg.setFfmpegPath(resolve(app.getAppPath(), ffmpegPath))
-    Ffmpeg.setFfprobePath(resolve(app.getAppPath(), ffprobePath))
-  }
-
-  async ffprobe(
-    input?: string | Readable,
-    options?: Ffmpeg.FfmpegCommandOptions,
-  ): Promise<Ffmpeg.FfprobeResponse> {
-    return Ffmpeg(input, options).ffprobeProcess()
   }
 
   getVideoMpegtsPipeline(
@@ -113,7 +104,7 @@ export class FlowrFfmpeg {
       .outputOptions(
         '-movflags empty_moov+frag_keyframe+default_base_moof+disable_chpl',
       )
-      .outputOption('-frag_duration 2200000')
+      .outputOption('-frag_duration 2200000') // (µs) 2.2s -> "ensure" a keyframe is present
       .outputOption('-c:v libx264')
       .on('start', commandLine => {
         log.info('Spawned Ffmpeg with command: ', commandLine)

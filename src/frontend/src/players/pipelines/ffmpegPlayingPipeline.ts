@@ -46,7 +46,7 @@ type PlayingPipelineProps = {
 }
 
 /**
- * State machine that handles ffprobe/ffmpeg process
+ * State machine that handles ffmpeg process
  * May safely be killed at the same time as a new one is initialized
  */
 class PlayingPipeline extends StateMachineImpl<PipelineState> {

@@ -1,13 +1,15 @@
-
-import type { IpcRenderer } from 'electron'
+/* eslint-disable @typescript-eslint/no-unsafe-assignment */
+import { IpcRenderer } from 'electron'
 import { debounce } from 'lodash'
 import { VirtualKeyboardEvent } from '../../keyboard/events'
 
 declare global {
+  // eslint-disable-next-line @typescript-eslint/no-namespace
   namespace NodeJS {
     interface Global {
       nodeRequire: any
       ipc: IpcRenderer
+      electronKeyboard: { toggle: () => void }
     }
   }
 }
@@ -18,6 +20,7 @@ const nodeRequire: {[key: string]: any} = {
   path: require('path'),
 }
 
+// eslint-disable-next-line @typescript-eslint/no-var-requires
 const ipcRenderer = require('electron').ipcRenderer
 const hiddenMenuCode = 'configtaktik'
 
@@ -71,9 +74,16 @@ function closeKeyboard(event: Event): void {
   }
 }
 
+function onClick(event: Event) {
+  const action = shouldActionKeyboard(event)
+    ? VirtualKeyboardEvent.OPEN
+    : VirtualKeyboardEvent.CLOSE
+  actionKeyboardDebounced(action)
+}
+
 window.addEventListener('focus', openKeyboard, true)
 window.addEventListener('blur', closeKeyboard, true)
-window.addEventListener('click', openKeyboard)
+window.addEventListener('click', onClick)
 window.addEventListener('keydown', handleHiddenMenuCode, true)
 
 process.once('loaded', () => {
@@ -84,9 +94,11 @@ process.once('loaded', () => {
       throw Error(`Cannot find module ${moduleName}. It must be explicitely exported from the desktop client.`)
     }
 
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-return
     return requiredModule
   }
   global.ipc = ipcRenderer
+  global.electronKeyboard = {
+    toggle: () => ipcRenderer.send(VirtualKeyboardEvent.TOGGLE)
+  }
 })
-
-export {}
