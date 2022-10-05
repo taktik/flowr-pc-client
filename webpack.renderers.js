@@ -68,7 +68,6 @@ module.exports = (env) => {
         filename: appFilename,
     } = reactAppConfig('app', './src/wexond/renderer/app/index.tsx', {
         'view-preload': './src/wexond/preloads/view-preload.ts',
-        'background-preload': './src/wexond/preloads/background-preload.ts',
     })
     const {
         entry: configEntry,

@@ -28,7 +28,6 @@ module.exports = async (env) => {
                 path: 'commonjs path',
                 os: 'commonjs os',
                 process: 'commonjs process',
-                leveldown: 'commonjs leveldown',
                 'node-window-manager': 'commonjs node-window-manager',
                 'node:http': 'commonjs http',
                 'node:https': 'commonjs https'

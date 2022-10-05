@@ -5,7 +5,6 @@ import {
   clipboard,
 } from 'electron'
 import { appWindow } from '.'
-import { sendToAllExtensions } from './extensions'
 import { engine } from './services/web-request'
 import { settings } from './index'
 import { parse } from 'tldts'
@@ -376,7 +375,6 @@ export class View extends BrowserView {
 
   public emitWebNavigationEvent = (name: string, ...data: any[]): void => {
     this.webContents.send(`api-emit-event-webNavigation-${name}`, ...data)
-    sendToAllExtensions(`api-emit-event-webNavigation-${name}`, ...data)
   }
 
   public getScreenshot = async (): Promise<string> => {
