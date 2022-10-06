@@ -83,6 +83,8 @@ class PlayingPipeline extends StateMachineImpl<PipelineState> {
   }
 
   private handleError(e: Error): void {
+    // Ignore errors if already killed
+    if (this.inState(KILLED)) return
     this.lastError = e
     this.setState(ERROR)
   }
@@ -164,6 +166,7 @@ class PlayingPipeline extends StateMachineImpl<PipelineState> {
   }
 
   kill(): void {
+    this.command?.unpipe(this.streamer)
     this.command?.kill('SIGTERM')
     this.killMetadataProcess()
     this.dispatcher.clear()
