@@ -20,7 +20,7 @@ export function exposeIpc(enabledEvents: string[] | '*', as = 'ipc'): void {
         send: (name: string, ...values: any[]) => {
             filterEnabledEvent(name)
             ipcRenderer.send(name, ...values)
-        }
+        },
     }
     
     contextBridge.exposeInMainWorld(as, ipcBridge)

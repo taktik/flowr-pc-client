@@ -115,5 +115,10 @@ export class KeyboardView {
   }
 }
 
+window.addEventListener('resize', () => {
+  const { width, height } = document.body.getBoundingClientRect()
+  ipc.send('resize', { width, height })
+})
+
 // tslint:disable-next-line: no-unused-expression
 new KeyboardView()
