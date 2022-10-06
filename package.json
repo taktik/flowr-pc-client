@@ -100,7 +100,7 @@
     "deep-extend": "0.6.0",
     "electron-log": "3.0.5",
     "electron-updater": "4.0.6",
-    "ffmpeg-static": "^5.1.0",
+    "ffmpeg-static": "3.0.0",
     "file-type": "11.0.0",
     "fluent-ffmpeg": "git+https://github.com/taktik/node-fluent-ffmpeg.git",
     "fs-extra": "8.0.1",
