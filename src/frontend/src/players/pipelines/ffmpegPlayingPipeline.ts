@@ -1,5 +1,5 @@
+import { FfmpegCommand } from '@taktik/fluent-ffmpeg'
 import { TrackInfo, TrackInfoStream } from '@taktik/mux.js'
-import { FfmpegCommand } from 'fluent-ffmpeg'
 import { PassThrough, Readable } from 'stream'
 import { State, StateMachineImpl, Transitions } from 'typescript-state-machine'
 import { getLogger } from '../../logging/loggers'
