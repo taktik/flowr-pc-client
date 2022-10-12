@@ -42,7 +42,8 @@ class Keyboard {
       // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
       const handler = url.startsWith('https') ? httpsRequest : httpRequest
       // eslint-disable-next-line @typescript-eslint/no-unsafe-call
-      handler(url, { method })
+      const request = handler(url, { method })
+      request.end()
     } catch (error) {
       log.warn('An error occurred when calling external keyboard endpoint', url, error)
     }
@@ -120,7 +121,7 @@ class Keyboard {
   setParentWindow(parent: BrowserWindow) {
     parent.on('close', () => {
       this.keyboardWindow?.setParentWindow(null)
-      this.keyboardWindow.hide()
+      this.keyboardWindow?.hide()
     })
     this.keyboardWindow.setParentWindow(parent)
   }

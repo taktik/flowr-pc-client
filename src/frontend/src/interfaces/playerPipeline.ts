@@ -1,5 +1,5 @@
+import { FfmpegCommand } from '@taktik/fluent-ffmpeg'
 import { WebContents } from 'electron'
-import { FfmpegCommand } from 'fluent-ffmpeg'
 import { Readable } from 'stream'
 
 export interface IPlayerStreams {

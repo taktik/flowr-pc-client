@@ -1,4 +1,4 @@
-import * as Ffmpeg from 'fluent-ffmpeg'
+import * as Ffmpeg from '@taktik/fluent-ffmpeg'
 import * as ffmpegPath from 'ffmpeg-static'
 import { Readable } from 'stream'
 import { resolve } from 'path'

@@ -254,14 +254,6 @@ export class Tab {
         status: loading ? 'loading' : 'complete',
       })
     })
-
-    const { defaultBrowserActions, browserActions } = store.extensions
-
-    for (const item of defaultBrowserActions) {
-      const browserAction = { ...item }
-      browserAction.tabId = this.id
-      browserActions.push(browserAction)
-    }
   }
 
   @action

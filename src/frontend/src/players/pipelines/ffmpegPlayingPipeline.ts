@@ -1,5 +1,5 @@
+import { FfmpegCommand } from '@taktik/fluent-ffmpeg'
 import { TrackInfo, TrackInfoStream } from '@taktik/mux.js'
-import { FfmpegCommand } from 'fluent-ffmpeg'
 import { PassThrough, Readable } from 'stream'
 import { State, StateMachineImpl, Transitions } from 'typescript-state-machine'
 import { getLogger } from '../../logging/loggers'
@@ -83,6 +83,8 @@ class PlayingPipeline extends StateMachineImpl<PipelineState> {
   }
 
   private handleError(e: Error): void {
+    // Ignore errors if already killed
+    if (this.inState(KILLED)) return
     this.lastError = e
     this.setState(ERROR)
   }
@@ -164,6 +166,7 @@ class PlayingPipeline extends StateMachineImpl<PipelineState> {
   }
 
   kill(): void {
+    this.command?.unpipe(this.streamer)
     this.command?.kill('SIGTERM')
     this.killMetadataProcess()
     this.dispatcher.clear()

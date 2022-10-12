@@ -2,7 +2,6 @@ import { ipcMain, app, session, BrowserWindow, BrowserWindowConstructorOptions }
 import { resolve } from 'path';
 import { platform } from 'os';
 import { AppWindow, WexondOptions } from './app-window';
-import { loadExtensions } from './extensions';
 import { registerProtocols } from './protocols';
 import { runWebRequestService, loadFilters } from './services/web-request';
 import { existsSync, writeFileSync } from 'fs';
@@ -115,11 +114,6 @@ export async function createWexondWindow(wexondOptions: WexondOptions, parentWin
     await loadFilters()
   } catch (error) {
     flowrLog.warn('Failed to load filters', error)
-  }
-  try {
-    await loadExtensions()
-  } catch (error) {
-    flowrLog.warn('Failed to load extensions', error)
   }
   runWebRequestService(appWindow)
   return appWindow

@@ -16,9 +16,7 @@ function buildPositionFromParents(parentRectangle: Rectangle): Rectangle {
 
 export class KeyboardWindow extends BrowserWindow {
   private log = getLogger('Keyboard window')
-  capsLock = false
-
-  get webContentsToSend(): WebContents | undefined {
+  private get webContentsToSend(): WebContents | undefined {
     const browserView = this.parent?.getBrowserView()
     return browserView?.webContents ?? this.parent?.webContents
   }
@@ -28,7 +26,7 @@ export class KeyboardWindow extends BrowserWindow {
       parent,
       acceptFirstMouse: true,
       alwaysOnTop: true,
-      focusable: false,
+      focusable: true,
       frame: false,
       maximizable: false,
       minimizable: false,
@@ -45,8 +43,9 @@ export class KeyboardWindow extends BrowserWindow {
     this.loadURL(url).catch(e => this.log.error('Failed to open keyboard url', url, e))
 
     const ipcEvents = {
-      keyPress: this.onKeyPress.bind(this) as this['onKeyPress'],
-      keyUp: this.onKeyUp.bind(this) as this['onKeyUp'],
+      keyPress: this.onKeyPress,
+      keyUp: this.onKeyUp,
+      resize: this.resize,
     }
     Object.entries(ipcEvents).forEach(event => ipcMain.on(...event))
     this.on('close', () => Object.entries(ipcEvents).forEach(event => ipcMain.removeListener(...event)))
@@ -60,16 +59,22 @@ export class KeyboardWindow extends BrowserWindow {
     }
   }
 
-  onKeyPress(_: IpcMainEvent, keyCode: string): void {
+  private onKeyPress = (_: IpcMainEvent, keyCode: string): void => {
     const keyDown = this.makeEvent('keyDown', keyCode)
     const char = this.makeEvent('char', keyCode)
     this.webContentsToSend?.sendInputEvent(keyDown)
     this.webContentsToSend?.sendInputEvent(char)
   }
 
-  onKeyUp(_: IpcMainEvent, keyCode: string): void {
+  private onKeyUp = (_: IpcMainEvent, keyCode: string): void => {
     const keyUp = this.makeEvent('keyUp', keyCode)
     this.webContentsToSend?.sendInputEvent(keyUp)
+  }
+
+  private resize = (_: IpcMainEvent, dimensions: { height: number }): void => {
+    const [width, height] = this.getContentSize()
+    if (height === dimensions.height) return
+    this.setContentSize(width, dimensions.height)
   }
 
   setParentWindow(parent: BrowserWindow | null): void {

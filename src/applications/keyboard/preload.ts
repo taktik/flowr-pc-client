@@ -1,3 +1,3 @@
 import { exposeIpc } from '../../common/exposeIpc'
 
-exposeIpc(['keyPress', 'keyUp'])
+exposeIpc(['keyPress', 'keyUp', 'resize'])

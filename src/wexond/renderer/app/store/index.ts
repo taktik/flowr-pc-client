@@ -10,7 +10,6 @@ import { OverlayStore } from './overlay';
 import { HistoryStore } from './history';
 import { FaviconsStore } from './favicons';
 import { SuggestionsStore } from './suggestions';
-import { ExtensionsStore } from './extensions';
 import { extname } from 'path';
 import { BookmarksStore } from './bookmarks';
 import { readFileSync, writeFile } from 'fs';
@@ -30,7 +29,6 @@ export class Store {
   public tabGroups = new TabGroupsStore();
   public tabs: TabsStore;
   public overlay = new OverlayStore();
-  public extensions = new ExtensionsStore();
   public downloads = new DownloadsStore();
 
   @observable
@@ -107,37 +105,6 @@ export class Store {
           'api-tabs-query',
           this.tabs.list.map(tab => tab.getApiTab()),
         );
-      },
-    );
-
-    ipcRenderer.on(
-      'api-browserAction-setBadgeText',
-      (
-        e: IpcRendererEvent,
-        senderId: number,
-        extensionId: string,
-        details: chrome.browserAction.BadgeTextDetails,
-      ) => {
-        if (details.tabId) {
-          const browserAction = this.extensions.queryBrowserAction({
-            extensionId,
-            tabId: details.tabId,
-          })[0];
-
-          if (browserAction) {
-            browserAction.badgeText = details.text;
-          }
-        } else {
-          this.extensions
-            .queryBrowserAction({
-              extensionId,
-            })
-            .forEach(item => {
-              item.badgeText = details.text;
-            });
-        }
-        const contents = webContents.fromId(senderId);
-        contents.send('api-browserAction-setBadgeText');
       },
     );
 
