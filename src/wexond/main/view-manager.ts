@@ -76,23 +76,6 @@ export class ViewManager {
     }
     Object.entries(this._ipcEvents).forEach(event => ipcMain.on(event[0], event[1]))
 
-    setInterval(() => {
-      for (const key in this.views) {
-        const view = this.views[key]
-        const title = view.webContents.getTitle()
-        const url = view.webContents.getURL()
-
-        if (title !== view.title) {
-          appWindow.webContents.send(`browserview-data-updated-${key}`, {
-            title,
-            url,
-          })
-          view.url = url
-          view.title = title
-        }
-      }
-    }, 200)
-
     session.fromPartition('persist:view').on('will-download', (event) => {
       event.preventDefault()
     })
@@ -110,7 +93,7 @@ export class ViewManager {
     if (this.inactivityConfig) {
       const { timeout, callback } = this.inactivityConfig
       try {
-        watchForInactivity(view, timeout, (browserView) => {
+        watchForInactivity(view.browserView, timeout, (browserView) => {
           const selectedView = this.views[this.selectedId]
           if (selectedView && selectedView.webContents.id === browserView.webContents.id) {
             callback()
@@ -143,7 +126,7 @@ export class ViewManager {
 
     if (this.isHidden) return
 
-    appWindow.setBrowserView(view)
+    appWindow.setBrowserView(view.browserView)
 
     const currUrl = view.webContents.getURL()
 
@@ -165,13 +148,13 @@ export class ViewManager {
     if (!view) return
 
     const { width, height } = appWindow.getContentBounds()
-    view.setBounds({
+    view.browserView.setBounds({
       x: 0,
       y: this.fullscreen ? 0 : TOOLBAR_HEIGHT + 1,
       width,
       height: this.fullscreen ? height : height - TOOLBAR_HEIGHT,
     })
-    view.setAutoResize({
+    view.browserView.setAutoResize({
       width: true,
       height: true,
     })
@@ -195,7 +178,7 @@ export class ViewManager {
       return
     }
 
-    if (appWindow && appWindow.getBrowserView() === view) {
+    if (appWindow && appWindow.getBrowserView() === view.browserView) {
       appWindow.setBrowserView(null)
     }
 

@@ -5,6 +5,7 @@ import store from '../../store';
 import { Favicon, Title, Site, More } from './style';
 import { Bookmark } from '../../models/bookmark';
 import { ListItem } from '../ListItem';
+import ensureIcon from '../../utils/ensureIcon'
 
 const onClick = (item: Bookmark) => (e: React.MouseEvent) => {
   if (!e.ctrlKey) return;
@@ -43,7 +44,7 @@ export default observer(({ data }: { data: Bookmark }) => {
     <ListItem key={data._id} onClick={onClick(data)} selected={selected}>
       <Favicon
         style={{
-          backgroundImage: `url(${store.favicons.favicons[data.favicon]})`,
+          backgroundImage: `url(${ensureIcon(store.favicons.favicons[data.favicon])})`,
         }}
       />
       <Title onClick={onTitleClick(data.url)}>{data.title}</Title>
