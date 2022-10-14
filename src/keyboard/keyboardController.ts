@@ -10,6 +10,7 @@ const log = getLogger('Keyboard controller')
 
 class Keyboard {
   private _flowrStore?: Store<IFlowrStore>
+  private parentCloseCallback?: { parent: BrowserWindow, callback: () => void }
   keyboardWindow?: KeyboardWindow
 
   set flowrStore(flowrStore: Store<IFlowrStore>) {
@@ -39,9 +40,7 @@ class Keyboard {
 
   private callExternal(url: string, method = 'GET') {
     try {
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
       const handler = url.startsWith('https') ? httpsRequest : httpRequest
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-call
       const request = handler(url, { method })
       request.end()
     } catch (error) {
@@ -119,10 +118,16 @@ class Keyboard {
   }
 
   setParentWindow(parent: BrowserWindow) {
-    parent.on('close', () => {
-      this.keyboardWindow?.setParentWindow(null)
-      this.keyboardWindow?.hide()
-    })
+    if (this.parentCloseCallback?.parent !== parent) {
+      const callback = () => {
+        this.keyboardWindow?.setParentWindow(null)
+        this.keyboardWindow?.hide()
+      }
+
+      this.parentCloseCallback.parent.off('close', this.parentCloseCallback.callback)
+      parent.on('close', callback)
+      this.parentCloseCallback = { parent, callback }
+    }
     this.keyboardWindow.setParentWindow(parent)
   }
 }

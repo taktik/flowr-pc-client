@@ -10,17 +10,29 @@ export function KeyboardMixin<T extends new (...args: any[]) => BrowserWindow>(b
 
       const ipcEvents = {
         [VirtualKeyboardEvent.OPEN]: (e: IpcMainEvent) => {
-          if (e.sender === this.webContents && keyboard.isEnabled) {
+          if (
+            e.sender === this.webContents &&
+            keyboard.isEnabled &&
+            this.isFocused()
+          ) {
             keyboard.open(this)
           }
         },
         [VirtualKeyboardEvent.CLOSE]: (e: IpcMainEvent) => {
-          if (e.sender === this.webContents && keyboard.isEnabled) {
+          if (
+            e.sender === this.webContents &&
+            keyboard.isEnabled &&
+            this.isFocused()
+          ) {
             keyboard.close()
           }
         },
         [VirtualKeyboardEvent.TOGGLE]: (e: IpcMainEvent) => {
-          if (e.sender === this.webContents && keyboard.isEnabled) {
+          if (
+            e.sender === this.webContents &&
+            keyboard.isEnabled &&
+            this.isFocused()
+          ) {
             keyboard.toggle(this)
           }
         },
