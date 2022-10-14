@@ -54,7 +54,7 @@ export class Player extends AbstractPlayer {
   }
 
   async play({ sender }: IpcMainEvent, playProps: PlayProps): Promise<void> {
-    this.log.info('--------- Received play request for url:', playProps.url, '---------')
+    this.log.info(`--------- Received play request for url: ${playProps.url} (a: ${playProps.audioPid}, s: ${playProps.subtitlesPid})---------`)
 
     try {
       await this.connectHeadAndPlugTail(sender, playProps)

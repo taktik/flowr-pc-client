@@ -4,6 +4,7 @@ import {
   nativeImage,
   clipboard,
   WebContents,
+  BrowserWindowConstructorOptions,
 } from 'electron'
 import { appWindow } from '.'
 import { engine } from './services/web-request'
@@ -326,7 +327,11 @@ export class View {
         sourceFrameId: 0,
         timeStamp: Date.now(),
       })
-      return { action }
+
+      const overrideBrowserWindowOptions: BrowserWindowConstructorOptions = action === 'allow'
+        ? { parent: appWindow }
+        : {}
+      return { action, overrideBrowserWindowOptions }
     })
 
     this.webContents.addListener('dom-ready', () => {
