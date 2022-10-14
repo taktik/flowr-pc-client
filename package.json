@@ -1,6 +1,6 @@
 {
   "name": "flowr-desktop",
-  "version": "1.3.0-beta5",
+  "version": "1.3.0-beta6",
   "author": {
     "email": "info@taktik.com",
     "name": "Taktik"
@@ -20,11 +20,13 @@
     "url": "git+https://github.com/taktik/flowr-desktop.git"
   },
   "scripts": {
-    "dev": "cross-env NODE_ENV='dev' webpack --config webpack.renderers.js && serve ./build -l 4444",
-    "build": "webpack --config webpack.main.js --env production && webpack --config webpack.renderers.js --env production",
+    "install-app-deps": "electron-builder install-app-deps",
+    "install-widevine": "node ./script/install-widevine.mjs",
+    "copy-header": "node ./script/copy-headers.mjs",
     "setup": "npm install && npm run install-app-deps && npm run build",
     "setup-widevine": "npm install && npm run install-app-deps && npm run install-widevine && npm run copy-header && npm run build",
-    "setup-widevine-win": "npm install && npm run install-app-deps && npm run install-widevine && npm run copy-header-win && npm run build",
+    "dev": "cross-env NODE_ENV='dev' webpack --config webpack.renderers.js && serve ./build -l 4444",
+    "build": "webpack --config webpack.main.js --env production && webpack --config webpack.renderers.js --env production",
     "start": "cross-env ENV='dev' webpack --config webpack.main.js && electron . --inspect=127.0.0.1:3001",
     "compile-win32": "electron-builder --config electron-builder.common.js -w",
     "compile-darwin": "electron-builder --config electron-builder.common.js -m",
@@ -33,11 +35,7 @@
     "compile-widevine-darwin": "electron-builder --config electron-builder.widevine.js -m",
     "compile-widevine-linux": "electron-builder --config electron-builder.widevine.js -l",
     "lint": "lint-staged",
-    "lint-fix": "prettier --write \"src/**/*.ts*\" && lint-staged",
-    "install-app-deps": "electron-builder install-app-deps",
-    "install-widevine": "npm install \"https://github.com/castlabs/electron-releases#v19.1.1+wvcus\" --no-save",
-    "copy-header": "cp -r $HOME/.electron-gyp/19.1.1 $HOME/.electron-gyp/19.1.1+wvcus",
-    "copy-header-win": "copy %USERPROFILE%\\.electron-gyp\\19.1.1 \"%USERPROFILE%\\.electron-gyp\\19.1.1+wvcus\""
+    "lint-fix": "prettier --write \"src/**/*.ts*\" && lint-staged"
   },
   "devDependencies": {
     "@types/axios": "0.14.0",
@@ -60,7 +58,7 @@
     "copy-webpack-plugin": "10.2.4",
     "cross-env": "5.2.0",
     "css-loader": "6.7.1",
-    "electron": "^19.1.1",
+    "electron": "^19.1.2",
     "electron-builder": "23.5.1",
     "eslint": "7.32.0",
     "eslint-config-prettier": "8.3.0",

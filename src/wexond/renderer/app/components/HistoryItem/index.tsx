@@ -6,6 +6,7 @@ import { HistoryItem } from '../../models';
 import { formatTime } from '../../utils';
 import { Favicon, Remove, Title, Time, Site } from './style';
 import { ListItem } from '../ListItem';
+import ensureIcon from '../../utils/ensureIcon'
 
 const onClick = (item: HistoryItem) => (e: React.MouseEvent) => {
   if (!e.ctrlKey) return;
@@ -32,12 +33,13 @@ const onRemoveClick = (item: HistoryItem) => () => {
 
 export default observer(({ data }: { data: HistoryItem }) => {
   const selected = store.history.selectedItems.includes(data._id);
+  const icon = ensureIcon(store.favicons.favicons[data.favicon])
 
   return (
     <ListItem key={data._id} onClick={onClick(data)} selected={selected}>
       <Favicon
         style={{
-          backgroundImage: `url(${store.favicons.favicons[data.favicon]})`,
+          backgroundImage: `url(${icon})`,
         }}
       />
       <Title onClick={onTitleClick(data.url)}>{data.title}</Title>

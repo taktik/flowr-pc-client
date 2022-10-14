@@ -20,14 +20,19 @@ function signIf(targetPlatform) {
   }
 }
 
-module.exports = {
-  ...common,
-  artifactName: '${productName}-${version}-${os}-${arch}-widevine.${ext}',
-  afterPack: signIf('darwin'),
-  afterSign: signIf('win32'),
-  electronVersion: '19.1.1',
-  electronDownload: {
-    version: '19.1.1+wvcus',
-    mirror: 'https://github.com/castlabs/electron-releases/releases/download/v'
+module.exports = async function() {
+  const { default: getElectronVersion } = await import('./script/electron-version.mjs')
+  const ELECTRON_VERSION = await getElectronVersion()
+
+  return {
+    ...common,
+    artifactName: '${productName}-${version}-${os}-${arch}-widevine.${ext}',
+    afterPack: signIf('darwin'),
+    afterSign: signIf('win32'),
+    electronVersion: ELECTRON_VERSION,
+    electronDownload: {
+      version: `${ELECTRON_VERSION}+wvcus`,
+      mirror: 'https://github.com/castlabs/electron-releases/releases/download/v'
+    }
   }
 }

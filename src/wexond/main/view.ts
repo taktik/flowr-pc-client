@@ -3,21 +3,23 @@ import {
   Menu,
   nativeImage,
   clipboard,
+  WebContents,
+  BrowserWindowConstructorOptions,
 } from 'electron'
 import { appWindow } from '.'
 import { engine } from './services/web-request'
 import { settings } from './index'
 import { parse } from 'tldts'
 import { buildPreloadPath } from '../../common/preload'
+import { getUserAgentForURL } from './user-agent'
 
-export class View extends BrowserView {
-  public title = ''
-  public url = ''
+export class View {
+  public browserView: BrowserView
   public tabId: number
   public homeUrl: string
 
   constructor(id: number, viewUrl: string) {
-    super({
+    this.browserView = new BrowserView({
       webPreferences: {
         preload: buildPreloadPath('view-preload.js'),
         nodeIntegration: false,
@@ -27,6 +29,11 @@ export class View extends BrowserView {
         plugins: true,
       },
     })
+
+    this.webContents.userAgent = getUserAgentForURL(
+      this.webContents.userAgent,
+      '',
+    )
 
     this.homeUrl = viewUrl
     this.tabId = id
@@ -256,6 +263,17 @@ export class View extends BrowserView {
       })
     })
 
+    this.webContents.addListener(
+      'did-start-navigation',
+      (e, url, isInPlace, isMainFrame) => {
+        if (!isMainFrame) return
+        const newUA = getUserAgentForURL(this.webContents.userAgent, url)
+        if (this.webContents.userAgent !== newUA) {
+          this.webContents.userAgent = newUA
+        }
+      }
+    )
+
     this.webContents.addListener('did-finish-load', () => {
       this.emitWebNavigationEvent('onCompleted', {
         tabId: this.tabId,
@@ -309,7 +327,11 @@ export class View extends BrowserView {
         sourceFrameId: 0,
         timeStamp: Date.now(),
       })
-      return { action }
+
+      const overrideBrowserWindowOptions: BrowserWindowConstructorOptions = action === 'allow'
+        ? { parent: appWindow }
+        : {}
+      return { action, overrideBrowserWindowOptions }
     })
 
     this.webContents.addListener('dom-ready', () => {
@@ -354,12 +376,47 @@ export class View extends BrowserView {
       },
     )
 
-    this.setAutoResize({
+    this.webContents.addListener('did-navigate', (e, url) => {
+      this.updateURL(url)
+    })
+
+    this.webContents.addListener('did-navigate-in-page', (e, url) => {
+      this.updateURL(url)
+    })
+
+    this.webContents.addListener('page-title-updated', (e, title) => {
+      appWindow.webContents.send(
+        `view-title-updated-${this.tabId}`,
+        title,
+      )
+    })
+
+    this.browserView.setAutoResize({
       width: true,
       height: true,
     })
     // eslint-disable-next-line @typescript-eslint/no-floating-promises
     this.webContents.loadURL(viewUrl)
+  }
+
+  public get webContents(): WebContents {
+    return this.browserView.webContents
+  }
+
+  public get url(): string {
+    return this.webContents.getURL()
+  }
+
+  public get title(): string {
+    return this.webContents.getTitle()
+  }
+
+  public get id(): number {
+    return this.webContents.id
+  }
+
+  public get isSelected(): boolean {
+    return this.id === appWindow.viewManager.selectedId
   }
 
   public updateNavigationState = (): void => {
@@ -380,5 +437,12 @@ export class View extends BrowserView {
   public getScreenshot = async (): Promise<string> => {
     const img = await this.webContents.capturePage()
     return img.toDataURL()
+  }
+
+  public updateURL = (url: string): void => {
+    appWindow.webContents.send(
+      `view-url-updated-${this.tabId}`,
+      url,
+    )
   }
 }

@@ -26,7 +26,7 @@ export class KeyboardWindow extends BrowserWindow {
       parent,
       acceptFirstMouse: true,
       alwaysOnTop: true,
-      focusable: true,
+      focusable: process.platform === 'linux',
       frame: false,
       maximizable: false,
       minimizable: false,

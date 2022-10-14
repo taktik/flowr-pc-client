@@ -9,9 +9,9 @@ import {
   defaultTabOptions,
   TAB_ANIMATION_DURATION,
 } from '~/renderer/app/constants'
-import { closeWindow, getColorBrightness } from '../utils'
-import { colors } from '~/renderer/constants'
+import { getColorBrightness } from '../utils'
 import { makeId } from '~/shared/utils/string'
+import { TabGroup } from './tab-group'
 
 let id = 1
 
@@ -28,22 +28,22 @@ export class Tab {
   public id: number = id++
 
   @observable
-  public isDragging: boolean = false
+  public isDragging = false
 
   @observable
-  public title: string = 'New tab'
+  public title = 'New tab'
 
   @observable
-  public loading: boolean = false
+  public loading = false
 
   @observable
-  public favicon: string = ''
+  public favicon = ''
 
   @observable
   public tabGroupId: number
 
   @observable
-  public width: number = 0
+  public width = 0
 
   @observable
   public background: string = store.theme.accentColor
@@ -64,7 +64,7 @@ export class Tab {
   public blockedAds = 0
 
   @computed
-  public get findVisible() {
+  public get findVisible(): boolean {
     return this._findVisible
   }
 
@@ -84,17 +84,17 @@ export class Tab {
   }
 
   @computed
-  public get isSelected() {
+  public get isSelected(): boolean {
     return store.tabGroups.currentGroup.selectedTabId === this.id
   }
 
   @computed
-  public get isHovered() {
+  public get isHovered(): boolean {
     return store.tabs.hoveredTabId === this.id
   }
 
   @computed
-  public get borderVisible() {
+  public get borderVisible(): boolean {
     const tabs = this.tabGroup.tabs
 
     const i = tabs.indexOf(this)
@@ -112,12 +112,12 @@ export class Tab {
   }
 
   @computed
-  public get isExpanded() {
+  public get isExpanded(): boolean {
     return this.isHovered || this.isSelected || !store.tabs.scrollable
   }
 
   @computed
-  public get isIconSet() {
+  public get isIconSet(): boolean {
     return this.favicon !== '' || this.loading
   }
 
@@ -130,7 +130,7 @@ export class Tab {
   public webContentsId: number
   public findRequestId: number
   public removeTimeout: any
-  public isWindow: boolean = false
+  public isWindow = false
 
   constructor(
     { url, active } = defaultTabOptions,
@@ -144,47 +144,44 @@ export class Tab {
 
     ipcRenderer.send('browserview-create', { tabId: this.id, url })
 
-    ipcRenderer.once(`browserview-created-${this.id}`, (e: any, id: number) => {
-      this.webContentsId = id
+    ipcRenderer.once(`browserview-created-${this.id}`, (_, webContentsId: number) => {
+      this.webContentsId = webContentsId
       if (active) {
         this.select()
       }
     })
 
     ipcRenderer.on(
-      `browserview-data-updated-${this.id}`,
-      async (e: any, { title, url }: any) => {
+      `view-url-updated-${this.id}`,
+      // eslint-disable-next-line @typescript-eslint/no-misused-promises
+      async (_, newUrl: string) => {
         let updated = null
 
-        if (url !== this.url) {
+        if (newUrl && newUrl !== this.url) {
           this.lastHistoryId = await store.history.addItem({
             title: this.title,
-            url,
+            url: newUrl,
             favicon: this.favicon,
             date: new Date().toString(),
           })
 
-          updated = {
-            url,
-          }
-        }
-
-        if (title !== this.title) {
-          updated = {
-            title,
-          }
+          updated = { url: newUrl }
         }
 
         if (updated) {
           this.emitOnUpdated(updated)
         }
 
-        this.title = title
-        this.url = url
+        this.url = newUrl
 
         this.updateData()
       },
     )
+
+    ipcRenderer.on(`view-title-updated-${this.id}`, (_, title: string) => {
+      this.title = title === 'about:blank' ? 'New tab' : title
+      this.updateData()
+    })
 
     ipcRenderer.on(
       `load-commit-${this.id}`,
@@ -200,7 +197,8 @@ export class Tab {
 
     ipcRenderer.on(
       `browserview-favicon-updated-${this.id}`,
-      async (e: any, favicon: string) => {
+      // eslint-disable-next-line @typescript-eslint/no-misused-promises
+      async (_, favicon: string) => {
         try {
           this.favicon = favicon
 
@@ -218,13 +216,13 @@ export class Tab {
               } else {
                 this.background = store.theme.accentColor
               }
-            } catch (e) {
-              console.error('Failed to update favicon', e)
+            } catch (error) {
+              console.error('Failed to update favicon', error)
             }
           }
-        } catch (e) {
+        } catch (error) {
           this.favicon = ''
-          console.error(e)
+          console.error(error)
         }
         this.updateData()
       },
@@ -236,7 +234,7 @@ export class Tab {
 
     ipcRenderer.on(
       `browserview-theme-color-updated-${this.id}`,
-      (e: any, themeColor: string) => {
+      (_, themeColor: string) => {
         if (themeColor && isColorAcceptable(themeColor)) {
           this.background = themeColor
           this.hasThemeColor = true
@@ -247,7 +245,7 @@ export class Tab {
       },
     )
 
-    ipcRenderer.on(`view-loading-${this.id}`, (e: any, loading: boolean) => {
+    ipcRenderer.on(`view-loading-${this.id}`, (_, loading: boolean) => {
       this.loading = loading
 
       this.emitOnUpdated({
@@ -257,7 +255,7 @@ export class Tab {
   }
 
   @action
-  public updateData() {
+  public updateData(): void {
     if (this.lastHistoryId) {
       const { title, url, favicon } = this
 
@@ -284,17 +282,17 @@ export class Tab {
     }
   }
 
-  public get tabGroup() {
+  public get tabGroup(): TabGroup {
     return store.tabGroups.getGroupById(this.tabGroupId)
   }
 
   @action
-  public unselect() {
+  public unselect(): void {
     this.tabGroup.selectedTabId = undefined
   }
 
   @action
-  public select() {
+  public select(): void {
     if (!this.isClosing) {
       store.canToggleMenu = this.isSelected
 
@@ -320,7 +318,7 @@ export class Tab {
     }
   }
 
-  public getWidth(containerWidth: number = null, tabs: Tab[] = null) {
+  public getWidth(containerWidth: number = null, tabs: Tab[] = null): number {
     if (containerWidth === null) {
       containerWidth = store.tabs.containerWidth
     }
@@ -344,7 +342,7 @@ export class Tab {
     return width
   }
 
-  public getLeft(calcNewLeft: boolean = false) {
+  public getLeft(calcNewLeft = false): number {
     const tabs = this.tabGroup.tabs.slice()
 
     const index = tabs.indexOf(this)
@@ -358,19 +356,19 @@ export class Tab {
   }
 
   @action
-  public setLeft(left: number, animation: boolean) {
+  public setLeft(left: number, animation: boolean): void {
     store.tabs.animateProperty('x', this.ref.current, left, animation)
     this.left = left
   }
 
   @action
-  public setWidth(width: number, animation: boolean) {
+  public setWidth(width: number, animation: boolean): void {
     store.tabs.animateProperty('width', this.ref.current, width, animation)
     this.width = width
   }
 
   @action
-  public close() {
+  public close(): void {
     const tabGroup = this.tabGroup
     const { tabs } = tabGroup
 
@@ -429,7 +427,8 @@ export class Tab {
     }, TAB_ANIMATION_DURATION * 1000)
   }
 
-  public emitOnUpdated = (data: any) => {
+  // eslint-disable-next-line @typescript-eslint/explicit-module-boundary-types
+  public emitOnUpdated = (data: any): void => {
     store.tabs.emitEvent('onUpdated', this.id, data, this.getApiTab())
   }
 
@@ -445,7 +444,7 @@ export class Tab {
 
       ipcRenderer.once(
         `browserview-call-result-${callId}`,
-        (e: any, result: any) => {
+        (_, result: any) => {
           resolve(result)
         },
       )
