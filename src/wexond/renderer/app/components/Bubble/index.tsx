@@ -27,7 +27,7 @@ export const Bubble = ({
   disabled,
   onCloseClick,
 }: {
-  children?: any
+  children?: JSX.Element
   icon?: string
   invert?: boolean
   maxLines?: number
