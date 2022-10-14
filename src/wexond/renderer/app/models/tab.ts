@@ -144,7 +144,7 @@ export class Tab {
 
     ipcRenderer.send('browserview-create', { tabId: this.id, url })
 
-    ipcRenderer.once(`browserview-created-${this.id}`, (e: any, webContentsId: number) => {
+    ipcRenderer.once(`browserview-created-${this.id}`, (_, webContentsId: number) => {
       this.webContentsId = webContentsId
       if (active) {
         this.select()
@@ -154,7 +154,7 @@ export class Tab {
     ipcRenderer.on(
       `view-url-updated-${this.id}`,
       // eslint-disable-next-line @typescript-eslint/no-misused-promises
-      async (e: any, newUrl: string) => {
+      async (_, newUrl: string) => {
         let updated = null
 
         if (newUrl && newUrl !== this.url) {
@@ -178,7 +178,7 @@ export class Tab {
       },
     )
 
-    ipcRenderer.on(`view-title-updated-${this.id}`, (e: any, title: string) => {
+    ipcRenderer.on(`view-title-updated-${this.id}`, (_, title: string) => {
       this.title = title === 'about:blank' ? 'New tab' : title
       this.updateData()
     })
@@ -198,7 +198,7 @@ export class Tab {
     ipcRenderer.on(
       `browserview-favicon-updated-${this.id}`,
       // eslint-disable-next-line @typescript-eslint/no-misused-promises
-      async (e: any, favicon: string) => {
+      async (_, favicon: string) => {
         try {
           this.favicon = favicon
 
@@ -234,7 +234,7 @@ export class Tab {
 
     ipcRenderer.on(
       `browserview-theme-color-updated-${this.id}`,
-      (e: any, themeColor: string) => {
+      (_, themeColor: string) => {
         if (themeColor && isColorAcceptable(themeColor)) {
           this.background = themeColor
           this.hasThemeColor = true
@@ -245,7 +245,7 @@ export class Tab {
       },
     )
 
-    ipcRenderer.on(`view-loading-${this.id}`, (e: any, loading: boolean) => {
+    ipcRenderer.on(`view-loading-${this.id}`, (_, loading: boolean) => {
       this.loading = loading
 
       this.emitOnUpdated({
@@ -444,7 +444,7 @@ export class Tab {
 
       ipcRenderer.once(
         `browserview-call-result-${callId}`,
-        (e: any, result: any) => {
+        (_, result: any) => {
           resolve(result)
         },
       )
