@@ -8,7 +8,7 @@ import { DEFAULT_PLAYER_STORE } from './playerStore'
 import { VlcPlayer } from './vlc/player'
 import { FlowrWindow } from "../../flowr-window";
 
-export default function(flowrWindow: FlowrWindow, playerConfig: Partial<IPlayerStore>): IPlayer {
+export default function(flowrWindow: FlowrWindow, playerConfig: Partial<IPlayerStore>, deinterlace = false): IPlayer {
   const resolver = (stored: IPlayerStore): IPlayerStore => {
     // first fill in stored data from potentially new defaults
     const base = deepExtend({}, DEFAULT_PLAYER_STORE, stored)
@@ -24,5 +24,5 @@ export default function(flowrWindow: FlowrWindow, playerConfig: Partial<IPlayerS
 
   return store.get('pipeline').use === PipelineType.VLC
     ? new VlcPlayer(flowrWindow, store)
-    : new Player(store)
+    : new Player(store, deinterlace)
 }

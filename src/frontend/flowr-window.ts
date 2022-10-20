@@ -73,7 +73,7 @@ export class FlowrWindow extends KeyboardMixin(BrowserWindow) {
     setLevel(desktopConfig.logLevel ?? LogSeverity.INFO)
 
     if (!this.player) {
-      const player = buildPlayer(this, playerConfig)
+      const player = buildPlayer(this, playerConfig, desktopConfig.deinterlacing)
       this.on('close', () => void player.close())
       this.player = player
     }

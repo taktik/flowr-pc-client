@@ -6,28 +6,6 @@ import { app } from 'electron'
 import { PlayerError, PlayerErrors } from './playerError'
 import { getLogger } from '../logging/loggers'
 
-function appendCmdWithoutSubtitle(
-  ffmpegCmd: Ffmpeg.FfmpegCommand,
-  videoStream: number,
-  audioStream: number,
-): void {
-  if (audioStream && audioStream > -1) {
-    ffmpegCmd.outputOptions([`-map 0:${videoStream}`, `-map 0:${audioStream}?`])
-  } else {
-    ffmpegCmd.input('anullsrc').inputFormat('lavfi')
-  }
-}
-
-function appendCmdWithSubtitle(
-  ffmpegCmd: Ffmpeg.FfmpegCommand,
-  audioStream: number,
-  subtitleStream: number,
-): void {
-  // TODO: how to add yadif to -filter_complex ? Currently, we don't find a way to do interlacing + subtitles
-  const filterComplex = `-filter_complex [0:v][0:${subtitleStream}]overlay[v]`
-  ffmpegCmd.outputOptions([filterComplex, '-map [v]', `-map 0:${audioStream}?`])
-}
-
 function handleError(
   callback: (error: PlayerError) => void,
 ): (err: Error, stdout: string, stderr: string | undefined) => void {
@@ -51,6 +29,7 @@ type FfmpegPipelinesParams = {
   input: Readable,
   audioPid?: number,
   subtitlesPid?: number,
+  deinterlace?: boolean,
   errorHandler(error: PlayerError): void,
 }
 
@@ -61,77 +40,27 @@ export class FlowrFfmpeg {
     Ffmpeg.setFfmpegPath(resolve(app.getAppPath(), ffmpegPath))
   }
 
-  getVideoMpegtsPipeline(
-    input: string | Readable,
-    videoStream: number,
-    audioStream = -1,
-    subtitleStream = -1,
-    isDeinterlacingEnabled: boolean,
-    errorHandler: (error: PlayerError) => void,
-  ): Ffmpeg.FfmpegCommand {
-    if (process.platform === 'darwin' && !(input instanceof Readable)) {
-      input +=
-        '?fifo_size=1880000&overrun_nonfatal=1&buffer_size=/1880000&pkt_size=188'
-    }
-
-    const ffmpegCmd = Ffmpeg(input)
-      .inputOptions('-probesize 1000k')
-      .inputOptions('-flags low_delay')
-      .outputOptions('-preset ultrafast')
-      .outputOptions('-tune zerolatency')
-      .outputOptions('-g 30')
-      .outputOptions('-r 30')
-      .outputOptions('-profile:v baseline')
-
-    if (subtitleStream && subtitleStream > -1) {
-      log.info('-------- appendCmdWithSubtitle')
-      appendCmdWithSubtitle(ffmpegCmd, audioStream, subtitleStream)
-    } else {
-      log.info('-------- appendCmdWithoutSubtitle')
-      appendCmdWithoutSubtitle(
-        ffmpegCmd,
-        videoStream,
-        audioStream,
-      )
-    }
-
-    if (process.platform !== 'darwin') {
-      ffmpegCmd.outputOptions('-flush_packets -1')
-    }
-
-    return ffmpegCmd
-      .format('mp4')
-      .outputOptions(
-        '-movflags empty_moov+frag_keyframe+default_base_moof+disable_chpl',
-      )
-      .outputOption('-frag_duration 2200000') // (µs) 2.2s -> "ensure" a keyframe is present
-      .outputOption('-c:v libx264')
-      .on('start', commandLine => {
-        log.info('Spawned Ffmpeg with command: ', commandLine)
-      })
-      .on('error', handleError(errorHandler))
-  }
-
   getAudioMpegtsPipeline(
     input: string | Readable,
     errorHandler: (error: PlayerError) => void,
   ): Ffmpeg.FfmpegCommand {
-    return Ffmpeg(input)
+    return Ffmpeg(input, { logger: log })
       .format('mp3')
-      .on('start', commandLine => {
+      .on('start', (commandLine: string) => {
         log.info('Spawned Ffmpeg with command:', commandLine)
       })
       .on('error', handleError(errorHandler))
   }
 
-  getVideoPipelineWithSubtitles({
+  getVideoPipeline({
     input,
     audioPid,
     subtitlesPid,
+    deinterlace = false,
     errorHandler,
   }: FfmpegPipelinesParams): Ffmpeg.FfmpegCommand {
     const audioStreamSelector = audioPid ? `i:${audioPid}` : '0:a:0'
-    const ffmpegCmd = Ffmpeg(input)
+    const ffmpegCmd = Ffmpeg(input, { logger: log })
       .inputOptions('-probesize 1000k')
       .inputOptions('-flags low_delay')
       .outputOption('-preset ultrafast')
@@ -141,12 +70,17 @@ export class FlowrFfmpeg {
       .outputOption(`-map ${audioStreamSelector}?`)
 
     if (subtitlesPid) {
+      const deinterlacingFilter = deinterlace ? ',yadif' : ''
+
       ffmpegCmd
-        .outputOption(`-filter_complex [0:v][i:${subtitlesPid}]overlay[v]`)
+        .outputOption(`-filter_complex [0:v][i:${subtitlesPid}]overlay${deinterlacingFilter}[v]`)
         .outputOption('-map [v]')
     } else {
-      ffmpegCmd
-        .outputOption('-map 0:v')
+      if (deinterlace) {
+        ffmpegCmd.videoFilter('yadif')
+      }
+
+      ffmpegCmd.outputOption('-map 0:v')
     }
 
     if (process.platform !== 'darwin') {
@@ -159,7 +93,7 @@ export class FlowrFfmpeg {
         '-movflags empty_moov+frag_keyframe+default_base_moof+disable_chpl',
       )
       .outputOption('-c:v libx264')
-      .on('start', commandLine => {
+      .on('start', (commandLine: string) => {
         log.info('Spawned Ffmpeg with command: ', commandLine)
       })
       .on('error', handleError(errorHandler))

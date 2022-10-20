@@ -2,6 +2,7 @@ import { FfmpegCommand } from '@taktik/fluent-ffmpeg'
 import { TrackInfo, TrackInfoStream } from '@taktik/mux.js'
 import { PassThrough, Readable } from 'stream'
 import { State, StateMachineImpl, Transitions } from 'typescript-state-machine'
+import { PipelinePlayOptions } from '../../interfaces/playerPipeline'
 import { getLogger } from '../../logging/loggers'
 import { Dispatcher } from '../dispatcher'
 import { FlowrFfmpeg } from '../ffmpeg'
@@ -39,12 +40,6 @@ const transitions: Transitions<PipelineState> = {
   [PipelineStateName.ERROR]: [KILLED],
 }
 
-type PlayingPipelineProps = {
-  input: Readable
-  baseAudioPid?: number
-  subtitlesPid?: number
-}
-
 /**
  * State machine that handles ffmpeg process
  * May safely be killed at the same time as a new one is initialized
@@ -61,16 +56,18 @@ class PlayingPipeline extends StateMachineImpl<PipelineState> {
   
   readonly baseAudioPid?: number
   readonly subtitlesPid?: number
+  readonly deinterlace: boolean
   lastError?: Error
 
   constructor(
     private readonly streamer: IpcStreamer,
-    { input, baseAudioPid, subtitlesPid }: PlayingPipelineProps
+    { input, audioPid, subtitlesPid, deinterlace = false }: PipelinePlayOptions
   ) {
     super(Object.values(PlayingPipelineStates), transitions, STARTING)
     this.input = input
-    this.baseAudioPid = baseAudioPid
+    this.baseAudioPid = audioPid
     this.subtitlesPid = subtitlesPid
+    this.deinterlace = deinterlace
     this.logger.debug('Play command received')
 
     this.registerStateChanges()
@@ -154,7 +151,13 @@ class PlayingPipeline extends StateMachineImpl<PipelineState> {
       const audioPid = this.baseAudioPid ?? this.trackInfo.audio.reduce((min, audio) => Math.min(min, audio.pid), 99999)
       const ffmpegInput = this.dispatcher.pipe(new PassThrough({ autoDestroy: false }))
       this.command = this.trackInfo.video
-        ? this.flowrFfmpeg.getVideoPipelineWithSubtitles({ input: ffmpegInput, audioPid, subtitlesPid: this.subtitlesPid, errorHandler: this.getErrorHandler() })
+        ? this.flowrFfmpeg.getVideoPipeline({
+            input: ffmpegInput,
+            audioPid,
+            subtitlesPid: this.subtitlesPid,
+            deinterlace: this.deinterlace,
+            errorHandler: this.getErrorHandler(),
+          })
         : this.flowrFfmpeg.getAudioMpegtsPipeline(this.input, this.getErrorHandler())
       this.streamer.currentAudioPid = audioPid
       this.command.pipe(this.streamer, { end: false })
@@ -174,14 +177,19 @@ class PlayingPipeline extends StateMachineImpl<PipelineState> {
     this.setState(KILLED)
   }
 
-  clone(overrideProps: Partial<PlayingPipelineProps> = {}): PlayingPipeline {
-    const { streamer, input, baseAudioPid, subtitlesPid } = this
-    return new PlayingPipeline(streamer, { input, baseAudioPid, subtitlesPid, ...overrideProps })
+  clone(overrideProps: Partial<PipelinePlayOptions> = {}): PlayingPipeline {
+    const { streamer, input, baseAudioPid, subtitlesPid, deinterlace } = this
+    return new PlayingPipeline(streamer, {
+      input,
+      audioPid: baseAudioPid,
+      subtitlesPid,
+      deinterlace,
+      ...overrideProps
+    })
   }
 }
 
 export {
   PlayingPipeline,
-  PlayingPipelineProps,
   PlayingPipelineStates,
 }
