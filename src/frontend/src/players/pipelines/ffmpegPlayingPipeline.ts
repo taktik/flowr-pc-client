@@ -150,6 +150,7 @@ class PlayingPipeline extends StateMachineImpl<PipelineState> {
       }
       const audioPid = this.baseAudioPid ?? this.trackInfo.audio.reduce((min, audio) => Math.min(min, audio.pid), 99999)
       const ffmpegInput = this.dispatcher.pipe(new PassThrough({ autoDestroy: false }))
+      this.baseAudioPid = audioPid
       this.command = this.trackInfo.video
         ? this.flowrFfmpeg.getVideoPipeline({
             input: ffmpegInput,
@@ -170,7 +171,7 @@ class PlayingPipeline extends StateMachineImpl<PipelineState> {
 
   kill(): void {
     this.command?.unpipe(this.streamer)
-    this.command?.kill('SIGTERM')
+    this.command?.kill('SIGKILL')
     this.killMetadataProcess()
     this.dispatcher.clear()
     this.input.unpipe(this.dispatcher)
