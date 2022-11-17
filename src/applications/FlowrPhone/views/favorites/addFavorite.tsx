@@ -24,7 +24,9 @@ interface AddFavoriteState {
 
 const StyledIcon = styled(ClickableIcon)`
   color: #56DE6F;
-  width: 56px;
+  min-width: 48px;
+  height: 48px;
+  font-size: 1em;
 `
 
 export class AddFavorite extends React.Component<AddFavoriteProps, AddFavoriteState> {

@@ -8,15 +8,16 @@
     align-items: stretch;
     padding: 0;
     box-sizing: border-box;
-    
+
 }
 
 .offHook-container .top-container { 
     background: rgba(0,0,0,0.8);
-    padding: 12px;
+    padding: 24px 24px 0;
     width: calc(100% - 80px);
     box-sizing: border-box;
     margin-left: 80px;
+    border-radius: 0 8px 0 0;
 }
 
 .container-flex {
@@ -29,13 +30,13 @@
     padding: 0;
     flex-grow: 1;
     width: calc(100% - 80px);
+    border-radius: 0 0 8px 0;
 }
 
 .right, .left {
     height: 100%;
     padding-top: 12px;
     box-sizing:border-box;
-    height: 100%;
 }
 
 .helper {
@@ -43,6 +44,7 @@
     font-size: 16px;
     font-family: 'Roboto', Arial, Helvetica, sans-serif;
     font-weight: bold;
+    padding: 24px 24px 24px 12px;
 }
 
 .helper span {
@@ -56,6 +58,7 @@
     padding-top: 8px;
     border-top: 1px solid rgba(255,255,255,0.6);
 }
+
 .left {
     display: flex;
     flex-flow: column nowrap;
@@ -97,7 +100,7 @@
     font-size: 36px;
     font-weight: normal;
     place-self: center;
-    margin: 0;
+    margin: 0 0 4px;
     background: transparent;
     box-sizing: border-box;
     width: 100%;
@@ -116,9 +119,9 @@
 .buttonSpan {
     color: white;
     font-family: 'Roboto', Arial, Helvetica, sans-serif;
-    font-weight: medium;
+    font-weight: 500;
     font-size: 18px;
-    letter-spacing: 0.4;
+    letter-spacing: 0.1em;
     width: 100%;
     text-align: center;
     display: block;
@@ -138,7 +141,7 @@
 
 .extra-btn-container > div {
     background: rgba(0,0,0,0.8);
-    border-radius: 4px 0 0 4px;
+    border-radius: 8px 0 0 8px;
     height: 80px;
     width: 80px;
     display: flex;

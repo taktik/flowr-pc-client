@@ -1,6 +1,5 @@
 /* eslint-disable no-console */
 import * as React from 'react'
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { RegisterStateMachine, REGISTERED_STATE } from '../stateMachines/registerStateMachine'
 import { IpcRenderer } from 'electron'
 import { WindowModes } from '../WindowModes'
@@ -17,7 +16,6 @@ import {
 } from '../stateMachines/callStateMachine'
 import { ListenerRegistration as TransitionListener } from 'typescript-state-machine'
 import { PhoneStateMachine } from '../stateMachines/factory'
-import styled from 'styled-components'
 import { Translator } from '../../../translator/translator'
 import { fr } from '../translations/fr'
 import { History, PhoneHistory } from '../features/history'
@@ -67,10 +65,6 @@ export type RegisterProps = {
   username: string,
   host: string,
 }
-
-const UpperRightIcon = styled(FontAwesomeIcon)`
-  width: 36px;
-`
 
 export enum PhoneCapabilities {
   EMIT = 'emit',
@@ -355,11 +349,8 @@ export class Phone extends React.Component<PhoneProps, PhoneAppState> {
             removeFavorite={this.removeFavorite.bind(this)}
             openKeyboard={window.openKeyboard}
             closeKeyboard={window.closeKeyboard}
+            hidePhone={this.hide.bind(this)}
         />
-        <div className="close-btn" onClick={this.hide.bind(this)}>
-          <UpperRightIcon icon="times" />
-          <span>{this._translator.translate('Close', this.props.lang)}</span>
-        </div>
       </div>
     )
   }

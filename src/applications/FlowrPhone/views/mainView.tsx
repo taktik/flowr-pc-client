@@ -11,6 +11,7 @@ import { PhoneCapabilities, CallingNumber } from './phone'
 import { HistoryView } from './history'
 import { PhoneHistory } from '../features/history'
 import { FavoritesView } from './favorites'
+import {FontAwesomeIcon} from "@fortawesome/react-fontawesome";
 
 enum PhoneRoute {
   MAIN,
@@ -38,6 +39,7 @@ interface MainViewProps {
   saveFavorite: (favorite: CallingNumber) => void
   openKeyboard?: () => void
   closeKeyboard?: () => void
+  hidePhone?: () => void
 }
 
 interface MainViewState {
@@ -52,7 +54,21 @@ const StyledCalling = styled(Calling)`
   box-sizing: border-box;
 `
 
+const Container = styled.div `
+  position: absolute;
+  height: 440px;
+  width: 880px;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%,-50%);
+`
+
+const UpperRightIcon = styled(FontAwesomeIcon)`
+  width: 36px;
+`
+
 export class MainView extends React.Component<MainViewProps, MainViewState> {
+  private _translator: Translator = new Translator()
   constructor(props: MainViewProps) {
     super(props)
     this.state = { route: PhoneRoute.MAIN, callNumber: { value: '' } }
@@ -143,6 +159,16 @@ export class MainView extends React.Component<MainViewProps, MainViewState> {
       default:
         template = unavailableTemplate
     }
-    return template
+    return (
+        <Container>
+          <>
+            {template}
+            <div className="close-btn" onClick={this.props.hidePhone}>
+              <UpperRightIcon icon="times" />
+              <span>{this._translator.translate('Close', this.props.lang)}</span>
+            </div>
+          </>
+        </Container>
+    )
   }
 }
