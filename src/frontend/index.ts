@@ -123,12 +123,12 @@ export function createFlowrWindow(flowrStore: Store<IFlowrStore>, isDebugMode: (
       // Ensure validity of stored URL
       const url = new URL(storedUrl)
       const mac = await getActiveMacAddress()
-      // set mac address in the URL te ensure backward compatibility with Flowr 5.1
+      // set mac address in the URL to ensure backward compatibility with Flowr 5.1
       url.searchParams.set('mac', mac)
   
       try {
-        await mainWindow.loadURL(url.href)
         reloadTimer = new Timer(() => void loadFlowr(), RELOAD_TIMEOUT)
+        await mainWindow.loadURL(url.href)
       } catch (untypedError) {
         const e = untypedError as NodeJS.ErrnoException
   
