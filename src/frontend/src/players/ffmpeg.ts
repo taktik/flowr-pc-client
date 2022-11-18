@@ -62,7 +62,6 @@ export class FlowrFfmpeg {
     const audioStreamSelector = audioPid ? `i:${audioPid}` : '0:a:0'
     const ffmpegCmd = Ffmpeg(input, { logger: log })
       .inputOptions('-probesize 1000k')
-      .inputOptions('-flags low_delay')
       .outputOption('-preset ultrafast')
       .outputOption('-tune zerolatency')
       .outputOption('-g 30')
