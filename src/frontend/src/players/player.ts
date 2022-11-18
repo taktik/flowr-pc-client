@@ -16,7 +16,7 @@ export class Player extends AbstractPlayer {
   private ffmpegWrapper: FfmpegWrapper
   private playPipelineTail?: IPipelineTail
 
-  constructor(store: Store<IPlayerStore>) {
+  constructor(store: Store<IPlayerStore>, readonly deinterlace: boolean) {
     super(store)
     this.playPipelineHead = new MainPipeline(this.store)
     this.transmuxer = new TransmuxerWrapper()
@@ -30,7 +30,7 @@ export class Player extends AbstractPlayer {
     this.playPipelineHeadOutput = pipelineHeadOutput
     this.playPipelineTail = useFfmpeg ? this.ffmpegWrapper : this.transmuxer
     this.playPipelineTail.sender = sender
-    this.playPipelineTail.play(pipelineHeadOutput, audioPid, subtitlesPid)
+    this.playPipelineTail.play({ input: pipelineHeadOutput, audioPid, subtitlesPid, deinterlace: this.deinterlace })
   }
 
   private async connectHeadAndPlugTail(sender: WebContents, { url, audioPid, subtitlesPid }: PlayProps): Promise<void> {
@@ -101,7 +101,7 @@ export class Player extends AbstractPlayer {
         this.clearPipelineTail()
         this.plugPipelineTail({ sender, audioPid, subtitlesPid, pipelineHeadOutput: this.playPipelineHeadOutput })
       } else if (this.playPipelineTail === this.ffmpegWrapper) {
-        this.playPipelineTail.setSubtitlesFromPid(subtitlesPid)
+        this.ffmpegWrapper.setSubtitlesFromPid(subtitlesPid)
       }
     } catch (error) {
       this.log.warn('An error occurred when setting the subtitles', error)

@@ -7,10 +7,17 @@ export interface IPlayerStreams {
   ffmpeg: FfmpegCommand
 }
 
+export type PipelinePlayOptions = {
+  input: Readable
+  audioPid?: number
+  subtitlesPid?: number
+  deinterlace?: boolean
+}
+
 export interface IPipelineTail {
   sender?: WebContents
 
-  play(input: Readable, audioPid?: number, subtitlesPid?: number): void
+  play(options: PipelinePlayOptions): void
   clear(): void
   setAudioTrackFromPid(pid: number): void
   setSubtitlesFromPid?(pid: number): void

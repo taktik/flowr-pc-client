@@ -10,10 +10,11 @@
     box-sizing: border-box;
     background: rgba(0,0,0,0.8);
     margin-left: 80px;
+    border-radius: 0 8px 8px 0;
 }
 
 .backbtn {
-    border-radius: 4px 0 0 4px;
+    border-radius: 8px 0 0 8px;
     font-family: 'Roboto', Arial, Helvetica, sans-serif;
     position: fixed;
     bottom: 0;
@@ -30,7 +31,7 @@
     justify-content: center;
 }
 
-.history-element{
+.history-element {
     width: 100%;
     display: flex;
     flex-flow: row nowrap;
@@ -42,7 +43,7 @@
     box-sizing: border-box;
 }
 
-.history-element:last-child{
+.history-element:last-child {
     border-bottom: none;
 }
 
@@ -50,11 +51,16 @@
     flex-grow: 1;
     text-align: left;
     padding-left: 24px;
+    display: flex;
+    flex-flow: row nowrap;
+    justify-content: space-around;
+    align-items: center;
 }
 
-.history-element .header .title.number{
+.history-element .header .title.number {
     width: 100%;
     text-align: left;
+    height: 1.2em;
 }
 
 .history-element .date {
@@ -64,7 +70,7 @@
     width: 20%;
 }
 
-.history-element .date > span{
+.history-element .date > span {
     display: block;
     background: rgba(255,255,255, 0.1);
     border-radius: 10px;
@@ -74,20 +80,20 @@
     padding: 0 8px;
 }
 
-.history-element .elapsed-time{
+.history-element .elapsed-time {
     text-align: right;
     width: 20%;
 }
 
-.history-element .statusIcon{
+.history-element .statusIcon {
     flex-grow: 0;
     width: 36px;
 }
 
-.emitted{
+.emitted {
     color: #3498db;
 }
 
-.received{
+.received {
     color: #9b59b6;
 }
