@@ -318,7 +318,7 @@ export class View {
       })
 
       const overrideBrowserWindowOptions: BrowserWindowConstructorOptions = action === 'allow'
-        ? { parent: appWindow }
+        ? { parent: appWindow, autoHideMenuBar: true }
         : {}
       return { action, overrideBrowserWindowOptions }
     })
