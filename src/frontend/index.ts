@@ -11,7 +11,7 @@ import { FlowrWindow } from './flowr-window'
 import defaultBrowserWindowOptions from './defaultBrowserWindowOptions'
 import { IFlowrStore, VirtualKeyboardMode } from './src/interfaces/flowrStore'
 import { buildPreloadPath } from '../common/preload'
-import { initializeLogging } from './src/logging'
+import { initializeIpcLogging } from './src/logging'
 import { LogSeverity } from './src/logging/types'
 import { buildFileUrl, monitorActivity } from '../application-manager/helpers'
 import { Timer } from '../common/timer'
@@ -243,7 +243,7 @@ export function createFlowrWindow(flowrStore: Store<IFlowrStore>, isDebugMode: (
     mainWindow.webContents.openDevTools()
   }
 
-  initializeLogging(mainWindow.webContents)
+  initializeIpcLogging(mainWindow.webContents)
 
   return mainWindow
 }

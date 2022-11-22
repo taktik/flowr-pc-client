@@ -24,6 +24,9 @@ import { IFlowrDesktopConfig } from '../frontend/src/interfaces/IFlowrDesktopCon
 import { WexondOptions } from '../wexond/main/app-window'
 import { openDevTools } from '../common/devTools'
 import { initialize } from '@electron/remote/main'
+import { initializeLogging } from '../frontend/src/logging'
+
+initializeLogging()
 
 const FlowrDataDir = resolve(homedir(), '.flowr')
 
@@ -167,11 +170,8 @@ async function main() {
     })
   }
 
-  if (app.isReady()) {
-    void onReady()
-  } else {
-    app.on('ready', onReady)
-  }
+  await app.whenReady()
+  void onReady()
 
   // eslint-disable-next-line @typescript-eslint/no-misused-promises
   ipcMain.on('clear-application-data', clearBrowsingData)
