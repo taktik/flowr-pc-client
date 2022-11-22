@@ -190,17 +190,6 @@ export class View {
         ])
       }
 
-      menuItems.push({
-        label: 'Inspect Element',
-        click: () => {
-          this.webContents.inspectElement(params.x, params.y)
-
-          if (this.webContents.isDevToolsOpened()) {
-            this.webContents.devToolsWebContents.focus()
-          }
-        },
-      })
-
       const menu = Menu.buildFromTemplate(menuItems)
 
       menu.popup()
