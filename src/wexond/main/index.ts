@@ -11,6 +11,7 @@ import { makeId } from '../shared/utils/string';
 import * as electronLog from 'electron-log'
 import { enable } from '@electron/remote/main'
 import { getLogger } from 'src/frontend/src/logging/loggers';
+import initComponents from '../extensions/components'
 
 export let settings: Settings = {};
 export let appWindow: AppWindow | null
@@ -63,6 +64,7 @@ export async function createWexondWindow(wexondOptions: WexondOptions, parentWin
     );
   }
 
+  await initComponents()
   appWindow = new AppWindow(wexondOptions, parentWindow, defaultBrowserWindow);
   enable(appWindow.webContents)
 

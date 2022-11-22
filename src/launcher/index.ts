@@ -24,6 +24,7 @@ import { IFlowrDesktopConfig } from '../frontend/src/interfaces/IFlowrDesktopCon
 import { WexondOptions } from '../wexond/main/app-window'
 import { openDevTools } from '../common/devTools'
 import { initialize } from '@electron/remote/main'
+import initComponents from '../wexond/extensions/components'
 import { initializeLogging } from '../frontend/src/logging'
 
 initializeLogging()
@@ -104,6 +105,11 @@ async function main() {
   }
 
   function onReady() {
+    /*
+      start the initialization of components (e.g. Widevine) in the background
+      The Promise will be awaited before loading Wexond
+    */
+    void initComponents()
     const flowrStore = initFlowrStore()
 
     keyboard.flowrStore = flowrStore
