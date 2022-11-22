@@ -14,9 +14,9 @@ export default async function initComponents(): Promise<void> {
   log.debug('Initializing electron components')
   try {
     await (initializing = components.whenReady())
+    log.debug('Electron components have been initialized')
   } catch (error) {
     log.warn('Failed to initialize external components (probably Widevine)', error)
   }
-  log.debug('Electron components have been initialized')
   initializing = undefined
 }
