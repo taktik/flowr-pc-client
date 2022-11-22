@@ -27,7 +27,6 @@ export const DEFAULT_FRONTEND_STORE: IFlowrStore = {
   debugMode: false,
   // 800x600 is the default size of our window
   windowBounds: { width: 1280, height: 720 },
-  channelData: {},
   isMaximized: false,
   clearAppDataOnStart: false,
   flowrMonitoringTime: 1000,
