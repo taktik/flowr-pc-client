@@ -121,9 +121,14 @@ export function createFlowrWindow(flowrStore: Store<IFlowrStore>, isDebugMode: (
     try {
       // Ensure validity of stored URL
       const url = new URL(storedUrl)
-      const mac = await getActiveMacAddress()
-      // set mac address in the URL to ensure backward compatibility with Flowr 5.1
-      url.searchParams.set('mac', mac)
+    
+      try {
+        const mac = await getActiveMacAddress()
+        // set mac address in the URL to ensure backward compatibility with Flowr 5.1
+        url.searchParams.set('mac', mac)
+      } catch (error) {
+        console.warn('Failed to retrieve/set active mac address', error)
+      }
   
       try {
         reloadTimer = new Timer(() => void loadFlowr(), RELOAD_TIMEOUT)
