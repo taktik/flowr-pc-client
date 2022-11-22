@@ -7,7 +7,7 @@ import { FlowrWindow } from '../frontend/flowr-window'
 import { buildApplicationPreloadPath, buildFilePath, getApplicationIndexUrl } from './helpers'
 import { getLogger } from '../frontend/src/logging/loggers'
 import { IFlowrStore } from '../frontend/src/interfaces/flowrStore'
-import { ApplicationCanOpenConfig, ApplicationInitConfig, ApplicationInitializer, ApplicationOpenConfig, FlowrApplicationInitializer, FlowrApplicationWindow, WindowTypes } from './types'
+import { ApplicationCanOpenConfig, ApplicationInitConfig, ApplicationInitError, ApplicationInitializer, ApplicationOpenConfig, FlowrApplicationInitializer, FlowrApplicationWindow, WindowTypes } from './types'
 import { openDevTools } from '../common/devTools'
 
 export class ApplicationManager {
@@ -131,8 +131,8 @@ export class ApplicationManager {
     return false
   }
 
-  async processApplicationsConfigs(event: IpcMainEvent, applicationConfigs: ApplicationInitConfig[]): Promise<{ errors: any[], initialized: FlowrApplication[] }> {
-    const errors = []
+  async processApplicationsConfigs(event: IpcMainEvent, applicationConfigs: ApplicationInitConfig[]): Promise<{ errors: ApplicationInitError[], initialized: FlowrApplication[] }> {
+    const errors: ApplicationInitError[] = []
     const initialized: FlowrApplication[] = []
 
     const processConfig = (applicationName: string, config: ApplicationInitConfig) => {
