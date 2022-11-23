@@ -11,7 +11,7 @@ import { FlowrWindow } from './flowr-window'
 import defaultBrowserWindowOptions from './defaultBrowserWindowOptions'
 import { IFlowrStore, VirtualKeyboardMode } from './src/interfaces/flowrStore'
 import { buildPreloadPath } from '../common/preload'
-import { initializeLogging } from './src/logging'
+import { initializeIpcLogging } from './src/logging'
 import { LogSeverity } from './src/logging/types'
 import { buildFileUrl, monitorActivity } from '../application-manager/helpers'
 import { Timer } from '../common/timer'
@@ -19,15 +19,16 @@ import { IPlayerStore, PlayerPosition } from "./src/interfaces/playerStore";
 import { storeManager } from "../launcher";
 import { DEFAULT_PLAYER_STORE } from "./src/players/playerStore";
 import { openConfigWindow } from '../config/configWindow'
+import { getLogger } from './src/logging/loggers'
 
 const FlowrDataDir = resolve(homedir(), '.flowr')
+const log = getLogger('Frontend index')
 
 export const FRONTEND_CONFIG_NAME = 'user-preferences'
 export const DEFAULT_FRONTEND_STORE: IFlowrStore = {
   debugMode: false,
   // 800x600 is the default size of our window
   windowBounds: { width: 1280, height: 720 },
-  channelData: {},
   isMaximized: false,
   clearAppDataOnStart: false,
   flowrMonitoringTime: 1000,
@@ -90,7 +91,7 @@ export function createFlowrWindow(flowrStore: Store<IFlowrStore>, isDebugMode: (
       cancelActivityMonitor?.()
       return loader()
         .catch(e => {
-          console.error(`Failed to load ${name} page.... sorry but can't do anything else for you`, e)
+          log.error(`Failed to load ${name} page.... sorry but can't do anything else for you`, e)
         })
     }
   }
@@ -122,9 +123,14 @@ export function createFlowrWindow(flowrStore: Store<IFlowrStore>, isDebugMode: (
     try {
       // Ensure validity of stored URL
       const url = new URL(storedUrl)
-      const mac = await getActiveMacAddress()
-      // set mac address in the URL to ensure backward compatibility with Flowr 5.1
-      url.searchParams.set('mac', mac)
+    
+      try {
+        const mac = await getActiveMacAddress()
+        // set mac address in the URL to ensure backward compatibility with Flowr 5.1
+        url.searchParams.set('mac', mac)
+      } catch (error) {
+        log.warn('Failed to retrieve/set active mac address', error)
+      }
   
       try {
         reloadTimer = new Timer(() => void loadFlowr(), RELOAD_TIMEOUT)
@@ -136,13 +142,13 @@ export function createFlowrWindow(flowrStore: Store<IFlowrStore>, isDebugMode: (
           // ignore => it means the page changed its hash in the meantime
           return
         }
-        console.warn('Error loading flowr window', e)
+        log.warn('Error loading flowr window', e)
         lastError = e.message
         await loadRedirectPage()
       }
     } catch (e) {
       isLaunchedUrlCorrect = false
-      console.error(`Invalid FlowR URL: ${storedUrl}. Display config page.`)
+      log.error(`Invalid FlowR URL: ${storedUrl}. Display config page.`)
       await loadConfigPage()
     }
   }
@@ -177,59 +183,40 @@ export function createFlowrWindow(flowrStore: Store<IFlowrStore>, isDebugMode: (
       cancelActivityMonitor?.()
       cancelActivityMonitor = monitorActivity(mainWindow, flowrStore.get('flowrMonitoringTime'), reload)
     },
-    getErrorLoadingFlowr: (evt: IpcMainEvent) => {
-        const errorData: any = {
-          remainingTime: reloadTimer?.remainingTime,
-          url: flowrStore.get('extUrl') || 'Flowr URL has not been configured !',
-          lastError,
-        }
-        evt.sender.send('receiveErrorLoadingFlowr', errorData)
-    },
-    getMacAddress: async (evt: IpcMainEvent) => {
-      const activeMacAddress = await getActiveMacAddress()
-      evt.sender.send('receiveMacAddress', activeMacAddress)
-    },
-    getActiveMacAddress: async (evt: IpcMainEvent) => {
-      const activeMacAddress = await getActiveMacAddress()
-      evt.sender.send('receiveActiveMacAddress', activeMacAddress)
-    },
-    getAllMacAddresses: async (evt: IpcMainEvent) => {
-      try {
-        const allMacAddresses = await getAllMacAddresses()
-        evt.sender.send('receiveAllMacAddresses', allMacAddresses)
-      } catch (e) {
-        evt.sender.send('receiveAllMacAddresses', [])
-      }
-    },
-    getIpAddress: async (evt: IpcMainEvent) => {
-      try {
-        const ipAddress = await getIpAddress()
-        evt.sender.send('receiveIpAddress', ipAddress)
-      } catch (e) {
-        evt.sender.send('receiveIpAddress', '127.0.0.1')
-      }
-    },
     reload,
-    getClientMetadata: (evt: IpcMainEvent) => {
-      evt.sender.send('receiveClientMetadata', {
-        name: app.getName(),
-        version: app.getVersion(),
-        electronVersion: process.versions.electron,
-        platform: process.platform,
-        arch: process.arch,
-      })
-    },
-    captureScreen: async (evt: IpcMainEvent) => {
-      const image = await mainWindow.capturePage()
-      evt.sender.send('receiveScreenCapture', image.toDataURL())
-    },
     openConfigMode: loadConfigPage,
-    getAudioDevicesPreferences: (evt: IpcMainEvent) => {
-      evt.sender.send('receiveAudioDevicesPreferences', flowrStore.get('audioDevices'))
+  }
+  const _ipcHandles = {
+    getMacAddress: () => getActiveMacAddress(),
+    getActiveMacAddress: () => getActiveMacAddress(),
+    getAllMacAddresses: () => getAllMacAddresses(),
+    getIpAddress: () => getIpAddress(),
+    getClientMetadata: () => ({
+      name: app.getName(),
+      version: app.getVersion(),
+      electronVersion: process.versions.electron,
+      platform: process.platform,
+      arch: process.arch,
+    }),
+    captureScreen: async () => {
+      const image = await mainWindow.capturePage()
+      return image.toDataURL()
     },
+    getAudioDevicesPreferences: () => {
+      return flowrStore.get('audioDevices')
+    },
+    getErrorLoadingFlowr: () => ({
+      remainingTime: reloadTimer?.remainingTime,
+      url: flowrStore.get('extUrl') || 'Flowr URL has not been configured !',
+      lastError,
+    }),
   }
   Object.entries(_ipcEvents).forEach(event => ipcMain.on(...event))
-  mainWindow.on('close', () => Object.entries(_ipcEvents).forEach(event => ipcMain.removeListener(...event)))
+  Object.entries(_ipcHandles).forEach(event => ipcMain.handle(...event))
+  mainWindow.on('close', () => {
+    Object.entries(_ipcEvents).forEach(event => ipcMain.removeListener(...event))
+    Object.keys(_ipcHandles).forEach(eventChannel => ipcMain.removeHandler(eventChannel))
+  })
 
   mainWindow.setMenuBarVisibility(false)
   void loadFlowr()
@@ -239,7 +226,7 @@ export function createFlowrWindow(flowrStore: Store<IFlowrStore>, isDebugMode: (
     mainWindow.webContents.openDevTools()
   }
 
-  initializeLogging(mainWindow.webContents)
+  initializeIpcLogging(mainWindow.webContents)
 
   return mainWindow
 }

@@ -16,6 +16,7 @@ export type ConfigWindowProps = {
 export function openConfigWindow({ flowrStore, debugMode, lastError, isLaunchedUrlCorrect, parent, done }: ConfigWindowProps): Promise<void> {
     const configWindow = new BrowserWindow({
         parent,
+        autoHideMenuBar: true,
         webPreferences: {
             preload: buildPreloadPath('config-preload.js'),
         }

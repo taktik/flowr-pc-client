@@ -190,17 +190,6 @@ export class View {
         ])
       }
 
-      menuItems.push({
-        label: 'Inspect Element',
-        click: () => {
-          this.webContents.inspectElement(params.x, params.y)
-
-          if (this.webContents.isDevToolsOpened()) {
-            this.webContents.devToolsWebContents.focus()
-          }
-        },
-      })
-
       const menu = Menu.buildFromTemplate(menuItems)
 
       menu.popup()
@@ -329,7 +318,7 @@ export class View {
       })
 
       const overrideBrowserWindowOptions: BrowserWindowConstructorOptions = action === 'allow'
-        ? { parent: appWindow }
+        ? { parent: appWindow, autoHideMenuBar: true }
         : {}
       return { action, overrideBrowserWindowOptions }
     })

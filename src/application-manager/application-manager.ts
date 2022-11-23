@@ -7,7 +7,7 @@ import { FlowrWindow } from '../frontend/flowr-window'
 import { buildApplicationPreloadPath, buildFilePath, getApplicationIndexUrl } from './helpers'
 import { getLogger } from '../frontend/src/logging/loggers'
 import { IFlowrStore } from '../frontend/src/interfaces/flowrStore'
-import { ApplicationCanOpenConfig, ApplicationInitConfig, ApplicationInitializer, ApplicationOpenConfig, FlowrApplicationInitializer, FlowrApplicationWindow, WindowTypes } from './types'
+import { ApplicationInitConfig, ApplicationInitError, ApplicationInitializer, ApplicationOpenConfig, FlowrApplicationInitializer, FlowrApplicationWindow, WindowTypes } from './types'
 import { openDevTools } from '../common/devTools'
 
 export class ApplicationManager {
@@ -43,10 +43,9 @@ export class ApplicationManager {
     this.executeOnWindows = this.executeOnWindows.bind(this)
     /* eslint-enable @typescript-eslint/no-unsafe-assignment */
     /* eslint-disable @typescript-eslint/unbound-method */
-    // eslint-disable-next-line @typescript-eslint/no-misused-promises
-    ipcMain.on('initializeApplications', this.processApplicationsConfigs)
-    ipcMain.on('open-application', this.openApplication)
-    ipcMain.on('can-open-application', this.canOpenApplication)
+    ipcMain.handle('initializeApplications', this.processApplicationsConfigs)
+    ipcMain.handle('open-application', this.openApplication)
+    ipcMain.handle('can-open-application', this.canOpenApplication)
     /* eslint-enable @typescript-eslint/unbound-method */
   }
   
@@ -132,8 +131,8 @@ export class ApplicationManager {
     return false
   }
 
-  async processApplicationsConfigs(event: IpcMainEvent, applicationConfigs: ApplicationInitConfig[]): Promise<void> {
-    const errors = []
+  async processApplicationsConfigs(event: IpcMainEvent, applicationConfigs: ApplicationInitConfig[]): Promise<{ errors: ApplicationInitError[], initialized: FlowrApplication[] }> {
+    const errors: ApplicationInitError[] = []
     const initialized: FlowrApplication[] = []
 
     const processConfig = (applicationName: string, config: ApplicationInitConfig) => {
@@ -165,10 +164,10 @@ export class ApplicationManager {
       }
     }
 
-    event.sender.send('initializeApplicationsResponse', { errors, initialized })
+    return { errors, initialized }
   }
 
-  openApplication(event: IpcMainEvent, openAppConfig: ApplicationOpenConfig): void {
+  openApplication(event: IpcMainEvent, openAppConfig: ApplicationOpenConfig): { err: string | null } {
     let err: string | null = null
 
     try {
@@ -207,22 +206,22 @@ export class ApplicationManager {
         }
       }
     } catch (e) {
-      this.logger.error('Error opening app', e)
+      this.logger.warn('Error opening app', e)
       err = (e as Error).message
     }
-    event.returnValue = { err }
+    return { err }
   }
 
-  canOpenApplication(event: IpcMainEvent, openConfig: ApplicationCanOpenConfig): void {
+  canOpenApplication(event: IpcMainEvent, openConfig: ApplicationOpenConfig): boolean {
     const appName = openConfig.application?.name ?? ''
     const application = this.applications[appName]
     let returnValue = false
     try {
       returnValue = !!application && application.canOpen(application.capabilities, openConfig.config)
     } catch (e) {
-      this.logger.error('Error retrieving open capabilities', e)
+      this.logger.warn('Error retrieving open capabilities', e)
     }
-    event.returnValue = returnValue
+    return returnValue
   }
 
   languageChanged(lang: string): void {
@@ -250,12 +249,9 @@ export class ApplicationManager {
   }
 
   destroy(): void {
-    /* eslint-disable @typescript-eslint/unbound-method */
-    // eslint-disable-next-line @typescript-eslint/no-misused-promises
-    ipcMain.removeListener('initializeApplications', this.processApplicationsConfigs)
-    ipcMain.removeListener('open-application', this.openApplication)
-    ipcMain.removeListener('can-open-application', this.canOpenApplication)
-    /* eslint-enable @typescript-eslint/unbound-method */
+    ipcMain.removeHandler('initializeApplications')
+    ipcMain.removeHandler('open-application')
+    ipcMain.removeHandler('can-open-application')
   }
 
   hideAllApplications(): void {

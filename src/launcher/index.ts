@@ -24,6 +24,10 @@ import { IFlowrDesktopConfig } from '../frontend/src/interfaces/IFlowrDesktopCon
 import { WexondOptions } from '../wexond/main/app-window'
 import { openDevTools } from '../common/devTools'
 import { initialize } from '@electron/remote/main'
+import initComponents from '../wexond/extensions/components'
+import { initializeLogging } from '../frontend/src/logging'
+
+initializeLogging()
 
 const FlowrDataDir = resolve(homedir(), '.flowr')
 
@@ -45,8 +49,8 @@ async function main() {
   setWexondLog(log)
   ipcMain.setMaxListeners(0)
 
-  let flowrWindow: FlowrWindow | null = null
-  let browserWindow: BrowserWindow | null = null
+  let flowrWindow: FlowrWindow | undefined = undefined
+  let browserWindow: BrowserWindow | undefined = undefined
 
   const gotTheLock = app.requestSingleInstanceLock()
 
@@ -84,7 +88,9 @@ async function main() {
 
     browserWindow = await createWexondWindow(wexondOptions, flowrWindow || undefined, buildBrowserWindowConfig(flowrStore, {}))
     openDevTools(browserWindow.webContents, debugMode)
-    FullScreenManager.applySameWindowState(flowrWindow, browserWindow)
+    if (browserWindow && flowrWindow) {
+      FullScreenManager.applySameWindowState(flowrWindow, browserWindow)
+    }
     applicationManager.browserWindow = browserWindow
 
     flowrWindow.webContents.setAudioMuted(true)
@@ -93,14 +99,21 @@ async function main() {
     flowrWindow?.hide()
 
     browserWindow.on('close', () => {
-      FullScreenManager.applySameWindowState(browserWindow, flowrWindow)
-      browserWindow = null
+      if (browserWindow && flowrWindow) {
+        FullScreenManager.applySameWindowState(browserWindow, flowrWindow)
+      }
+      browserWindow = undefined
       flowrWindow?.webContents.setAudioMuted(false)
       flowrWindow?.show()
     })
   }
 
   function onReady() {
+    /*
+      start the initialization of components (e.g. Widevine) in the background
+      The Promise will be awaited before loading Wexond
+    */
+    void initComponents()
     const flowrStore = initFlowrStore()
 
     keyboard.flowrStore = flowrStore
@@ -167,11 +180,8 @@ async function main() {
     })
   }
 
-  if (app.isReady()) {
-    void onReady()
-  } else {
-    app.on('ready', onReady)
-  }
+  await app.whenReady()
+  void onReady()
 
   // eslint-disable-next-line @typescript-eslint/no-misused-promises
   ipcMain.on('clear-application-data', clearBrowsingData)
@@ -201,7 +211,7 @@ async function main() {
       applicationManager.flowrWindow = flowrWindow
 
       flowrWindow.on('close', () => {
-        flowrWindow = null
+        flowrWindow = undefined
       })
 
       flowrWindow.webContents.setWindowOpenHandler(({ url }) => {

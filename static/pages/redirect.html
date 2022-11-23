@@ -82,15 +82,12 @@
 
 <script>
     let Timer
-    window.ipc.removeAllListeners('receiveErrorLoadingFlowr')
-    window.ipc.on('receiveErrorLoadingFlowr', function(evt, data) {
-        init(data)
-    })
-    window.ipc.send('getErrorLoadingFlowr')
-    function init(data) {
+
+    async function init() {
+        const data = await window.ipc.invoke('getErrorLoadingFlowr')
         runTimer(data.remainingTime)
         document.getElementById('url').innerHTML = data.url
-        document.getElementById('errorDetails').addEventListener("toggle", function() {
+        document.getElementById('errorDetails').addEventListener('toggle', function() {
             if (document.getElementById('errorDetails').open) {
                 const detailsError = document.getElementById('error')
                 detailsError.innerText = data.lastError.trim()
@@ -121,6 +118,8 @@
             }
         }, 1000)
     }
+
+    init()
 </script>
 </body>
 </html>
