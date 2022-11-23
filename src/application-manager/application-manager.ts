@@ -7,7 +7,7 @@ import { FlowrWindow } from '../frontend/flowr-window'
 import { buildApplicationPreloadPath, buildFilePath, getApplicationIndexUrl } from './helpers'
 import { getLogger } from '../frontend/src/logging/loggers'
 import { IFlowrStore } from '../frontend/src/interfaces/flowrStore'
-import { ApplicationCanOpenConfig, ApplicationInitConfig, ApplicationInitError, ApplicationInitializer, ApplicationOpenConfig, FlowrApplicationInitializer, FlowrApplicationWindow, WindowTypes } from './types'
+import { ApplicationInitConfig, ApplicationInitError, ApplicationInitializer, ApplicationOpenConfig, FlowrApplicationInitializer, FlowrApplicationWindow, WindowTypes } from './types'
 import { openDevTools } from '../common/devTools'
 
 export class ApplicationManager {
@@ -212,7 +212,7 @@ export class ApplicationManager {
     return { err }
   }
 
-  canOpenApplication(event: IpcMainEvent, openConfig: ApplicationCanOpenConfig): boolean {
+  canOpenApplication(event: IpcMainEvent, openConfig: ApplicationOpenConfig): boolean {
     const appName = openConfig.application?.name ?? ''
     const application = this.applications[appName]
     let returnValue = false

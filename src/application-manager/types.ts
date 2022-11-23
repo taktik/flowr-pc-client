@@ -9,11 +9,6 @@ interface ApplicationInitConfig {
   config?: ApplicationConfig
 }
 
-interface ApplicationCanOpenConfig {
-  application: FlowrApplication
-  config?: {[key: string]: any}
-}
-
 interface ApplicationOpenConfig {
   application: FlowrApplication
   config?: {[key: string]: any}
@@ -64,7 +59,6 @@ type ApplicationInitError = {
 }
 
 export {
-  ApplicationCanOpenConfig,
   ApplicationInitConfig,
   ApplicationInitError,
   ApplicationInitializer,
