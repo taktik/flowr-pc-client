@@ -12,6 +12,7 @@ import { watchForInactivity } from '../../inactivity/window'
 import { buildPreloadPath } from '../../common/preload'
 import { Point, Rectangle } from 'electron/main'
 import { buildFileUrl } from '../../application-manager/helpers'
+import { WEXOND_PARTITION } from '../../common/partitions'
 
 const containsPoint = (bounds: Rectangle, point: Point) => {
   return (
@@ -60,6 +61,7 @@ export class AppWindow extends KeyboardMixin(BrowserWindow) {
         contextIsolation: false,
         experimentalFeatures: true,
         preload: buildPreloadPath('inactivity-preload.js'),
+        partition: WEXOND_PARTITION,
       },
       icon: resolve(app.getAppPath(), 'static/app-icons/icon-wexond.png'),
     })

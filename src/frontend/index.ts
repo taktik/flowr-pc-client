@@ -20,6 +20,7 @@ import { storeManager } from "../launcher";
 import { DEFAULT_PLAYER_STORE } from "./src/players/playerStore";
 import { openConfigWindow } from '../config/configWindow'
 import { getLogger } from './src/logging/loggers'
+import { FLOWR_PARTITION } from '../common/partitions'
 
 const FlowrDataDir = resolve(homedir(), '.flowr')
 const log = getLogger('Frontend index')
@@ -70,7 +71,7 @@ export function createFlowrWindow(flowrStore: Store<IFlowrStore>, isDebugMode: (
     webPreferences: {
       nodeIntegration: false,
       contextIsolation: false,
-      partition: 'persist:flowr', // needed to display webcam image
+      partition: FLOWR_PARTITION, // needed to display webcam image
       preload: buildPreloadPath('exportNode.js'),
     },
     transparent: isPlayerInBackground,

@@ -12,6 +12,7 @@ import * as electronLog from 'electron-log'
 import { enable } from '@electron/remote/main'
 import { getLogger } from 'src/frontend/src/logging/loggers';
 import initComponents from '../extensions/components'
+import { WEXOND_PARTITION } from '../../common/partitions'
 
 export let settings: Settings = {};
 export let appWindow: AppWindow | null
@@ -73,7 +74,7 @@ export async function createWexondWindow(wexondOptions: WexondOptions, parentWin
   })
 
   session
-    .fromPartition('persist:view')
+    .fromPartition(WEXOND_PARTITION)
     .on('will-download', (event, item) => {
       const fileName = item.getFilename();
       const savePath = resolve(app.getPath('downloads'), fileName);

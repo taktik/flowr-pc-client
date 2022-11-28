@@ -12,6 +12,7 @@ import { settings } from './index'
 import { parse } from 'tldts'
 import { buildPreloadPath } from '../../common/preload'
 import { getUserAgentForURL } from './user-agent'
+import { WEXOND_PARTITION } from '../../common/partitions'
 
 export class View {
   public browserView: BrowserView
@@ -25,7 +26,7 @@ export class View {
         nodeIntegration: false,
         additionalArguments: [`--tab-id=${id}`],
         contextIsolation: true,
-        partition: 'persist:view',
+        partition: WEXOND_PARTITION,
         plugins: true,
       },
     })

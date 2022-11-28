@@ -7,6 +7,7 @@ import { clearBrowsingData } from '~/main/clearBrowsingData'
 import { watchForInactivity } from '../../inactivity/window'
 import { IInactivityConfig } from '../../inactivity/utils'
 import { getValue } from '../../common/getValue'
+import { WEXOND_PARTITION } from '../../common/partitions'
 
 export class ViewManager {
   public views: { [key: number]: View } = {}
@@ -76,7 +77,7 @@ export class ViewManager {
     }
     Object.entries(this._ipcEvents).forEach(event => ipcMain.on(event[0], event[1]))
 
-    session.fromPartition('persist:view').on('will-download', (event) => {
+    session.fromPartition(WEXOND_PARTITION).on('will-download', (event) => {
       event.preventDefault()
     })
   }

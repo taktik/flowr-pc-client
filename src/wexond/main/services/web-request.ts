@@ -8,6 +8,7 @@ import { getPath } from '~/shared/utils/paths/main'
 import { getLogger } from 'src/frontend/src/logging/loggers'
 import { appWindow, settings } from '..'
 import { AppWindow } from '../app-window'
+import { WEXOND_PARTITION } from '../../../common/partitions'
 
 const lists: {[key: string]: string} = {
   easylist: 'https://easylist.to/easylist/easylist.txt',
@@ -95,7 +96,7 @@ const getTabByWebContentsId = (window: AppWindow, id: number) => {
 }
 
 export const runWebRequestService = (window: AppWindow): void => {
-  const webviewRequest = session.fromPartition('persist:view').webRequest
+  const webviewRequest = session.fromPartition(WEXOND_PARTITION).webRequest
 
   // onBeforeRequest
   webviewRequest.onBeforeRequest(
