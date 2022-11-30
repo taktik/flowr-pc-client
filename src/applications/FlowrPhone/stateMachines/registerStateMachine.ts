@@ -48,22 +48,42 @@ export class RegisterStateMachine extends StateMachineImpl<RegisterState> {
     return STATUS_TO_STATE[status]
   }
 
-  get registerProps(): RegisterProps | null {
-    return this._registerProps
-  }
-
-  set registerProps(props: RegisterProps | null) {
-    const isDifferent = !this.registerProps || (props && (props.host !== this._registerProps.host || props.username !== this._registerProps.username))
-    this._registerProps = props
-
-    if (isDifferent && this.inState(REGISTERED_STATE)) {
+  private stateUpdated(withDifferentValue: boolean) {
+    if (withDifferentValue && this.inState(REGISTERED_STATE)) {
       this.unregister()
     } else if (this.inState(UNREGISTERED_STATE)) {
       this.attemptToRegister()
     }
   }
 
-  constructor(dispatcher: Dispatcher, registerProps: RegisterProps | null) {
+  get registerProps(): RegisterProps | null {
+    return this._registerProps
+  }
+
+  set registerProps(props: RegisterProps | null) {
+    const isDifferent = !this.registerProps || (props && (props.host !== this._registerProps.host || props.username !== this._registerProps.username))
+
+    this._registerProps = props
+    this.stateUpdated(isDifferent)
+  }
+
+  private _canReceive: boolean
+
+  get canReceive(): boolean {
+    return this._canReceive
+  }
+  set canReceive(can: boolean) {
+    const isDifferent = can !== this._canReceive
+
+    this._canReceive = can
+    this.stateUpdated(isDifferent)
+  }
+
+  constructor(
+    dispatcher: Dispatcher,
+    registerProps: RegisterProps | null,
+    canReceive: boolean
+  ) {
     super(REGISTER_STATES, CONNECTION_TRANSITIONS, IDLE_STATE)
     this.onEnterState(UNREGISTERED_STATE, this.attemptToRegister.bind(this))
     this.onLeaveState(UNREGISTERED_STATE, this.clearRegisterAttempts.bind(this))
@@ -71,11 +91,12 @@ export class RegisterStateMachine extends StateMachineImpl<RegisterState> {
     this.onAnyTransition((from, to) => console.log(`Register transitioned from ${from.label} to ${to.label}`))
 
     this._dispatcher = dispatcher
+    this._canReceive = canReceive // must be declared BEFORE register props (because of the setter)
     this.registerProps = registerProps
   }
 
   private attemptToRegister() {
-    if (validRegisterProps(this._registerProps)) {
+    if (validRegisterProps(this._registerProps) && this.canReceive) {
       this.register()
     }
     clearTimeout(this._registerTimeout)
