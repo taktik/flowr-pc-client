@@ -125,6 +125,7 @@ wss.on('connection', ws => {
         send({ "status" : "registered" , "identity" : registeredIdentity, "duration" : "0" , "refrence" : "SM-04" })
         break
       case 'unregister':
+        registeredIdentity = undefined
         send({ "action" : "unregister" , "response" : "signal send to daemon" , "reference" : "SM-15" })
         break
     }

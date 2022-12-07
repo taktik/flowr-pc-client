@@ -1,6 +1,6 @@
 import * as React from 'react'
 import * as ReactDOM from 'react-dom'
-import { Phone } from './phone'
+import { Phone, PhoneProps } from './phone'
 import styled from 'styled-components'
 import { fonts } from '../fonts'
 
@@ -28,6 +28,7 @@ const StyledPhone = styled(Phone)`
 `
 const styleElement = document.createElement('style')
 
+/* eslint-disable @typescript-eslint/restrict-template-expressions */
 styleElement.textContent = `
 @font-face {
   font-family: 'Roboto';
@@ -48,32 +49,50 @@ styleElement.textContent = `
   src: url(${fonts.robotoLight}) format('woff2');
 }
 `
-export const robotoLight = () => `
+/* eslint-enable @typescript-eslint/restrict-template-expressions */
+
+export const robotoLight = (): string => `
   font-family: Roboto;
   font-weight: 300;
 `
 
-export const robotoRegular = () => `
+export const robotoRegular = (): string => `
   font-family: Roboto;
   font-weight: 400;
 `
 
-export const robotoMedium = () => `
+export const robotoMedium = (): string => `
   font-family: Roboto;
   font-weight: 500;
 `
 
 document.head.appendChild(styleElement)
 
-window.ipcRenderer.on('initPropsReply', (evt, props) => {
-  ReactDOM.render(<StyledPhone
-      capabilities={props.capabilities}
-      currentUser={props.currentUser}
-      favorites={props.favorites}
-      history={props.history}
-      lang={props.lang}
-      phoneServer={props.server}
-      registerProps={props.registerProps}
-  />, document.getElementById('phone'))
-})
-window.ipcRenderer.send('initProps')
+const defaultPhoneProps: PhoneProps = {
+  phoneServer: '',
+  registerProps: {
+    username: '',
+    host: ''
+  },
+  currentUser: '',
+  history: false,
+  favorites: false
+}
+
+window.ipcRenderer.invoke('initProps')
+  .catch((error): PhoneProps => {
+    window.ipcRenderer.send('phone-error', error)
+    return defaultPhoneProps
+  })
+  .then((props) => {
+    ReactDOM.render(<StyledPhone
+        capabilities={props.capabilities}
+        currentUser={props.currentUser}
+        favorites={props.favorites}
+        history={props.history}
+        lang={props.lang}
+        phoneServer={props.server}
+        registerProps={props.registerProps}
+    />, document.getElementById('phone'))
+  })
+  .catch((error) => window.ipcRenderer.send('phone-error', error))

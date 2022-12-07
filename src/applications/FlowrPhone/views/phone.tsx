@@ -56,17 +56,17 @@ type PhoneAppState = {
   elapsedTime: number,
 }
 
-export interface CallingNumber {
+interface CallingNumber {
   name?: string,
   value: string
 }
 
-export type RegisterProps = {
+type RegisterProps = {
   username: string,
   host: string,
 }
 
-export enum PhoneCapabilities {
+enum PhoneCapabilities {
   EMIT = 'emit',
   RECEIVE = 'receive',
 }
@@ -76,7 +76,7 @@ interface PhoneStore {
   favorites?: UserStore<CallingNumber>
 }
 
-export class Phone extends React.Component<PhoneProps, PhoneAppState> {
+class Phone extends React.Component<PhoneProps, PhoneAppState> {
   private registerStateMachine: RegisterStateMachine
   private callStateMachine: CallStateMachine
   private callStateMachineListeners: TransitionListener[] = []
@@ -116,7 +116,16 @@ export class Phone extends React.Component<PhoneProps, PhoneAppState> {
 
   constructor(props: PhoneProps) {
     super(props)
-    const { registerStateMachine, callStateMachine } = PhoneStateMachine.factory(props.phoneServer, props.registerProps, this.callingNumberChanged.bind(this))
+    this._capabilities = props.capabilities
+    const {
+      registerStateMachine,
+      callStateMachine
+    } = PhoneStateMachine.factory(
+      props.phoneServer,
+      props.registerProps,
+      this.callingNumberChanged.bind(this),
+      this.canReceive(),
+    )
     this.registerStateMachine = registerStateMachine
     this.callStateMachine = callStateMachine
 
@@ -226,6 +235,7 @@ export class Phone extends React.Component<PhoneProps, PhoneAppState> {
   capabilitiesChanged(e: Event, capabilities: {[key: string]: boolean} | undefined): void {
     this._capabilities = capabilities
     this.setState({ capabilities })
+    this.registerStateMachine.canReceive = this.canReceive()
   }
 
   historyChanged(e: Event, history: boolean): void {
@@ -367,4 +377,12 @@ export class Phone extends React.Component<PhoneProps, PhoneAppState> {
       cancelAnimationFrame(this.tickRequest)
     }
   }
+}
+
+export {
+  CallingNumber,
+  Phone,
+  PhoneCapabilities,
+  PhoneProps,
+  RegisterProps,
 }

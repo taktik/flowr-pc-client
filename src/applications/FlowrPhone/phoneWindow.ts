@@ -32,7 +32,6 @@ export class PhoneWindow extends KeyboardMixin(BrowserWindow) {
   private _lang: string | undefined
   private _currentUser: string | undefined
   private _history: boolean | undefined
-  private readonly _ipcEvents: {[key: string]: (...args: any[]) => void}
   private logger = getLogger('Phone window')
 
   constructor(parent: BrowserWindow, preload: string | undefined, index: string, props: PhoneAppProps, private store?: Store<Record<string, any>> | undefined) {
@@ -58,7 +57,7 @@ export class PhoneWindow extends KeyboardMixin(BrowserWindow) {
 
     this.mode = WindowModes.WIDGET
     /* eslint-disable @typescript-eslint/no-unsafe-assignment */
-      this._ipcEvents = {
+    const ipcEvents = {
       'phone-maximize': () => this.mode = WindowModes.FULLSCREEN,
       'phone-reduce': () => this.mode = WindowModes.WIDGET,
       'phone-show': this.show.bind(this),
@@ -66,29 +65,37 @@ export class PhoneWindow extends KeyboardMixin(BrowserWindow) {
       'register-props': this.updateRegisterProps.bind(this),
       'phone-mute': this.mute.bind(this),
       'update-phone-store': this.updateStore.bind(this),
-        initProps: () => {
-          const { username, host } =  props.registerProps
-          this._history = props.history
-          this._currentUser = props.currentUser
-          this.webContents.send( 'initPropsReply',
-              {
-                phoneMessagingNumber: props.phoneMessagingNumber,
-                phoneServer: props.phoneServer,
-                capabilities: props.capabilities,
-                currentUser: props.currentUser || '',
-                favorites: !!props.favorites,
-                history: !!props.history,
-                lang: props.lang,
-                registerProps: username && host ? { username, host } : null
-              })
-        }
+      'phone-error': (error: Error) => {
+        this.logger.warn('Error in phone application', error)
+      }
     }
-      /* eslint-enable @typescript-eslint/no-unsafe-assignment */
+    const ipcHandles = {
+      initProps: () => {
+        const { username, host } =  props.registerProps
+        this._history = props.history
+        this._currentUser = props.currentUser
 
-    Object.entries(this._ipcEvents).forEach(event => ipcMain.on(...event))
-    this.on('close', () => Object.entries(this._ipcEvents).forEach(event => ipcMain.removeListener(...event)))
+        return {
+          phoneMessagingNumber: props.phoneMessagingNumber,
+          phoneServer: props.phoneServer,
+          capabilities: props.capabilities,
+          currentUser: props.currentUser || '',
+          favorites: !!props.favorites,
+          history: !!props.history,
+          lang: props.lang,
+          registerProps: username && host ? { username, host } : null
+        }
+      }
+    }
+    /* eslint-enable @typescript-eslint/no-unsafe-assignment */
+
+    Object.entries(ipcEvents).forEach(event => ipcMain.on(...event))
+    Object.entries(ipcHandles).forEach(event => ipcMain.handle(...event))
+    this.on('close', () => {
+      Object.entries(ipcEvents).forEach(event => ipcMain.removeListener(...event))
+      Object.keys(ipcHandles).forEach(eventName => ipcMain.removeHandler(eventName))
+    })
   }
-
 
   get _widgetPosition(): Rectangle {
     const contentBounds = this.getParentWindow().getBounds()
