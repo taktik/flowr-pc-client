@@ -91,7 +91,7 @@
     "@taktik/buffers": "1.0.4",
     "@taktik/flowr-common-js": "1.0.5",
     "@taktik/fluent-ffmpeg": "2.1.5",
-    "@taktik/mux.js": "5.10.3",
+    "@taktik/mux.js": "5.10.4",
     "@taktik/ts-decryptor": "1.0.10",
     "@taktik/udp-streamer": "1.0.9",
     "axios": "0.27.2",
