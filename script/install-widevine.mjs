@@ -17,7 +17,8 @@ function installWidevine() {
                 '--no-save'
             ],
             {
-                stdio: [stdin, stdout, stderr]
+                stdio: [stdin, stdout, stderr],
+                shell: true,
             }
         )
         command.on('error', reject)
