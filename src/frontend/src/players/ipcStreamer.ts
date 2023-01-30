@@ -1,16 +1,19 @@
 import { CircularBuffer } from '@taktik/buffers'
-import { IOutputTrack, TrackInfo } from '@taktik/mux.js'
+import { IOutputTrack, TrackInfo, mp4 } from '@taktik/mux.js'
 import { Writable } from 'stream'
-import { WebContents } from 'electron'
+import { ipcMain, IpcMainEvent, WebContents } from 'electron'
 import { IStreamerConfig } from '../interfaces/ipcStreamerConfig'
 import { getLogger } from '../logging/loggers'
+import { FileHandle, open } from 'fs/promises'
 
 export class IpcStreamer extends Writable {
   private _sender: WebContents | undefined
   private buffer: CircularBuffer
   private sendInterval: number | undefined
-  private sendIntervalValue: number
   private log = getLogger('Ipc streamer')
+
+  private initSegment?: Buffer
+  private initSegmentComplete = false
 
   currentAudioPid: number | undefined
   currentTrackInfo: TrackInfo | undefined
@@ -20,7 +23,7 @@ export class IpcStreamer extends Writable {
     this._sender = sender
   }
 
-  constructor({ capacity, maxCapacity, readMode, sendInterval }: IStreamerConfig) {
+  constructor({ capacity, maxCapacity, readMode }: IStreamerConfig) {
     super({ autoDestroy: false })
     this.buffer = new CircularBuffer({
       allowOverwrite: false,
@@ -28,29 +31,93 @@ export class IpcStreamer extends Writable {
       maxCapacity,
       readMode,
     })
-    this.sendIntervalValue = sendInterval
+
+    /* eslint-disable @typescript-eslint/no-unsafe-assignment */
+    this.startRecord = this.startRecord.bind(this)
+    this.stopRecord = this.stopRecord.bind(this)
+    /* eslint-enable @typescript-eslint/no-unsafe-assignment */
+
+    /* eslint-disable @typescript-eslint/no-misused-promises, @typescript-eslint/unbound-method */
+    ipcMain.on('record:start', this.startRecord)
+    ipcMain.on('record:stop', this.stopRecord)
+    /* eslint-enable @typescript-eslint/no-misused-promises, @typescript-eslint/unbound-method */
+  }
+
+  private recordHandle?: FileHandle
+
+  private async startRecord(_: IpcMainEvent, folder?: string) {
+    try {
+      const handle = await open(`${folder ?? '/home/taktik'}/record-${Date.now()}.mp4`, 'w')
+      
+      if (this.initSegmentComplete && this.initSegment) {
+        await handle.write(this.initSegment)
+      }
+  
+      this.recordHandle = handle
+    } catch (error) {
+      this.log.warn('Failed to start recording', error)
+    }
+  }
+
+  private async stopRecord() {
+    await this.recordHandle?.close()
+    this.recordHandle = undefined
+  }
+
+  private appendToInitSegment(chunk: Buffer): void {
+    this.initSegment = this.initSegment ? Buffer.concat([this.initSegment, chunk]) : chunk
   }
 
   // tslint:disable-next-line: function-name
   _write(chunk: Buffer, encoding: BufferEncoding, callback: (error: Error | null | undefined) => void): void {
     try {
+      let chunkToBuffer = chunk
+
       try {
-        this.buffer.write(chunk)
+        const [moof] = mp4.tools.findBox(chunk, ['moof'])
+
+        if (!this.initSegmentComplete && moof) {
+          this.initSegmentComplete = true
+
+          const index = chunk.indexOf(moof)
+          /**
+           * The call to "mp4.tools.findBox" returns the requested boxes content if found, without their header
+           * The header is composed of 8 bytes: 4 bytes for the boxe's size + 4 bytes for its type (e.g moof, mdat, ftyp, etc...)
+           * Thus the "index - 8" below: we want to retrieve the index of the beginning of the whole box, headers included
+           */
+          const indexBeforeHeaders = index - 8
+
+          if (indexBeforeHeaders < 0) {
+            this.log.warn('Something is wrong, we detected the first moof box but there is not enough room for its headers ?!')
+          } else if (indexBeforeHeaders > 0) {
+            this.log.info(`------------------ Found first moof at index ${indexBeforeHeaders} ------------------`)
+            // moof detected in the middle of the chunk: we need to complete the init segment with the bytes before it
+            this.appendToInitSegment(chunk.slice(0, indexBeforeHeaders))
+            chunkToBuffer = chunk.slice(indexBeforeHeaders)
+          } else {
+            // moof is at the start of the package, no need to do anything else
+          }
+        }
+
+        if (!this.initSegmentComplete) {
+          this.log.debug('Completing init segment')
+          this.appendToInitSegment(chunk)
+        } else {
+          if (moof) {
+            this.attemptSend()
+          }
+          this.buffer.write(chunkToBuffer)
+        }
       } catch (e) {
         this.log.error('Could not write chunk to streamer buffer:', e)
         this.attemptSend()
 
         try {
-          this.buffer.write(chunk)
+          this.buffer.write(chunkToBuffer)
         } catch (error) {
-          this.log.error('Ffmpeg output chunk size is bigger than streamer\'s capacity.')
-          this.log.error('Consider increasing streamer\'s maxCapacity and/or capacity')
-          this.log.error(error)
-          this.sendSegment(chunk)
+          this.log.error('Ffmpeg output chunk size is bigger than streamer\'s capacity. Consider increasing streamer\'s maxCapacity and/or capacity', error)
+          this.sendSegment(chunkToBuffer)
         }
-      }
-      if (!this.sendInterval) {
-        this.sendInterval = setInterval(this.attemptSend.bind(this), this.sendIntervalValue)
       }
       callback(null)
     } catch (e) {
@@ -67,7 +134,11 @@ export class IpcStreamer extends Writable {
     this.sendInterval = undefined
     this.removeAllListeners()
     this.currentTrackInfo = undefined
+    this.initSegment = undefined
+    this.initSegmentComplete = false
     this.log.debug('Cleared')
+
+    this.stopRecord().catch(e => this.log.warn('Failed to stop recording on "clear"', e))
   }
 
   // tslint:disable-next-line: function-name
@@ -83,6 +154,7 @@ export class IpcStreamer extends Writable {
     return {
       data,
       type,
+      initSegment: this.initSegment,
       codec: this.currentCodec,
       pid,
     }
@@ -105,6 +177,8 @@ export class IpcStreamer extends Writable {
   private sendSegment(segment: Buffer) {
     const data = this.formatFfmpegOutput(segment)
     this.send('segment', data)
+    this.recordHandle?.write(data.data)
+      .catch((e) => this.log.warn('Failed to write segment to record', e))
   }
 
   sendTrackInfo(trackInfo: TrackInfo): void {
