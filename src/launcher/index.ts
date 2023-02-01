@@ -225,8 +225,6 @@ async function main() {
         return { action: 'deny' }
       })
 
-      toDelete(flowrWindow)
-
       ipcMain.on('flowrLanguageChanged', (e: Event, lang: string) => applicationManager.languageChanged(lang))
     } catch (e) {
       console.error('Error in init', e)
@@ -236,33 +234,6 @@ async function main() {
   function initFlowrStore(): Store<IFlowrStore> {
     return storeManager.createStore(FRONTEND_CONFIG_NAME, { defaults: DEFAULT_FRONTEND_STORE })
   }
-}
-
-function toDelete(flowrWindow: BrowserWindow) {
-  const a = new BrowserWindow({ parent: flowrWindow })
-
-  a.loadURL('chrome://media-internals').catch(e => log.warn('Failed to open media internals', e))
-
-  // const rootFolder = '/Users/loris/Pictures/media-internals-captures'
-
-  // const capture = () => {
-  //   a.webContents.capturePage()
-  //     .then((image) => writeFile(`${rootFolder}/${new Date().toISOString()}.jpg`, image.toJPEG(20)))
-  //     .catch(e => log.warn('Failed to capture media-internals', e))
-
-  //   setTimeout(capture, 10_000)
-  // }
-
-  // mkdir(rootFolder)
-  //   .catch(e => {
-  //     if ((e as NodeJS.ErrnoException).code !== 'EEXIST') {
-  //       throw e
-  //     }
-  //   })
-  //   .then(capture)
-  //   .catch(e => {
-  //     log.warn('Faileeeeeed', e)
-  //   })
 }
 
 void main()

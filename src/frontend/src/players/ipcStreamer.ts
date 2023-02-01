@@ -1,10 +1,9 @@
 import { CircularBuffer } from '@taktik/buffers'
 import { IOutputTrack, TrackInfo, mp4 } from '@taktik/mux.js'
 import { Writable } from 'stream'
-import { ipcMain, IpcMainEvent, WebContents } from 'electron'
+import { WebContents } from 'electron'
 import { IStreamerConfig } from '../interfaces/ipcStreamerConfig'
 import { getLogger } from '../logging/loggers'
-import { FileHandle, open } from 'fs/promises'
 
 export class IpcStreamer extends Writable {
   private _sender: WebContents | undefined
@@ -31,37 +30,6 @@ export class IpcStreamer extends Writable {
       maxCapacity,
       readMode,
     })
-
-    /* eslint-disable @typescript-eslint/no-unsafe-assignment */
-    this.startRecord = this.startRecord.bind(this)
-    this.stopRecord = this.stopRecord.bind(this)
-    /* eslint-enable @typescript-eslint/no-unsafe-assignment */
-
-    /* eslint-disable @typescript-eslint/no-misused-promises, @typescript-eslint/unbound-method */
-    ipcMain.on('record:start', this.startRecord)
-    ipcMain.on('record:stop', this.stopRecord)
-    /* eslint-enable @typescript-eslint/no-misused-promises, @typescript-eslint/unbound-method */
-  }
-
-  private recordHandle?: FileHandle
-
-  private async startRecord(_: IpcMainEvent, folder?: string) {
-    try {
-      const handle = await open(`${folder ?? '/home/taktik'}/record-${Date.now()}.mp4`, 'w')
-      
-      if (this.initSegmentComplete && this.initSegment) {
-        await handle.write(this.initSegment)
-      }
-  
-      this.recordHandle = handle
-    } catch (error) {
-      this.log.warn('Failed to start recording', error)
-    }
-  }
-
-  private async stopRecord() {
-    await this.recordHandle?.close()
-    this.recordHandle = undefined
   }
 
   private appendToInitSegment(chunk: Buffer): void {
@@ -71,31 +39,32 @@ export class IpcStreamer extends Writable {
   // tslint:disable-next-line: function-name
   _write(chunk: Buffer, encoding: BufferEncoding, callback: (error: Error | null | undefined) => void): void {
     try {
-      let chunkToBuffer = chunk
+      let chunkWithMoof = chunk
 
       try {
+        // Attempt to find a "moof" box in the chunk
+        // if it is found, it means we reached the end of the previous box's data
         const [moof] = mp4.tools.findBox(chunk, ['moof'])
 
         if (!this.initSegmentComplete && moof) {
+          // receiving a "moof" means that the initialization segment is complete
           this.initSegmentComplete = true
 
-          const index = chunk.indexOf(moof)
           /**
-           * The call to "mp4.tools.findBox" returns the requested boxes content if found, without their header
-           * The header is composed of 8 bytes: 4 bytes for the boxe's size + 4 bytes for its type (e.g moof, mdat, ftyp, etc...)
+           * The call to "findBox" above returns the requested boxes' content if found, without their header
+           * The header is composed of 8 bytes: 4 bytes for the boxe's size (in bytes) + 4 bytes for its type (e.g moof, mdat, ftyp, etc...)
            * Thus the "index - 8" below: we want to retrieve the index of the beginning of the whole box, headers included
            */
-          const indexBeforeHeaders = index - 8
+          const indexBeforeHeaders = chunk.indexOf(moof) - 8
 
           if (indexBeforeHeaders < 0) {
             this.log.warn('Something is wrong, we detected the first moof box but there is not enough room for its headers ?!')
           } else if (indexBeforeHeaders > 0) {
-            this.log.info(`------------------ Found first moof at index ${indexBeforeHeaders} ------------------`)
-            // moof detected in the middle of the chunk: we need to complete the init segment with the bytes before it
+            this.log.info(`Found first moof at index ${indexBeforeHeaders} in the chunk. Attempt to complete init segment.`)
             this.appendToInitSegment(chunk.slice(0, indexBeforeHeaders))
-            chunkToBuffer = chunk.slice(indexBeforeHeaders)
+            chunkWithMoof = chunk.slice(indexBeforeHeaders)
           } else {
-            // moof is at the start of the package, no need to do anything else
+            // "moof" is at the start of the package, no need to do anything else
           }
         }
 
@@ -104,19 +73,20 @@ export class IpcStreamer extends Writable {
           this.appendToInitSegment(chunk)
         } else {
           if (moof) {
+            // It's OK if the "moof" box is not exactly at the beginning of appended chunks. What matters is that it is contained in it.
             this.attemptSend()
           }
-          this.buffer.write(chunkToBuffer)
+          this.buffer.write(chunkWithMoof)
         }
       } catch (e) {
         this.log.error('Could not write chunk to streamer buffer:', e)
         this.attemptSend()
 
         try {
-          this.buffer.write(chunkToBuffer)
+          this.buffer.write(chunkWithMoof)
         } catch (error) {
           this.log.error('Ffmpeg output chunk size is bigger than streamer\'s capacity. Consider increasing streamer\'s maxCapacity and/or capacity', error)
-          this.sendSegment(chunkToBuffer)
+          this.sendSegment(chunkWithMoof)
         }
       }
       callback(null)
@@ -137,8 +107,6 @@ export class IpcStreamer extends Writable {
     this.initSegment = undefined
     this.initSegmentComplete = false
     this.log.debug('Cleared')
-
-    this.stopRecord().catch(e => this.log.warn('Failed to stop recording on "clear"', e))
   }
 
   // tslint:disable-next-line: function-name
@@ -177,8 +145,6 @@ export class IpcStreamer extends Writable {
   private sendSegment(segment: Buffer) {
     const data = this.formatFfmpegOutput(segment)
     this.send('segment', data)
-    this.recordHandle?.write(data.data)
-      .catch((e) => this.log.warn('Failed to write segment to record', e))
   }
 
   sendTrackInfo(trackInfo: TrackInfo): void {

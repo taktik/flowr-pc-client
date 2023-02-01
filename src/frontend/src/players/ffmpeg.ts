@@ -67,6 +67,7 @@ export class FlowrFfmpeg {
       .outputOption('-g 30')
       .outputOption('-r 30')
       .outputOption(`-map ${audioStreamSelector}?`)
+      .outputOption('-async 1')
 
     if (subtitlesPid) {
       const deinterlacingFilter = deinterlace ? ',yadif' : ''
