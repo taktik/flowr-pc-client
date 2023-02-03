@@ -118,7 +118,7 @@ class Keyboard {
   }
 
   setParentWindow(parent: BrowserWindow) {
-    if (this.parentCloseCallback?.parent !== parent) {
+    if (this.parentCloseCallback && this.parentCloseCallback.parent !== parent) {
       const callback = () => {
         this.keyboardWindow?.setParentWindow(null)
         this.keyboardWindow?.hide()
