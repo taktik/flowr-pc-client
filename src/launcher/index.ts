@@ -207,6 +207,7 @@ async function main() {
 
     try {
       flowrWindow = createFlowrWindow(store, isDebugMode, setDebugMode)
+      keyboard.setParentWindow(flowrWindow)
       FullScreenManager.applyDefaultActionOnWindow(flowrWindow)
       applicationManager.flowrWindow = flowrWindow
 

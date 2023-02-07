@@ -1,4 +1,4 @@
-import { ipcMain, app, BrowserWindowConstructorOptions, IpcMainEvent } from 'electron'
+import { ipcMain, app, BrowserWindowConstructorOptions } from 'electron'
 import { extend } from 'lodash'
 import { networkEverywhere } from 'network-everywhere'
 import { homedir, platform } from 'os'
