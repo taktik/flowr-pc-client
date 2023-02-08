@@ -128,7 +128,7 @@ class Keyboard {
       parent.on('close', callback)
       this.parentCloseCallback = { parent, callback }
     }
-    this.keyboardWindow.setParentWindow(parent)
+    this.keyboardWindow?.setParentWindow(parent)
   }
 }
 
