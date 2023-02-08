@@ -22,7 +22,7 @@ class FfmpegWrapper implements IPipelineTail {
     this.streamer = new IpcStreamer(store.get('streamer'))
   }
 
-  initPipeline(pipeline: PlayingPipeline): void {
+  private initPipeline(pipeline: PlayingPipeline): void {
     pipeline.onEnterState(PlayingPipelineStates.ERROR, () => {
       const error = pipeline.lastError
 

@@ -5,6 +5,11 @@ import { resolve } from 'path'
 import { app } from 'electron'
 import { PlayerError, PlayerErrors } from './playerError'
 import { getLogger } from '../logging/loggers'
+import Mp4Parser from './parsers/mp4'
+import SimpleParser from './parsers/simple'
+
+import type { FfmpegCommandResponse, FfmpegPipelinesParams } from './types'
+import type { IOutputParser } from './parsers/types'
 
 function handleError(
   callback: (error: PlayerError) => void,
@@ -25,77 +30,93 @@ function handleError(
   }
 }
 
-type FfmpegPipelinesParams = {
-  input: Readable,
-  audioPid?: number,
-  subtitlesPid?: number,
-  deinterlace?: boolean,
-  errorHandler(error: PlayerError): void,
-}
-
 const log = getLogger('FlowrFfmpeg')
 
-export class FlowrFfmpeg {
-  constructor() {
-    Ffmpeg.setFfmpegPath(resolve(app.getAppPath(), ffmpegPath))
+Ffmpeg.setFfmpegPath(resolve(app.getAppPath(), ffmpegPath))
+
+enum OutputFormat {
+  MP4 = 'mp4',
+  MP3 = 'mp3',
+}
+
+function getOutputParserForFormat(format: OutputFormat): IOutputParser | undefined {
+  switch (format) {
+    case OutputFormat.MP4:
+      return new Mp4Parser()
+    default:
+      return new SimpleParser()
   }
+}
 
-  getAudioMpegtsPipeline(
-    input: string | Readable,
-    errorHandler: (error: PlayerError) => void,
-  ): Ffmpeg.FfmpegCommand {
-    return Ffmpeg(input, { logger: log })
-      .format('mp3')
-      .on('start', (commandLine: string) => {
-        log.info('Spawned Ffmpeg with command:', commandLine)
-      })
-      .on('error', handleError(errorHandler))
+function ffmpegCommandResponse(command: Ffmpeg.FfmpegCommand, format: OutputFormat): FfmpegCommandResponse {
+  return {
+    command: command.format(format),
+    parser: getOutputParserForFormat(format),
   }
+}
 
-  getVideoPipeline({
-    input,
-    audioPid,
-    subtitlesPid,
-    deinterlace = false,
-    errorHandler,
-  }: FfmpegPipelinesParams): Ffmpeg.FfmpegCommand {
-    const audioStreamSelector = audioPid ? `i:${audioPid}` : '0:a:0'
-    const ffmpegCmd = Ffmpeg(input, { logger: log })
-      .inputOptions('-probesize 1000k')
-      .outputOption('-preset ultrafast')
-      .outputOption('-tune zerolatency')
-      .outputOption('-g 30')
-      .outputOption('-r 30')
-      .outputOption(`-map ${audioStreamSelector}?`)
-      .outputOption('-async 1')
+function getAudioMpegtsPipeline(
+  input: string | Readable,
+  errorHandler: (error: PlayerError) => void,
+): FfmpegCommandResponse {
+  const command = Ffmpeg(input, { logger: log })
+    .on('start', (commandLine: string) => {
+      log.info('Spawned Ffmpeg with command:', commandLine)
+    })
+    .on('error', handleError(errorHandler))
 
-    if (subtitlesPid) {
-      const deinterlacingFilter = deinterlace ? ',yadif' : ''
+  return ffmpegCommandResponse(command, OutputFormat.MP3)
+}
 
-      ffmpegCmd
-        .outputOption(`-filter_complex [0:v][i:${subtitlesPid}]overlay${deinterlacingFilter}[v]`)
-        .outputOption('-map [v]')
-    } else {
-      if (deinterlace) {
-        ffmpegCmd.videoFilter('yadif')
-      }
+function getVideoPipeline({
+  input,
+  audioPid,
+  subtitlesPid,
+  deinterlace = false,
+  errorHandler,
+}: FfmpegPipelinesParams): FfmpegCommandResponse {
+  const audioStreamSelector = audioPid ? `i:${audioPid}` : '0:a:0'
+  const command = Ffmpeg(input, { logger: log })
+    .inputOptions('-probesize 1000k')
+    .outputOption('-preset ultrafast')
+    .outputOption('-tune zerolatency')
+    .outputOption('-g 30')
+    .outputOption('-r 30')
+    .outputOption(`-map ${audioStreamSelector}?`)
+    .outputOption('-async 1')
 
-      ffmpegCmd.outputOption('-map 0:v')
+  if (subtitlesPid) {
+    const deinterlacingFilter = deinterlace ? ',yadif' : ''
+
+    command
+      .outputOption(`-filter_complex [0:v][i:${subtitlesPid}]overlay${deinterlacingFilter}[v]`)
+      .outputOption('-map [v]')
+  } else {
+    if (deinterlace) {
+      command.videoFilter('yadif')
     }
 
-    if (process.platform !== 'darwin') {
-      ffmpegCmd.outputOption('-flush_packets -1')
-    }
-
-    return ffmpegCmd
-      .format('mp4')
-      .outputOption(
-        '-movflags empty_moov+frag_keyframe+default_base_moof+disable_chpl',
-      )
-      .outputOption('-c:v libx264')
-      .on('start', (commandLine: string) => {
-        log.info('Spawned Ffmpeg with command: ', commandLine)
-      })
-      .on('error', handleError(errorHandler))
+    command.outputOption('-map 0:v')
   }
+
+  if (process.platform !== 'darwin') {
+    command.outputOption('-flush_packets -1')
+  }
+
+  command
+    .outputOption(
+      '-movflags empty_moov+frag_keyframe+default_base_moof+disable_chpl',
+    )
+    .outputOption('-c:v libx264')
+    .on('start', (commandLine: string) => {
+      log.info('Spawned Ffmpeg with command: ', commandLine)
+    })
+    .on('error', handleError(errorHandler))
+
+  return ffmpegCommandResponse(command, OutputFormat.MP4)
+}
+
+export {
+  getAudioMpegtsPipeline,
+  getVideoPipeline,
 }

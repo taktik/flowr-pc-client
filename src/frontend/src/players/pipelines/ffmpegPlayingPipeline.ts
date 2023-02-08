@@ -5,7 +5,7 @@ import { State, StateMachineImpl, Transitions } from 'typescript-state-machine'
 import { PipelinePlayOptions } from '../../interfaces/playerPipeline'
 import { getLogger } from '../../logging/loggers'
 import { Dispatcher } from '../dispatcher'
-import { FlowrFfmpeg } from '../ffmpeg'
+import { getAudioMpegtsPipeline, getVideoPipeline } from '../ffmpeg'
 import { IpcStreamer } from '../ipcStreamer'
 import { PlayerError, PlayerErrors } from '../playerError'
 
@@ -47,16 +47,16 @@ const transitions: Transitions<PipelineState> = {
 class PlayingPipeline extends StateMachineImpl<PipelineState> {
   private id = `${Date.now()}-${Math.floor(100 * Math.random())}`
   private logger = getLogger(`FfmpegPlayingPipeline [${this.id}]`)
-  private flowrFfmpeg: FlowrFfmpeg = new FlowrFfmpeg()
   private dispatcher = new Dispatcher()
   private metadataProcess?: { stream: TrackInfoStream, dataCb: (trackInfo: TrackInfo) => void, errorCb: (e: Error) => void }
   private input: Readable
   private command?: FfmpegCommand
   private trackInfo?: TrackInfo
   
-  readonly baseAudioPid?: number
   readonly subtitlesPid?: number
   readonly deinterlace: boolean
+  
+  baseAudioPid?: number
   lastError?: Error
 
   constructor(
@@ -151,15 +151,22 @@ class PlayingPipeline extends StateMachineImpl<PipelineState> {
       const audioPid = this.baseAudioPid ?? this.trackInfo.audio.reduce((min, audio) => Math.min(min, audio.pid), 99999)
       const ffmpegInput = this.dispatcher.pipe(new PassThrough({ autoDestroy: false }))
       this.baseAudioPid = audioPid
-      this.command = this.trackInfo.video
-        ? this.flowrFfmpeg.getVideoPipeline({
+      const { command, parser } = this.trackInfo.video
+        ? getVideoPipeline({
             input: ffmpegInput,
             audioPid,
             subtitlesPid: this.subtitlesPid,
             deinterlace: this.deinterlace,
             errorHandler: this.getErrorHandler(),
           })
-        : this.flowrFfmpeg.getAudioMpegtsPipeline(this.input, this.getErrorHandler())
+        : getAudioMpegtsPipeline(this.input, this.getErrorHandler())
+
+      this.command = command
+
+      if (parser) {
+        this.streamer.outputParser = parser
+      }
+
       this.streamer.currentAudioPid = audioPid
       this.command.pipe(this.streamer, { end: false })
       this.setState(PLAYING)
