@@ -6,20 +6,22 @@ import { PlayerError, PlayerErrors } from '../playerError'
 import { IPipelineTail, PipelinePlayOptions } from '../../interfaces/playerPipeline'
 import { getLogger } from '../../logging/loggers'
 import { PlayingPipeline, PlayingPipelineStates } from './ffmpegPlayingPipeline'
+import { IStreamerConfig } from '../../interfaces/ipcStreamerConfig'
 
 class FfmpegWrapper implements IPipelineTail {
   private id = `${Date.now()}-${Math.floor(1000 * Math.random())}`
   private logger = getLogger(`FfmpegWrapper [${this.id}]`)
-  private streamer: IpcStreamer
+  private streamer = new IpcStreamer()
+  private readonly streamerConfig: IStreamerConfig
   private currentPipeline?: PlayingPipeline
-  private playTimeout?: number
+  private playTimeout?: NodeJS.Timer
 
   set sender(sender: WebContents) {
     this.streamer.sender = sender
   }
 
   constructor(store: Store<IPlayerStore>) {
-    this.streamer = new IpcStreamer(store.get('streamer'))
+    this.streamerConfig = store.get('streamer')
   }
 
   private initPipeline(pipeline: PlayingPipeline): void {
@@ -64,7 +66,7 @@ class FfmpegWrapper implements IPipelineTail {
 
   play(options: PipelinePlayOptions): void {
     this.clear()
-    this.initPipeline(new PlayingPipeline(this.streamer, options))
+    this.initPipeline(new PlayingPipeline(this.streamer, this.streamerConfig, options))
   }
 
   replay(newProps: Partial<PipelinePlayOptions> = {}): void {

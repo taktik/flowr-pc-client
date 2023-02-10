@@ -1,9 +1,10 @@
 import { mp4 } from '@taktik/mux.js'
 import { getLogger } from '../../logging/loggers'
-import { IOutputParser, OutputParserResponse } from './types'
+import FfmpegParser from './abstract'
+import { OutputParserResponse } from './types'
 
-class Mp4Parser implements IOutputParser {
-  private log = getLogger('mp4 parser')
+class Mp4Parser extends FfmpegParser {
+  protected log = getLogger('mp4 parser')
   private initSegment?: Buffer
   private initSegmentComplete = false
 
@@ -11,7 +12,14 @@ class Mp4Parser implements IOutputParser {
     this.initSegment = this.initSegment ? Buffer.concat([this.initSegment, chunk]) : chunk
   }
 
-  parse(chunk: Buffer): OutputParserResponse {
+  /**
+   * From a chunk of data, attempt to find a "moof" box
+   * This box type announces the beginning of a new data segment
+   * This allows to structure forwarded data to somehthing that can be handled easily
+   * @param chunk 
+   * @returns Data to be added to the inner buffer; and whether a segment has been completed
+   */
+  private parse(chunk: Buffer) {
     let data = chunk
 
     // Attempt to find a "moof" box in the chunk
@@ -46,10 +54,37 @@ class Mp4Parser implements IOutputParser {
     }
 
     return {
-      initSegment: this.initSegmentComplete ? this.initSegment : undefined,
       data,
-      canSend: this.initSegmentComplete && !!moof,
+      canSend: this.initSegmentComplete && !!moof
     }
+  }
+
+  /**
+   * Parse received chunk to determine if a segment has been completed and can be sent
+   * @param {Buffer} chunk
+   * @returns Data to be added to the inner buffer
+   */
+  protected override preBufferProcess(chunk: Buffer): Buffer {
+    const { data, canSend } = this.parse(chunk)
+      
+    if (canSend) {
+      this.attemptSend()
+    }
+
+    return data
+  }
+
+  protected override formatOutput(bufferedData: Buffer): OutputParserResponse {
+    return {
+      initSegment: this.initSegmentComplete ? this.initSegment : undefined,
+      data: bufferedData
+    }
+  }
+
+  clear(flush = false): void {
+    this.initSegment = undefined
+    this.initSegmentComplete = false
+    super.clear(flush)
   }
 }
 

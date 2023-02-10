@@ -1,7 +1,6 @@
 type OutputParserResponse = {
-  initSegment: Buffer | undefined
+  initSegment?: Buffer
   data: Buffer
-  canSend: boolean
 }
 
 interface IOutputParser {

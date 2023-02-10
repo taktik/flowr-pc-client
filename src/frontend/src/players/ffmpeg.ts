@@ -1,15 +1,16 @@
 import * as Ffmpeg from '@taktik/fluent-ffmpeg'
 import * as ffmpegPath from 'ffmpeg-static'
-import { Readable } from 'stream'
+import { Readable, Writable } from 'stream'
 import { resolve } from 'path'
 import { app } from 'electron'
 import { PlayerError, PlayerErrors } from './playerError'
 import { getLogger } from '../logging/loggers'
 import Mp4Parser from './parsers/mp4'
 import SimpleParser from './parsers/simple'
+import FfmpegParser from './parsers/abstract'
+import { IStreamerConfig } from '../interfaces/ipcStreamerConfig'
 
-import type { FfmpegCommandResponse, FfmpegPipelinesParams } from './types'
-import type { IOutputParser } from './parsers/types'
+import type { FfmpegCommandBuilder, FfmpegParserConstructor, FfmpegPipelinesParams, IFfmpegCommandWrapper } from './types'
 
 function handleError(
   callback: (error: PlayerError) => void,
@@ -34,38 +35,70 @@ const log = getLogger('FlowrFfmpeg')
 
 Ffmpeg.setFfmpegPath(resolve(app.getAppPath(), ffmpegPath))
 
+/**
+ * The container formats we use as ffmpeg's outputs
+ */
 enum OutputFormat {
   MP4 = 'mp4',
   MP3 = 'mp3',
 }
 
-function getOutputParserForFormat(format: OutputFormat): IOutputParser | undefined {
+/**
+ * 
+ * @param {OutputFormat} format 
+ * @returns 
+ */
+function getOutputParserForFormat(format: OutputFormat): FfmpegParserConstructor {
   switch (format) {
     case OutputFormat.MP4:
-      return new Mp4Parser()
+      return Mp4Parser
     default:
-      return new SimpleParser()
+      return SimpleParser
   }
 }
 
-function ffmpegCommandResponse(command: Ffmpeg.FfmpegCommand, format: OutputFormat): FfmpegCommandResponse {
-  return {
-    command: command.format(format),
-    parser: getOutputParserForFormat(format),
+/**
+ * Wrapper around the actual ffmpeg command and the output data parser
+ */
+class FfmpegCommandWrapper implements IFfmpegCommandWrapper {
+  constructor(
+    private readonly ffmpegCommand: Ffmpeg.FfmpegCommand,
+    private readonly ffmpegOutput: FfmpegParser,
+  ) {
+    ffmpegCommand.pipe(ffmpegOutput)
   }
+
+  pipe<T extends Writable>(stream: T, options?: { end?: boolean }): T {
+    return this.ffmpegOutput.pipe(stream, options)
+  }
+
+  unpipe<T extends Writable>(stream: T): this {
+    this.ffmpegOutput.unpipe(stream)
+    return this
+  }
+
+  kill(): void {
+    this.ffmpegCommand?.kill('SIGKILL')
+  }
+}
+
+function makePipelineBuilder(command: Ffmpeg.FfmpegCommand, format: OutputFormat): FfmpegCommandBuilder {
+  const Parser = getOutputParserForFormat(format)
+
+  return (parserConfig: IStreamerConfig) => new FfmpegCommandWrapper(command.format(format), new Parser(parserConfig))
 }
 
 function getAudioMpegtsPipeline(
   input: string | Readable,
   errorHandler: (error: PlayerError) => void,
-): FfmpegCommandResponse {
+): FfmpegCommandBuilder {
   const command = Ffmpeg(input, { logger: log })
     .on('start', (commandLine: string) => {
       log.info('Spawned Ffmpeg with command:', commandLine)
     })
     .on('error', handleError(errorHandler))
 
-  return ffmpegCommandResponse(command, OutputFormat.MP3)
+  return makePipelineBuilder(command, OutputFormat.MP3)
 }
 
 function getVideoPipeline({
@@ -74,7 +107,7 @@ function getVideoPipeline({
   subtitlesPid,
   deinterlace = false,
   errorHandler,
-}: FfmpegPipelinesParams): FfmpegCommandResponse {
+}: FfmpegPipelinesParams): FfmpegCommandBuilder {
   const audioStreamSelector = audioPid ? `i:${audioPid}` : '0:a:0'
   const command = Ffmpeg(input, { logger: log })
     .inputOptions('-probesize 1000k')
@@ -113,10 +146,14 @@ function getVideoPipeline({
     })
     .on('error', handleError(errorHandler))
 
-  return ffmpegCommandResponse(command, OutputFormat.MP4)
+  return makePipelineBuilder(command, OutputFormat.MP4)
 }
 
 export {
   getAudioMpegtsPipeline,
   getVideoPipeline,
+}
+
+export type {
+  FfmpegCommandWrapper
 }

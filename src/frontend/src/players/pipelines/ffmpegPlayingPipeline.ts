@@ -1,13 +1,15 @@
-import { FfmpegCommand } from '@taktik/fluent-ffmpeg'
 import { TrackInfo, TrackInfoStream } from '@taktik/mux.js'
 import { PassThrough, Readable } from 'stream'
 import { State, StateMachineImpl, Transitions } from 'typescript-state-machine'
+import { IStreamerConfig } from '../../interfaces/ipcStreamerConfig'
 import { PipelinePlayOptions } from '../../interfaces/playerPipeline'
 import { getLogger } from '../../logging/loggers'
 import { Dispatcher } from '../dispatcher'
 import { getAudioMpegtsPipeline, getVideoPipeline } from '../ffmpeg'
 import { IpcStreamer } from '../ipcStreamer'
 import { PlayerError, PlayerErrors } from '../playerError'
+
+import type { IFfmpegCommandWrapper } from '../types'
 
 enum PipelineStateName {
   STARTING = 'Starting',
@@ -50,7 +52,7 @@ class PlayingPipeline extends StateMachineImpl<PipelineState> {
   private dispatcher = new Dispatcher()
   private metadataProcess?: { stream: TrackInfoStream, dataCb: (trackInfo: TrackInfo) => void, errorCb: (e: Error) => void }
   private input: Readable
-  private command?: FfmpegCommand
+  private command?: IFfmpegCommandWrapper
   private trackInfo?: TrackInfo
   
   readonly subtitlesPid?: number
@@ -61,6 +63,7 @@ class PlayingPipeline extends StateMachineImpl<PipelineState> {
 
   constructor(
     private readonly streamer: IpcStreamer,
+    private readonly parserConfig: IStreamerConfig,
     { input, audioPid, subtitlesPid, deinterlace = false }: PipelinePlayOptions
   ) {
     super(Object.values(PlayingPipelineStates), transitions, STARTING)
@@ -151,7 +154,7 @@ class PlayingPipeline extends StateMachineImpl<PipelineState> {
       const audioPid = this.baseAudioPid ?? this.trackInfo.audio.reduce((min, audio) => Math.min(min, audio.pid), 99999)
       const ffmpegInput = this.dispatcher.pipe(new PassThrough({ autoDestroy: false }))
       this.baseAudioPid = audioPid
-      const { command, parser } = this.trackInfo.video
+      const init = this.trackInfo.video
         ? getVideoPipeline({
             input: ffmpegInput,
             audioPid,
@@ -161,11 +164,7 @@ class PlayingPipeline extends StateMachineImpl<PipelineState> {
           })
         : getAudioMpegtsPipeline(this.input, this.getErrorHandler())
 
-      this.command = command
-
-      if (parser) {
-        this.streamer.outputParser = parser
-      }
+      this.command = init(this.parserConfig)
 
       this.streamer.currentAudioPid = audioPid
       this.command.pipe(this.streamer, { end: false })
@@ -178,7 +177,7 @@ class PlayingPipeline extends StateMachineImpl<PipelineState> {
 
   kill(): void {
     this.command?.unpipe(this.streamer)
-    this.command?.kill('SIGKILL')
+    this.command?.kill()
     this.killMetadataProcess()
     this.dispatcher.clear()
     this.input.unpipe(this.dispatcher)
@@ -187,7 +186,7 @@ class PlayingPipeline extends StateMachineImpl<PipelineState> {
 
   clone(overrideProps: Partial<PipelinePlayOptions> = {}): PlayingPipeline {
     const { streamer, input, baseAudioPid, subtitlesPid, deinterlace } = this
-    return new PlayingPipeline(streamer, {
+    return new PlayingPipeline(streamer, this.parserConfig, {
       input,
       audioPid: baseAudioPid,
       subtitlesPid,
