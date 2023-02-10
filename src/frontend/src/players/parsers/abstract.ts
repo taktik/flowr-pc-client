@@ -35,13 +35,22 @@ abstract class FfmpegParser extends Transform {
   }
 
   /**
-   * Read from buffer and push data to the next stream
+   * Actually push formatted data buffer
+   * @param {Buffer} buffer 
+   * @returns {Boolean} Whether the push operation was successful
+   */
+  private send(buffer: Buffer): boolean {
+    return this.push(this.formatOutput(buffer))
+  }
+
+  /**
+   * Read from buffer and attempt to push data to the next stream
    */
   protected attemptSend(): void {
     const toRead = this._buffer.availableRead
 
     if (toRead) {
-      if (!this.push(this.formatOutput(this._buffer.read(toRead)))) {
+      if (!this.send(this._buffer.read(toRead))) {
         this._buffer.rewind(toRead)
       }
     }
@@ -74,7 +83,7 @@ abstract class FfmpegParser extends Transform {
         this._buffer.write(chunk)
       } catch (error) {
         this.log.error('Output chunk size is bigger than streamer\'s capacity. Consider increasing streamer\'s maxCapacity and/or capacity', error)
-        this.write(chunk)
+        this.send(chunk)
       }
     }
   }
