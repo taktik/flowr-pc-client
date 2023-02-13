@@ -3,11 +3,6 @@ type OutputParserResponse = {
   data: Buffer
 }
 
-interface IOutputParser {
-  parse(chunk: Buffer): OutputParserResponse
-}
-
 export {
-  IOutputParser,
   OutputParserResponse,
 }
