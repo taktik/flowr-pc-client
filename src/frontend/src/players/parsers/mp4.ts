@@ -15,7 +15,7 @@ class Mp4Parser extends FfmpegParser {
   /**
    * From a chunk of data, attempt to find a "moof" box
    * This box type announces the beginning of a new data segment
-   * This allows to structure forwarded data to somehthing that can be handled easily
+   * This allows to structure forwarded data to something that can be handled easily
    * @param chunk 
    * @returns Data to be added to the inner buffer; and whether a segment has been completed
    */
