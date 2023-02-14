@@ -83,7 +83,7 @@ function onClick(event: Event) {
 
 window.addEventListener('focus', openKeyboard, true)
 window.addEventListener('blur', closeKeyboard, true)
-window.addEventListener('click', onClick)
+window.addEventListener('click', onClick, true)
 window.addEventListener('keydown', handleHiddenMenuCode, true)
 
 process.once('loaded', () => {
