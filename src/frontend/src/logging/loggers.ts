@@ -147,3 +147,7 @@ export const {
   getLevel,
   getSeverity,
 } = new RootLogger()
+
+export type {
+  ILogger
+}

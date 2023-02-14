@@ -26,6 +26,7 @@ import { openDevTools } from '../common/devTools'
 import { initialize } from '@electron/remote/main'
 import initComponents from '../wexond/extensions/components'
 import { initializeLogging } from '../frontend/src/logging'
+import { getLogger } from '../frontend/src/logging/loggers'
 
 initializeLogging()
 
@@ -36,6 +37,24 @@ const applicationManager = new ApplicationManager()
 
 // https://www.npmjs.com/package/@electron/remote
 let remoteModuleInitialized = false
+
+const mainLogger = getLogger('Launcher')
+
+app.on('render-process-gone', (_, webContents, details) => {
+  const windowTitle = webContents.getTitle()
+
+  if (
+    details.reason === 'clean-exit' ||
+    windowTitle === 'DevTools'
+  ) return
+
+  mainLogger.warn(`A render process (${windowTitle}) has disappeared: ${JSON.stringify(details)}`)
+})
+
+app.on('child-process-gone', (_, details) => {
+  if (details.reason === 'clean-exit') return
+  mainLogger.warn(`A child process has disappeared: ${JSON.stringify(details)}`)
+})
 
 async function main() {
   const migrateUserPreferences = getMigrateUserPreferences(`${FRONTEND_CONFIG_NAME}.json`)
