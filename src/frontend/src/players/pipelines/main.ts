@@ -4,6 +4,7 @@ import { Readable, Writable } from 'stream'
 import { IPlayerStore } from '../../interfaces/playerStore'
 import { Store } from '../../store'
 import { IntervalStream } from '../intervalStream'
+import { RtpUnpacker } from './rtpUnpacker'
 
 interface IPipeline {
   clear(): Promise<void>
@@ -50,10 +51,12 @@ class MainPipeline implements IReadablePipeline {
     const port = parseInt(cleanUrl.split(':')[1], 10)
     const connectionStream = await this.udpStreamer.connect(ip, port)
 
+    const unpackedStream = url.startsWith('rtp://') ? connectionStream.pipe(new RtpUnpacker()) : connectionStream
+
     if (this.useDecryption) {
-      this.decryptor.injest(connectionStream)
+      this.decryptor.injest(unpackedStream)
     } else {
-      connectionStream.pipe(this.intervalStream)
+      unpackedStream.pipe(this.intervalStream)
     }
 
     return this.output
