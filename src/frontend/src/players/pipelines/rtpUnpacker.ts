@@ -25,11 +25,15 @@ export class RtpUnpacker extends Transform {
   _transform(chunk: Buffer, _encoding: string, callback: TransformCallback): void {
     const rtpHeader = chunk.slice(0, 12)
     const hasPadding = Boolean(rtpHeader[0] & 0x20)
+    const marker = (rtpHeader[1]) >>> 7;
     const payloadType = rtpHeader[1] & 0x7f
 
-    //  If the payload does not correspond to an audio/video stream in MPEG2 (Payload Type = PT = 33), nothing is done
-    //  33 MP2T audio/video	90000	MPEG-2 transport stream	RFC 2250
-    if(payloadType !== 33){
+    //  If the payload does not correspond to
+    //    1. A full <=> Marker = M = 1 
+    //    2. Audio/Video MPEG2 packet <=> Payload Type = PT = 33
+    //  the packet is left unchanged and passed through for FFmpeg to deal with.
+    //  Ref: https://en.wikipedia.org/wiki/Real-time_Transport_Protocol#:~:text=The%20RTP%20header%20has%20a,the%20particular%20class%20of%20application.
+    if(payloadType !== 33 || marker !== 1){
       callback(null, chunk)
     } else {
       const sequenceNumber = rtpHeader.readUInt16BE(2)
