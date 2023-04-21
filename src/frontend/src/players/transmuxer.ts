@@ -26,6 +26,14 @@ export class TransmuxerWrapper extends Writable implements IPipelineTail {
     }
   }
 
+  pause(): void {
+    throw Error('Not implemented')
+  }
+
+  resume(): void {
+    throw Error('Not implemented')
+  }
+
   // tslint:disable-next-line: function-name
   _write(chunk: Buffer, encoding: BufferEncoding, callback: TransformCallback): void {
     try {

@@ -1,10 +1,10 @@
 import { CircularBuffer } from '@taktik/buffers'
 import { Transform, TransformCallback } from 'stream'
-import { IStreamerConfig } from './interfaces/ipcStreamerConfig'
+import { IStreamerConfig } from '../interfaces/ipcStreamerConfig'
 
 export class IntervalStream extends Transform {
   private buffer: CircularBuffer
-  private sendInterval: number | undefined
+  private sendInterval: NodeJS.Timeout | undefined
   private sendIntervalValue: number
 
   private attemptSend() {
@@ -13,7 +13,7 @@ export class IntervalStream extends Transform {
     }
   }
 
-  constructor({ capacity, maxCapacity, readMode, sendInterval }: IStreamerConfig) {
+  constructor({ capacity, maxCapacity, readMode, sendInterval }: IStreamerConfig, private yo = false) {
     super({ autoDestroy: false })
     this.buffer = new CircularBuffer({
       allowOverwrite: false,
@@ -25,7 +25,7 @@ export class IntervalStream extends Transform {
   }
 
   // tslint:disable-next-line: function-name
-  _transform(chunk: Buffer, encoding: BufferEncoding, callback: TransformCallback) {
+  _transform(chunk: Buffer, encoding: BufferEncoding, callback: TransformCallback): void {
     try {
       try {
         this.buffer.write(chunk)
@@ -36,7 +36,7 @@ export class IntervalStream extends Transform {
         try {
           this.buffer.write(chunk)
         } catch (e) {
-          console.error(`[IntervalStream] Output chunk size (${chunk.byteLength}) is bigger than streamer\'s capacity (${this.buffer.capacity}).`)
+          console.error(`[IntervalStream] Output chunk size (${chunk.byteLength}) is bigger than streamer's capacity (${this.buffer.capacity}).`)
           console.error('[IntervalStream] Consider increasing streamer\'s maxCapacity and/or capacity')
           console.error('[IntervalStream]', e)
           this.push(chunk)
@@ -51,7 +51,7 @@ export class IntervalStream extends Transform {
     }
   }
 
-  clear(flush: boolean = false) {
+  clear(flush = false): void {
     if (flush) {
       this.attemptSend()
     }
@@ -61,7 +61,7 @@ export class IntervalStream extends Transform {
   }
 
   // tslint:disable-next-line: function-name
-  _final(callback: (error?: Error) => void) {
+  _final(callback: (error?: Error) => void): void {
     try {
       this.clear()
       callback()

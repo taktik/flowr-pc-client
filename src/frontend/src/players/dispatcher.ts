@@ -1,4 +1,4 @@
-import { Writable } from 'stream'
+import { PassThrough, Readable, Writable } from 'stream'
 
 export interface Dispatcher {
   // override of the super type signature (defined in "internal")
@@ -38,5 +38,10 @@ export class Dispatcher extends Writable {
   clear(): void {
     this._outputs.forEach(stream => stream.off('error', this.onError))
     this._outputs.clear()
+  }
+
+  addOutput(): Readable {
+    const newOutput = new PassThrough()
+    return this.pipe(newOutput)
   }
 }

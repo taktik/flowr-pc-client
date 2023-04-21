@@ -29,5 +29,9 @@ export const DEFAULT_PLAYER_STORE: IPlayerStore = {
     maxCapacity: 200000000, // max buffer expansion size, to increase on OverflowErrors
     readMode: ReadMode.SLICE,
   },
-  position: PlayerPosition.FOREGROUND
+  position: PlayerPosition.FOREGROUND,
+  pause: {
+    enabled: false,
+    liveCache: 10,
+  }
 }

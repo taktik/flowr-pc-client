@@ -3,8 +3,10 @@ import { UdpStreamer } from '@taktik/udp-streamer'
 import { Readable, Writable } from 'stream'
 import { IPlayerStore } from '../../interfaces/playerStore'
 import { Store } from '../../store'
+import { Dispatcher } from '../dispatcher'
 import { IntervalStream } from '../intervalStream'
 import { RtpUnpacker } from './rtpUnpacker'
+import { OfflineHandler } from '../offline/main'
 
 interface IPipeline {
   clear(): Promise<void>
@@ -23,10 +25,17 @@ interface IWritablePipeline<T extends Writable = Writable> extends IPipeline {
 class MainPipeline implements IReadablePipeline {
   private udpStreamer: UdpStreamer
   private decryptor?: TsDecryptor
-  private intervalStream?: IntervalStream
+  private mainDispatch = new Dispatcher()
+  private aaa?: OfflineHandler
+  private intervalStream: IntervalStream
 
   get useDecryption(): boolean {
     return this.store.get('decryption').use
+  }
+
+  get offlineEnabled(): boolean {
+    return true
+    // return this.store.get('pause').enabled
   }
 
   get output(): Readable {
@@ -35,12 +44,29 @@ class MainPipeline implements IReadablePipeline {
 
   constructor(private store: Store<IPlayerStore>) {
     this.udpStreamer = new UdpStreamer(store.get('udpStreamer'))
-    this.intervalStream = new IntervalStream(store.get('streamer'))
+    this.intervalStream = new IntervalStream(store.get('streamer'), true)
 
     if (this.useDecryption) {
       this.decryptor = new TsDecryptor(store.get('tsDecryptor'))
       this.decryptor.pipe(this.intervalStream)
     }
+  }
+
+  private handleOffline(name: string) {
+
+    if (this.offlineEnabled) {
+      const output = this.mainDispatch.addOutput()
+      this.aaa = new OfflineHandler(name, output)
+    }
+  }
+
+  private pipedInput?: () => void
+
+  private pipeeeee(input: Readable): void {
+    const aaa = this.useDecryption ? this.decryptor?.packetAligner : this.intervalStream
+    input.pipe(aaa)
+
+    this.pipedInput = () => input.unpipe(aaa)
   }
 
   async connect(url: string): Promise<Readable> {
@@ -50,14 +76,12 @@ class MainPipeline implements IReadablePipeline {
     const ip = cleanUrl.split(':')[0]
     const port = parseInt(cleanUrl.split(':')[1], 10)
     const connectionStream = await this.udpStreamer.connect(ip, port)
-
     const unpackedStream = url.startsWith('rtp://') ? connectionStream.pipe(new RtpUnpacker()) : connectionStream
 
-    if (this.useDecryption) {
-      this.decryptor.injest(unpackedStream)
-    } else {
-      unpackedStream.pipe(this.intervalStream)
-    }
+
+    this.pipeeeee(this.mainDispatch.addOutput())
+    this.handleOffline(cleanUrl)
+    unpackedStream.pipe(this.mainDispatch)
 
     return this.output
   }
@@ -72,8 +96,31 @@ class MainPipeline implements IReadablePipeline {
 
   async clear(): Promise<void> {
     await this.udpStreamer.close()
+    this.mainDispatch.clear()
     this.decryptor?.clear()
     this.intervalStream?.clear()
+  }
+
+  async pause(): Promise<void> {
+    if (this.aaa) {
+      this.pipedInput?.()
+      await this.aaa.pause()
+    }
+  }
+
+  async resume(): Promise<Readable | void> {
+    if (this.aaa) {
+      this.pipeeeee(await this.aaa.resume())
+
+      return this.output
+    }
+  }
+
+  async backToLive(): Promise<void> {
+    if (this.aaa) {
+      this.mainDispatch.pipe(this.intervalStream)
+      await this.aaa.backToLive()
+    }
   }
 }
 

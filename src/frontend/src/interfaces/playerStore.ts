@@ -26,6 +26,11 @@ export interface IPlayerStore {
       applicationPath?: string
       keepAliveTimeout?: number
     }
-  },
+  }
   position: PlayerPosition
+  pause: {
+    enabled: boolean
+    // in seconds -> how much of the stream should be kept in memory while playing (to start back a few seconds before the stream was paused)
+    liveCache: number
+  }
 }

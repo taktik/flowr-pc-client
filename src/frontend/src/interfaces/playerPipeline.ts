@@ -18,6 +18,8 @@ export interface IPipelineTail {
   sender?: WebContents
 
   play(options: PipelinePlayOptions): void
+  pause(): void
+  resume(): void
   clear(): void
   setAudioTrackFromPid(pid: number): void
   setSubtitlesFromPid?(pid: number): void

@@ -57,8 +57,8 @@ class PlayingPipeline extends StateMachineImpl<PipelineState> {
   
   readonly subtitlesPid?: number
   readonly deinterlace: boolean
-  
-  baseAudioPid?: number
+
+  audioPid?: number
   lastError?: Error
 
   constructor(
@@ -67,11 +67,11 @@ class PlayingPipeline extends StateMachineImpl<PipelineState> {
     { input, audioPid, subtitlesPid, deinterlace = false }: PipelinePlayOptions
   ) {
     super(Object.values(PlayingPipelineStates), transitions, STARTING)
+    this.logger.debug('Play command received')
     this.input = input
-    this.baseAudioPid = audioPid
+    this.audioPid = audioPid
     this.subtitlesPid = subtitlesPid
     this.deinterlace = deinterlace
-    this.logger.debug('Play command received')
 
     this.registerStateChanges()
     this.retrieveMetadata()
@@ -151,9 +151,9 @@ class PlayingPipeline extends StateMachineImpl<PipelineState> {
       if (!this.trackInfo) {
         throw Error('Attempt to play without track info. This should never happen.')
       }
-      const audioPid = this.baseAudioPid ?? this.trackInfo.audio.reduce((min, audio) => Math.min(min, audio.pid), 99999)
+      const audioPid = this.audioPid ?? this.trackInfo.audio.reduce((min, audio) => Math.min(min, audio.pid), 99999)
       const ffmpegInput = this.dispatcher.pipe(new PassThrough({ autoDestroy: false }))
-      this.baseAudioPid = audioPid
+      this.audioPid = audioPid
       const init = this.trackInfo.video
         ? getVideoPipeline({
             input: ffmpegInput,
@@ -185,10 +185,17 @@ class PlayingPipeline extends StateMachineImpl<PipelineState> {
   }
 
   clone(overrideProps: Partial<PipelinePlayOptions> = {}): PlayingPipeline {
-    const { streamer, input, baseAudioPid, subtitlesPid, deinterlace } = this
-    return new PlayingPipeline(streamer, this.parserConfig, {
+    const {
+      streamer,
       input,
-      audioPid: baseAudioPid,
+      audioPid,
+      subtitlesPid,
+      deinterlace,
+    } = this
+
+    return new PlayingPipeline(streamer, {
+      input,
+      audioPid,
       subtitlesPid,
       deinterlace,
       ...overrideProps

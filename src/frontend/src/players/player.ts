@@ -109,16 +109,17 @@ export class Player extends AbstractPlayer {
   }
 
   /* Should be implemented in FLOW-5509 Bedside FlowR v5 | Barco | Play/Pause*/
-  /* eslint-disable @typescript-eslint/no-unused-vars */
-  backToLive(event: IpcMainEvent): void | Promise<void> {
-    throw Error("not available")
+  async pause(): Promise<void> {
+    await this.playPipelineHead.pause()
+    this.playPipelineTail?.pause()
   }
-  /* eslint-disable @typescript-eslint/no-unused-vars */
-  pause(event: IpcMainEvent): void | Promise<void> {
-    throw Error("not available")
+
+  async resume(): Promise<void> {
+    await this.playPipelineHead.resume()
+    this.playPipelineTail?.resume()
   }
-  /* eslint-disable @typescript-eslint/no-unused-vars */
-  resume(event: IpcMainEvent): void | Promise<void> {
-    throw Error("not available")
+
+  async backToLive(): Promise<void> {
+    await this.playPipelineHead.backToLive()
   }
 }

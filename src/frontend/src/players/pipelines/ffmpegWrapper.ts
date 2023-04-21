@@ -14,7 +14,7 @@ class FfmpegWrapper implements IPipelineTail {
   private streamer = new IpcStreamer()
   private readonly streamerConfig: IStreamerConfig
   private currentPipeline?: PlayingPipeline
-  private playTimeout?: NodeJS.Timer
+  private playTimeout?: NodeJS.Timeout
 
   set sender(sender: WebContents) {
     this.streamer.sender = sender
@@ -96,7 +96,7 @@ class FfmpegWrapper implements IPipelineTail {
   }
 
   setAudioTrackFromPid(pid: number): void {
-    if (pid !== this.currentPipeline?.baseAudioPid) {
+    if (pid !== this.currentPipeline?.audioPid) {
       this.replay({ audioPid: pid })
     }
   }
@@ -105,6 +105,14 @@ class FfmpegWrapper implements IPipelineTail {
     if (pid !== this.currentPipeline?.subtitlesPid) {
       this.replay({ subtitlesPid: pid })
     }
+  }
+
+  pause(): void {
+    this.streamer.pause()
+  }
+
+  resume(): void {
+    this.streamer.resume()
   }
 }
 

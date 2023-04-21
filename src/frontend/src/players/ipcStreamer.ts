@@ -6,6 +6,8 @@ import { OutputParserResponse } from './parsers/types'
 
 export class IpcStreamer extends Writable {
   private _sender: WebContents | undefined
+  private sendInterval?: NodeJS.Timeout
+  private sendIntervalValue: number
   private log = getLogger('Ipc streamer')
 
   currentAudioPid: number | undefined
@@ -47,6 +49,14 @@ export class IpcStreamer extends Writable {
     this.send('segment', formatted)
   }
 
+  paused = false
+
+  private startSendInterval() {
+    if (!this.sendInterval && !this.paused) {
+      this.sendInterval = setInterval(this.attemptSend.bind(this), this.sendIntervalValue)
+    }
+  }
+
   // tslint:disable-next-line: function-name
   _write(segment: OutputParserResponse, encoding: BufferEncoding, callback: (error: Error | null | undefined) => void): void {
     try {
@@ -69,8 +79,50 @@ export class IpcStreamer extends Writable {
     cb()
   }
 
+  private formatFfmpegOutput(data: Buffer): IOutputTrack<'audio' | 'video'> {
+    const type = !this.currentTrackInfo?.video ? 'audio' : 'video' // default to video if we did not
+    const pid = this.currentAudioPid || 0
+
+    return {
+      data,
+      type,
+      codec: this.currentCodec,
+      pid,
+    }
+  }
+
+  private attemptSend() {
+    if (this.buffer.availableRead && !this.paused) {
+      this.sendSegment(this.buffer.readAll())
+    }
+  }
+
+  private send(message: string, content: any) {
+    if (this._sender) {
+      this._sender.send(message, content)
+    } else {
+      this.log.error(`No sender defined, cannot send "${message}" message`)
+    }
+  }
+
+  private sendSegment(segment: Buffer) {
+    const data = this.formatFfmpegOutput(segment)
+    this.send('segment', data)
+  }
+
   sendTrackInfo(trackInfo: TrackInfo): void {
     this.currentTrackInfo = trackInfo
     this.send('trackinfo', trackInfo)
+  }
+
+  pause(): void {
+    this.paused = true
+    clearInterval(this.sendInterval)
+    this.sendInterval = undefined
+  }
+
+  resume(): void {
+    this.paused = false
+    this.startSendInterval()
   }
 }
