@@ -13,7 +13,7 @@ export default function (flowrStore: Store<IFlowrStore>): BrowserWindowConstruct
     minWidth: 430,
     minHeight: 270,
     title: 'FlowR',
-    fullscreen: FullScreenManager.shouldBeDefaultFullScreen,
+    fullscreen: kiosk || FullScreenManager.shouldBeDefaultFullScreen,
     fullscreenable: FullScreenManager.fullscreenable,
     kiosk,
     titleBarStyle: 'hiddenInset',

@@ -1,18 +1,17 @@
-import { BrowserWindow, app, ipcMain, globalShortcut, screen, BrowserWindowConstructorOptions } from 'electron'
-import { resolve } from 'path'
-import { platform } from 'os'
-import { windowManager, Window } from 'node-window-manager'
-import mouseEvents from 'mouse-hooks'
-
-import { ViewManager } from './view-manager'
-import { ProcessWindow } from './models/process-window'
-import { TOOLBAR_HEIGHT } from '../renderer/app/constants'
-import { KeyboardMixin } from '../../keyboard/keyboardMixin'
-import { watchForInactivity } from '../../inactivity/window'
-import { buildPreloadPath } from '../../common/preload'
+import { app, BrowserWindow, BrowserWindowConstructorOptions, globalShortcut, ipcMain, screen } from 'electron'
 import { Point, Rectangle } from 'electron/main'
+import { Window, windowManager } from 'node-window-manager'
+import { platform } from 'os'
+import { resolve } from 'path'
 import { buildFileUrl } from '../../application-manager/helpers'
 import { WEXOND_PARTITION } from '../../common/partitions'
+import { buildPreloadPath } from '../../common/preload'
+import { watchForInactivity } from '../../inactivity/window'
+import { KeyboardMixin } from '../../keyboard/keyboardMixin'
+import { TOOLBAR_HEIGHT } from '../renderer/app/constants'
+import { ProcessWindow } from './models/process-window'
+import { ViewManager } from './view-manager'
+
 
 const containsPoint = (bounds: Rectangle, point: Point) => {
   return (
@@ -59,7 +58,7 @@ export class AppWindow extends KeyboardMixin(BrowserWindow) {
         plugins: true,
         nodeIntegration: true,
         contextIsolation: false,
-        experimentalFeatures: true,
+        experimentalFeatures: false,
         preload: buildPreloadPath('inactivity-preload.js'),
         partition: WEXOND_PARTITION,
       },
@@ -109,13 +108,13 @@ export class AppWindow extends KeyboardMixin(BrowserWindow) {
       this.webContents.send('html-fullscreen', false)
     })
 
-    this.on('scroll-touch-begin', () => {
-      this.webContents.send('scroll-touch-begin')
-    })
-
-    this.on('scroll-touch-end', () => {
-      this.viewManager.selected?.webContents.send('scroll-touch-end')
-      this.webContents.send('scroll-touch-end')
+    this.webContents.on('input-event', (_, event: Electron.InputEvent) => {
+      if (event.type === 'gestureScrollBegin') {
+          this.webContents.send('scroll-touch-begin')
+      } else if (event.type === 'gestureScrollEnd') {
+        this.viewManager.selected?.webContents.send('scroll-touch-end')
+        this.webContents.send('scroll-touch-end')
+      }
     })
 
     if (platform() === 'win32') {
@@ -159,70 +158,6 @@ export class AppWindow extends KeyboardMixin(BrowserWindow) {
   }
 
   private activateWindowCapturing(ipcEvents: {[key: string]: (...args: any[]) => void}) {
-    const mouseEventsListeners = {
-      'mouse-down': () => {
-        if (this.isMinimized()) return
-  
-        setTimeout(() => {
-          this.draggedWindow = new ProcessWindow(
-            windowManager.getActiveWindow().id,
-          )
-  
-          if (this.draggedWindow.id === handle) {
-            this.draggedWindow = null
-            return
-          }
-        }, 50)
-      },
-      'mouse-up': () => {
-        if (this.selectedWindow && !this.isMoving) {
-          const bounds = this.selectedWindow.getBounds()
-          const { lastBounds } = this.selectedWindow
-
-          if (
-            !this.isMaximized() &&
-            (bounds.width !== lastBounds.width ||
-              bounds.height !== lastBounds.height)
-          ) {
-            this.isUpdatingContentBounds = true
-  
-            clearInterval(this.interval)
-  
-            this.selectedWindow.lastBounds = bounds
-  
-            this.setContentBounds({
-              width: bounds.width,
-              height: bounds.height + TOOLBAR_HEIGHT,
-              x: bounds.x,
-              y: bounds.y - TOOLBAR_HEIGHT - 1,
-            })
-  
-            this.interval = setInterval(() => void this.intervalCallback(), 100)
-  
-            this.isUpdatingContentBounds = false
-          }
-        }
-  
-        this.isMoving = false
-  
-        if (this.draggedWindow && this.willAttachWindow) {
-          const win = this.draggedWindow
-  
-          win.setOwner(this.window)
-  
-          this.windows.push(win)
-  
-          this.willAttachWindow = false
-  
-          setTimeout(() => {
-            this.selectWindow(win)
-          }, 50)
-        }
-  
-        this.draggedWindow = null
-        this.detached = false
-      },
-    }
     const updateBounds = () => {
       this.isMoving = true
 
@@ -239,7 +174,6 @@ export class AppWindow extends KeyboardMixin(BrowserWindow) {
 
     this.on('close', () => {
       Object.entries(ipcEvents).forEach(event => ipcMain.off(...event))
-      Object.entries(mouseEventsListeners).forEach(([eventName, callback]) => mouseEvents.off(eventName, callback))
       for (const window of this.windows) {
         this.detachWindow(window)
       }
@@ -255,7 +189,6 @@ export class AppWindow extends KeyboardMixin(BrowserWindow) {
     this.interval = setInterval(() => void this.intervalCallback(), 100)
 
     Object.entries(ipcEvents).forEach(event => ipcMain.on(...event))
-    Object.entries(mouseEventsListeners).forEach(([eventName, callback]) => mouseEvents.on(eventName, callback))
 
     windowManager.on('window-activated', (window: Window) => {
       this.webContents.send('select-tab', window.id)

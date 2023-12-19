@@ -1,7 +1,5 @@
 import { Window } from 'node-window-manager';
 import { IRectangle } from 'node-window-manager/dist/interfaces'
-import mouseEvents from 'mouse-hooks';
-import { appWindow } from '..';
 
 export class ProcessWindow extends Window {
   public resizable = false;
@@ -24,18 +22,7 @@ export class ProcessWindow extends Window {
   }
 
   public detach(): void {
-    this.setOwner(null);
-
-    mouseEvents.once('mouse-up', () => {
-      setTimeout(() => {
-        this.setBounds({
-          width: this.initialBounds.width,
-          height: this.initialBounds.height,
-        });
-
-        appWindow.webContents.send('remove-tab', this.id);
-      }, 50);
-    });
+    this.setOwner(null)
   }
 
   public show(): void {

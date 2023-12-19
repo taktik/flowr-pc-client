@@ -71,6 +71,7 @@ export function createFlowrWindow(flowrStore: Store<IFlowrStore>, isDebugMode: (
     webPreferences: {
       nodeIntegration: false,
       contextIsolation: false,
+      sandbox: false,
       partition: FLOWR_PARTITION, // needed to display webcam image
       preload: buildPreloadPath('exportNode.js'),
     },
