@@ -104,28 +104,29 @@ module.exports = (env) => {
     const keyboardConfig = appConfig('keyboard', 'ts')
 
     return {
-        output,
-        target: 'electron-renderer',
-        resolve,
-        mode,
-        optimization,
-        module: webpackModule,
-        externals: {
-            fs: 'commonjs fs',
-            path: 'commonjs path',
-            os: 'commonjs os',
-            process: 'commonjs process',
-            electron: 'commonjs electron',
-        },
-        entry: {
-            ...baseEntry,
-            ...flowrPhoneConfig.entry,
-            ...keyboardConfig.entry,
-        },
-        plugins: [
-            ...basePlugins,
-            ...flowrPhoneConfig.plugins,
-            ...keyboardConfig.plugins,
-        ]
+      output,
+      target: 'electron-renderer',
+      resolve,
+      devtool: false,
+      mode,
+      optimization,
+      module: webpackModule,
+      externals: {
+        fs: 'commonjs fs',
+        path: 'commonjs path',
+        os: 'commonjs os',
+        process: 'commonjs process',
+        electron: 'commonjs electron',
+      },
+      entry: {
+        ...baseEntry,
+        ...flowrPhoneConfig.entry,
+        ...keyboardConfig.entry,
+      },
+      plugins: [
+        ...basePlugins,
+        ...flowrPhoneConfig.plugins,
+        ...keyboardConfig.plugins,
+      ],
     }
 }

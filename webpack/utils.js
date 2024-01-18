@@ -82,47 +82,44 @@ const resolve = {
 }
 
 const webpackModule = {
-    rules: [
+  rules: [
+    {
+      test: /\.ejs$/,
+      type: 'asset/source',
+    },
+    {
+      test: /\.html$/,
+      use: 'html-loader',
+    },
+    {
+      test: /\.(ts|tsx)$/,
+      use: [
         {
-            test: /\.ejs$/,
-            type: 'asset/source',
+          loader: 'ts-loader',
+          options: {
+            transpileOnly: true,
+            experimentalWatchApi: true,
+          },
         },
-        {
-            test: /\.html$/,
-            use: 'html-loader',
-        },
-        {
-            test: /\.(ts|tsx)$/,
-            use: [
-                {
-                    loader: 'ts-loader',
-                    options: {
-                        transpileOnly: true,
-                        experimentalWatchApi: true,
-                    },
-                },
-            ],
-        },
-        {
-            test: /\.css/,
-            use: [
-                'style-loader',
-                'css-loader',
-            ],
-        },
-        {
-            test: /\.(png|jpg|gif)$/,
-            type: 'asset/inline',
-        },
-        {
-            test: /\.(eot|svg|ttf|woff|woff2|otf)$/i,
-            type: 'asset/resource',
-        },
-        {
-            test: /\.node$/,
-            type: 'asset/resource',
-        },
-    ],
+      ],
+    },
+    {
+      test: /\.css/,
+      use: ['style-loader', 'css-loader'],
+    },
+    {
+      test: /\.(png|jpg|gif)$/,
+      type: 'asset/inline',
+    },
+    {
+      test: /\.(eot|svg|ttf|woff|woff2|otf)$/i,
+      type: 'asset/resource',
+    },
+    {
+      test: /\.node$/,
+      type: 'asset/resource',
+    },
+  ],
 }
 
 const output = {

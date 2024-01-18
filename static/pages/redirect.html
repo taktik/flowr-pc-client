@@ -1,10 +1,13 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
+    <meta http-equiv="Content-Security-Policy" content="script-src 'self';">
     <style>
         body {
             font-family: 'Roboto', sans-serif;
         }
+
         .button {
             color: white;
             padding: 8px 16px;
@@ -61,65 +64,65 @@
         }
     </style>
 </head>
+
 <body>
-
-<div class="container">
-
-    <div class="item"><h2>Something went wrong</h2></div>
-
-    <details class="item" id="errorDetails">
-        <summary div id="url"> </summary>
-        <div class="detailsContent">
-        <p id="error" style="color: rgb(255, 0, 0,0.8)"> </p>
+    <div class="container">
+        <div class="item">
+            <h2>Something went wrong</h2>
         </div>
-        <div class="detailsContent">
-            <button id="reload" class="button buttonReload" onclick="reload()"> Reload </button>
-        </div>
-    </details>
-    <br>
-    <div id="timer" class="item"></div>
-</div>
+        <details class="item" id="errorDetails">
+            <summary div id="url"> </summary>
+            <div class="detailsContent">
+                <p id="error" style="color: rgb(255, 0, 0,0.8)"> </p>
+            </div>
+            <div class="detailsContent">
+                <button id="reload" class="button buttonReload" onclick="reload()"> Reload </button>
+            </div>
+        </details>
+        <br>
+        <div id="timer" class="item"></div>
+    </div>
+    <script>
+        let Timer;
 
-<script>
-    let Timer
+        async function init() {
+            const data = await window.ipc.invoke('getErrorLoadingFlowr');
+            runTimer(data.remainingTime);
+            document.getElementById('url').innerHTML = data.url;
+            document.getElementById('errorDetails').addEventListener('toggle', function () {
+                if (document.getElementById('errorDetails').open) {
+                    const detailsError = document.getElementById('error');
+                    detailsError.innerText = data.lastError.trim();
+                    getDetails();
+                }
+            });
+        }
 
-    async function init() {
-        const data = await window.ipc.invoke('getErrorLoadingFlowr')
-        runTimer(data.remainingTime)
-        document.getElementById('url').innerHTML = data.url
-        document.getElementById('errorDetails').addEventListener('toggle', function() {
-            if (document.getElementById('errorDetails').open) {
-                const detailsError = document.getElementById('error')
-                detailsError.innerText = data.lastError.trim()
-                getDetails()
-            }
-        })
-    }
+        function getDetails() {
+            clearInterval(Timer);
+        }
 
-    function getDetails() {
-        clearInterval(Timer)
-    }
+        function reload() {
+            window.ipc.send('reload');
+        }
 
-    function reload() {
-        window.ipc.send('reload')
-    }
+        //timer displayed when the user does nothing, we show him the next reload in a timer
+        function runTimer(remainingTime) {
+            let timeLeft = remainingTime ? Math.floor(remainingTime / 1000) : 120;
 
-    //timer displayed when the user does nothing, we show him the next reload in a timer
-    function runTimer(remainingTime) {
-        let timeLeft = remainingTime ? Math.floor(remainingTime / 1000) : 120
+            Timer = setInterval(function () {
+                if (timeLeft < 0) {
+                    clearInterval(Timer);
+                    reload();
+                } else {
+                    document.getElementById('timer').innerHTML = 'reload in...' + timeLeft;
+                    timeLeft -= 1;
+                }
+            }, 1000);
+        }
 
-        Timer = setInterval(function() {
-            if (timeLeft < 0) {
-                clearInterval(Timer)
-                reload()
-            } else {
-                document.getElementById('timer').innerHTML = 'reload in...' + timeLeft
-                timeLeft -= 1
-            }
-        }, 1000)
-    }
-
-    init()
-</script>
+        init()
+    </script>
 </body>
+
 </html>
