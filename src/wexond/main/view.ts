@@ -26,6 +26,7 @@ export class View {
         nodeIntegration: false,
         additionalArguments: [`--tab-id=${id}`],
         contextIsolation: true,
+        sandbox: false,
         partition: WEXOND_PARTITION,
         plugins: true,
       },

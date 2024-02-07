@@ -185,7 +185,7 @@ export class ViewManager {
 
     // Undocumented electron API: https://github.com/electron/electron/issues/26929#issuecomment-754294324
     // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-call
-    (view.webContents as any).destroy()
+    (view.webContents as any)?.destroy()
 
     delete this.views[tabId]
   }
