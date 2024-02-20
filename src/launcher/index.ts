@@ -1,8 +1,15 @@
+import { initialize } from '@electron/remote/main'
 import { app, BrowserWindow, ipcMain, IpcMainEvent } from 'electron'
 import * as log from 'electron-log'
-import { resolve } from 'path'
+import { cloneDeep, mergeWith } from 'lodash'
 import { homedir } from 'os'
-
+import { resolve } from 'path'
+import { FlowrWindow } from 'src/frontend/flowr-window'
+import { createWexondWindow, setWexondLog } from '~/main'
+import { clearBrowsingData } from '~/main/clearBrowsingData'
+import { ApplicationManager } from '../application-manager/application-manager'
+import { openDevTools } from '../common/devTools'
+import { FullScreenManager } from '../common/fullscreen'
 import {
   buildBrowserWindowConfig,
   createFlowrWindow,
@@ -10,23 +17,17 @@ import {
   FRONTEND_CONFIG_NAME,
   initFlowrConfig
 } from '../frontend'
-import { createWexondWindow, setWexondLog } from '~/main'
-import { clearBrowsingData } from '~/main/clearBrowsingData'
-import { getMigrateUserPreferences } from './migration/fromFlowrClientToFlowrPcClient'
-import { FlowrWindow } from 'src/frontend/flowr-window'
-import { Store, StoreManager } from '../frontend/src/store'
-import { ApplicationManager } from '../application-manager/application-manager'
+import defaultBrowserWindowOptions from '../frontend/defaultBrowserWindowOptions'
 import { IFlowrStore } from '../frontend/src/interfaces/flowrStore'
-import { keyboard } from '../keyboard/keyboardController'
-import { cloneDeep, mergeWith } from 'lodash'
-import { FullScreenManager } from '../common/fullscreen'
 import { IFlowrDesktopConfig } from '../frontend/src/interfaces/IFlowrDesktopConfig'
-import { WexondOptions } from '../wexond/main/app-window'
-import { openDevTools } from '../common/devTools'
-import { initialize } from '@electron/remote/main'
-import initComponents from '../wexond/extensions/components'
 import { initializeLogging } from '../frontend/src/logging'
 import { getLogger } from '../frontend/src/logging/loggers'
+import { Store, StoreManager } from '../frontend/src/store'
+import { keyboard } from '../keyboard/keyboardController'
+import initComponents from '../wexond/extensions/components'
+import { WexondOptions } from '../wexond/main/app-window'
+import { getMigrateUserPreferences } from './migration/fromFlowrClientToFlowrPcClient'
+
 
 initializeLogging()
 
@@ -227,7 +228,10 @@ async function main() {
     try {
       flowrWindow = createFlowrWindow(store, isDebugMode, setDebugMode)
       keyboard.setParentWindow(flowrWindow)
-      FullScreenManager.applyDefaultActionOnWindow(flowrWindow)
+      if (!defaultBrowserWindowOptions(store).kiosk) {
+        FullScreenManager.applyDefaultActionOnWindow(flowrWindow)
+      }
+      
       applicationManager.flowrWindow = flowrWindow
 
       flowrWindow.on('close', () => {

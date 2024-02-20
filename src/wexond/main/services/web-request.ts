@@ -86,8 +86,8 @@ export const loadFilters = async (): Promise<void> => {
 const getTabByWebContentsId = (window: AppWindow, id: number) => {
   for (const key in window.viewManager.views) {
     const view = window.viewManager.views[key]
-
-    if (view.webContents.id === id) {
+   
+    if (view.webContents?.id === id) {
       return view.tabId
     }
   }
