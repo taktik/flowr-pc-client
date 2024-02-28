@@ -135,7 +135,6 @@ export function createFlowrWindow(flowrStore: Store<IFlowrStore>, isDebugMode: (
       }
   
       try {
-        reloadTimer = new Timer(() => void loadFlowr(), RELOAD_TIMEOUT)
         await mainWindow.loadURL(url.href)
       } catch (untypedError) {
         const e = untypedError as NodeJS.ErrnoException
@@ -147,6 +146,7 @@ export function createFlowrWindow(flowrStore: Store<IFlowrStore>, isDebugMode: (
         log.warn('Error loading flowr window', e)
         lastError = e.message
         await loadRedirectPage()
+        reloadTimer = new Timer(() => void loadFlowr(), RELOAD_TIMEOUT)
       }
     } catch (e) {
       isLaunchedUrlCorrect = false
