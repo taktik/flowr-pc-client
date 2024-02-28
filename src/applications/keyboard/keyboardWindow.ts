@@ -16,9 +16,9 @@ function buildPositionFromParents(parentRectangle: Rectangle): Rectangle {
 
 export class KeyboardWindow extends BrowserWindow {
   private log = getLogger('Keyboard window')
-  private get webContentsToSend(): WebContents | undefined {
-    const browserView = this.parent?.getBrowserView()
-    return browserView?.webContents ?? this.parent?.webContents
+  private webContentsToSend(): WebContents | undefined {
+    const browserView = !this.parent?.isDestroyed() ? this.parent?.getBrowserView() : undefined
+    return browserView?.webContents ?? (!this.parent?.isDestroyed() ? this.parent?.webContents : undefined)
   }
 
   constructor(private parent?: BrowserWindow) {
@@ -62,13 +62,13 @@ export class KeyboardWindow extends BrowserWindow {
   private onKeyPress = (_: IpcMainEvent, keyCode: string): void => {
     const keyDown = this.makeEvent('keyDown', keyCode)
     const char = this.makeEvent('char', keyCode)
-    this.webContentsToSend?.sendInputEvent(keyDown)
-    this.webContentsToSend?.sendInputEvent(char)
+    this.webContentsToSend()?.sendInputEvent(keyDown)
+    this.webContentsToSend()?.sendInputEvent(char)
   }
 
   private onKeyUp = (_: IpcMainEvent, keyCode: string): void => {
     const keyUp = this.makeEvent('keyUp', keyCode)
-    this.webContentsToSend?.sendInputEvent(keyUp)
+    this.webContentsToSend()?.sendInputEvent(keyUp)
   }
 
   private resize = (_: IpcMainEvent, dimensions: { height: number }): void => {

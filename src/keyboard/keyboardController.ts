@@ -117,15 +117,15 @@ class Keyboard {
     }
   }
 
-  setParentWindow(parent: BrowserWindow) {
-    if (this.parentCloseCallback && this.parentCloseCallback.parent !== parent) {
+  setParentWindow(parent: BrowserWindow | null) {
+    if (!this.parentCloseCallback?.parent || this.parentCloseCallback.parent !== parent) {
       const callback = () => {
         this.keyboardWindow?.setParentWindow(null)
         this.keyboardWindow?.hide()
       }
 
-      this.parentCloseCallback.parent.off('close', this.parentCloseCallback.callback)
-      parent.on('close', callback)
+      this.parentCloseCallback?.parent?.off('close', this.parentCloseCallback.callback)
+      parent?.on('close', callback)
       this.parentCloseCallback = { parent, callback }
     }
     this.keyboardWindow?.setParentWindow(parent)
