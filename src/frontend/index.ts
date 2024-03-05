@@ -47,7 +47,7 @@ export async function initFlowrConfig(data: IFlowrStore | null): Promise<void> {
 }
 const DEVICE_DETAIL_PATH = join(FlowrDataDir, 'device.json')
 const devicesDetailsHelper = new DeviceDetailHelper(DEVICE_DETAIL_PATH)
-const RELOAD_TIMEOUT = 120000 // 2min
+const RELOAD_TIMEOUT = 60000 // 1min
 
 let isLaunchedUrlCorrect = true
 let lastError = ''
