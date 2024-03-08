@@ -124,6 +124,40 @@ The builds may automatically be published on github. For this you need to setup 
 ```
 $ npm run compile-win32 -- --publish always # note the additional "--" to pass the flag to the actual command
 ```
+
+### Build for Mac
+Attention: use ffmpeg-static 5.2.0
+```
+nvm use && rm -rf node_modules && npm run setup && npm run build && npm run cm
+```
+### Build for Mac with Widevine support
+Attention: use ffmpeg-static 5.2.0
+```
+nvm use && rm -rf node_modules && npm run setup-widevine && npm run build && npm run cwm
+```
+
+### Build Linux
+Attention: use ffmpeg-static 3.0.0
+```
+nvm use && rm -rf node_modules && npm run setup && npm run build && npm run cl
+```
+### Build for Linux with Widevine support
+Attention: use ffmpeg-static 3.0.0
+```
+nvm use && rm -rf node_modules && npm run setup-widevine && npm run build && npm run cwl
+```
+
+### Build for Windows (On Windows)
+Attention: use ffmpeg-static 3.0.0
+```
+nvm use && rm -rf node_modules && npm run setup && npm run build && npm run cw
+```
+### Build for Windows with Widevine support (On Windows)
+Attention: use ffmpeg-static 3.0.0
+```
+nvm use && rm -rf node_modules && npm run setup-widevine-win && npm run build && npm run cww
+```
+
 ### Helpers (linux/OSX only)
 Two script are available to help build and publish
 ```
