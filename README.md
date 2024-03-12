@@ -155,7 +155,7 @@ nvm use 18.16.1 ; rd .\node_modules -Recurse -Force ; npm run setup ; npm run bu
 ### Build for Windows with Widevine support (On Windows)
 Attention: use ffmpeg-static 3.0.0
 ```
-nvm use 18.16.1 ; rd .\node_modules -Recurse -Force ; npm run setup-widevine-win ; npm run build ; npm run cww
+nvm use 18.16.1 ; rd .\node_modules -Recurse -Force ; npm run setup-widevine ; npm run build ; npm run cww
 ```
 
 ### Helpers (linux/OSX only)
