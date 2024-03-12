@@ -47,7 +47,7 @@ export async function initFlowrConfig(data: IFlowrStore | null): Promise<void> {
 }
 const DEVICE_DETAIL_PATH = join(FlowrDataDir, 'device.json')
 const devicesDetailsHelper = new DeviceDetailHelper(DEVICE_DETAIL_PATH)
-const RELOAD_TIMEOUT = 120000 // 2min
+const RELOAD_TIMEOUT = 60000 // 1min
 
 let isLaunchedUrlCorrect = true
 let lastError = ''
@@ -135,7 +135,6 @@ export function createFlowrWindow(flowrStore: Store<IFlowrStore>, isDebugMode: (
       }
   
       try {
-        reloadTimer = new Timer(() => void loadFlowr(), RELOAD_TIMEOUT)
         await mainWindow.loadURL(url.href)
       } catch (untypedError) {
         const e = untypedError as NodeJS.ErrnoException
@@ -147,6 +146,7 @@ export function createFlowrWindow(flowrStore: Store<IFlowrStore>, isDebugMode: (
         log.warn('Error loading flowr window', e)
         lastError = e.message
         await loadRedirectPage()
+        reloadTimer = new Timer(() => void loadFlowr(), RELOAD_TIMEOUT)
       }
     } catch (e) {
       isLaunchedUrlCorrect = false
