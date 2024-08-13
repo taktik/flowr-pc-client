@@ -1,8 +1,9 @@
 import { ChildProcessWithoutNullStreams, spawn } from 'child_process'
-import path from 'path'
+import {join, resolve} from 'path'
 import { BeIDDataHandler } from './beid-message-handler'
-import {WebContents} from "electron";
+import {app, WebContents} from "electron";
 import {platform} from "os";
+import * as log from "electron-log";
 
 // Event to handle
 // on(event: 'close', listener: (code: number | null, signal: NodeJS.Signals | null) => void): this;
@@ -45,12 +46,17 @@ class BeIDProcessHandler {
     }
 
     private start(webContents: WebContents) {
-        this.childProcessReference = spawn(this.executablePath)
-        this.messageHandler.webContents = webContents
-        this.childProcessReference.stdout.on('data', this.childProcessStandardOutputHandler)
-        this.childProcessReference.stderr.on('data', this.childProcessStandardErrorHandler)
-        this.childProcessReference.on('exit', this.childProcessExitHandler)
-        this.childProcessReference.on('close', this.childProcessExitHandler)
+        try {
+            this.childProcessReference = spawn(this.executablePath)
+            this.messageHandler.webContents = webContents
+            this.childProcessReference.stdout.on('data', this.childProcessStandardOutputHandler)
+            this.childProcessReference.stderr.on('data', this.childProcessStandardErrorHandler)
+            this.childProcessReference.on('exit', this.childProcessExitHandler)
+            this.childProcessReference.on('close', this.childProcessExitHandler)
+        } catch (err) {
+            log.error(err)
+        }
+
     }
 
     private constructor(path: string, webContents: WebContents) {
@@ -62,9 +68,16 @@ class BeIDProcessHandler {
 
 let handler: BeIDProcessHandler
 
+const computeExecutablePath = () => {
+    const fileName = platform() === 'win32' ? 'beid_reader.exe': 'beid_reader'
+    if (process.env.ENV === 'dev') {
+        return join(app.getAppPath(), `script/beid/${fileName}`)
+    }
+    return resolve(app.getAppPath(), `script/beid/${fileName}`)
+}
+
 const init = (webContents: WebContents ) => {
-    const executablePath = platform() === 'win32' ? 'src/beidReader/beid/beid_reader.exe' : 'src/beidReader/beid/beid_reader'
-    handler = BeIDProcessHandler.getInstance(executablePath, webContents)
+    handler = BeIDProcessHandler.getInstance(computeExecutablePath(), webContents)
 }
 
 const getHandler = () => {
