@@ -27,6 +27,7 @@ import { keyboard } from '../keyboard/keyboardController'
 import initComponents from '../wexond/extensions/components'
 import { WexondOptions } from '../wexond/main/app-window'
 import { getMigrateUserPreferences } from './migration/fromFlowrClientToFlowrPcClient'
+import {init as initBeiReader} from "../beidReader/beid";
 
 
 initializeLogging()
@@ -231,7 +232,7 @@ async function main() {
       if (!defaultBrowserWindowOptions(store).kiosk) {
         FullScreenManager.applyDefaultActionOnWindow(flowrWindow)
       }
-      
+
       applicationManager.flowrWindow = flowrWindow
 
       flowrWindow.on('close', () => {
@@ -250,6 +251,8 @@ async function main() {
       })
 
       ipcMain.on('flowrLanguageChanged', (e: Event, lang: string) => applicationManager.languageChanged(lang))
+      // ADD check if bei_reader should be init
+      initBeiReader(flowrWindow.webContents)
     } catch (e) {
       console.error('Error in init', e)
     }

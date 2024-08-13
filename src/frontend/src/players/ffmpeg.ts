@@ -33,8 +33,8 @@ function handleError(
 
 const log = getLogger('FlowrFfmpeg')
 
-Ffmpeg.setFfmpegPath(resolve(app.getAppPath(), ffmpegPath))
-
+// Ffmpeg.setFfmpegPath(resolve(app.getAppPath(), ffmpegPath))
+//
 /**
  * The container formats we use as ffmpeg's outputs
  */
@@ -44,9 +44,9 @@ enum OutputFormat {
 }
 
 /**
- * 
- * @param {OutputFormat} format 
- * @returns 
+ *
+ * @param {OutputFormat} format
+ * @returns
  */
 function getOutputParserForFormat(format: OutputFormat): FfmpegParserConstructor {
   switch (format) {
