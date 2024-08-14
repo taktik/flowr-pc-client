@@ -32,16 +32,33 @@ export class Incoming extends React.Component<IncomingProps> {
   render() {
     return (
       <div className="incoming-call-container">
-        <h2 className="title">{this.props.translator.translate('Incoming Call', this.props.lang)}</h2>
-        <h1 className="phoneNumber">{formatCallingNumber(this.props.callingNumber) || ''}</h1>
+        <h2 className="title">
+          {this.props.translator.translate(
+            'Incoming Call',
+            this.props.lang,
+          )}
+        </h2>
+        <h2 className="title">
+          {this.props.translator.translate(
+            'Pick Up the phone',
+            this.props.lang,
+          )}
+        </h2>
+        <h1 className="phoneNumber">
+          {formatCallingNumber(this.props.callingNumber) || ''}
+        </h1>
         <FlexRowSpaceEvenly className="buttons-container">
           <div className="buttonContainer">
             <AnswerPhoneIcon answer={this.props.answer} />
-            <span className="buttonSpan">{this.props.translator.translate('Accept', this.props.lang)}</span>
+            <span className="buttonSpan">
+              {this.props.translator.translate('Accept', this.props.lang)}
+            </span>
           </div>
           <div className="buttonContainer">
             <HangupPhoneIcon hangup={this.props.hangup} />
-            <span className="buttonSpan">{this.props.translator.translate('Decline', this.props.lang)}</span>
+            <span className="buttonSpan">
+              {this.props.translator.translate('Decline', this.props.lang)}
+            </span>
           </div>
         </FlexRowSpaceEvenly>
       </div>

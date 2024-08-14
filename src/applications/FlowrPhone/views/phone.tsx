@@ -367,7 +367,7 @@ class Phone extends React.Component<PhoneProps, PhoneAppState> {
 
   componentWillMount(): void {
     this.setHistory(this.props.history, this.props.currentUser)
-    this.setFavorites(this.props.history, this.props.currentUser)
+    this.setFavorites(this.props.favorites, this.props.currentUser)
   }
 
   componentWillUnmount(): void {
