@@ -58,7 +58,15 @@ export class ApplicationManager {
       const preload = buildApplicationPreloadPath(name)
       const index = getApplicationIndexUrl(name)
       const store = storeManager.createStore<Record<string, any>>(name, { defaults: {} })
-      const clearStore = this.flowrStore?.get('clearAppDataOnStart') ?? false
+      let clearStore = false
+
+      switch (name) {
+        case 'FlowrPhone': {
+          const applicationOptions = this.flowrStore?.get('applications') ?? { 'FlowrPhone': { clearAppDataOnStart: false } }
+          clearStore = applicationOptions['FlowrPhone'].clearAppDataOnStart ?? false
+          break
+        }
+      }
 
       if (clearStore) {
         // Clear application storage on client start
