@@ -112,10 +112,12 @@ export class Calling extends React.Component<CallingProps, CallingState> {
     return (
       <div className="calling-container">
         {title}
-        <PhoneNumber className="phoneNumber">{formatCallingNumber(this.props.callingNumber)}</PhoneNumber>
+        <PhoneNumber className="phoneNumber">
+          {formatCallingNumber(this.props.callingNumber)}
+        </PhoneNumber>
         <div className="flex-container">
           <div className="flex-column width-50">
-            { elapsedTime }
+            {elapsedTime}
             {/* <FlexRowCenter className={this.props.className}>
               {<div>
                 <MuteMicIcon mute={this.props.mute}/>
@@ -131,15 +133,33 @@ export class Calling extends React.Component<CallingProps, CallingState> {
               </div>}
             </FlexRowCenter> */}
             <div className="flex-row">
-                <div className="buttonContainer">
-                  <KeyPadIcon displayKeyPad={this.toggleKeyboard.bind(this)}/>
-                  <span className="buttonSpan">{this.props.translator.translate('Keypad', this.props.lang)}</span>
-                </div>
-                <div className="buttonContainer">
-                  <HangupPhoneIcon hangup={this.props.hangup} />
-                  <span className="buttonSpan">{this.props.translator.translate('Hang Up', this.props.lang)}</span>
-                </div>
+              <div className="buttonContainer">
+                <KeyPadIcon
+                  displayKeyPad={this.toggleKeyboard.bind(this)}
+                />
+                <span className="buttonSpan">
+                  {this.props.translator.translate(
+                    'Keypad',
+                    this.props.lang,
+                  )}
+                </span>
+              </div>
+              <div className="buttonContainer">
+                <HangupPhoneIcon hangup={this.props.hangup} />
+                <span className="buttonSpan">
+                  {this.props.translator.translate(
+                    'Hang Up',
+                    this.props.lang,
+                  )}
+                </span>
+              </div>
             </div>
+            <h4 className="warning">
+              {this.props.translator.translate(
+                'Pick Up the phone',
+                this.props.lang,
+              )}
+            </h4>
           </div>
 
           {keyboard}

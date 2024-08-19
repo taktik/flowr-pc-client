@@ -9,6 +9,17 @@
     box-sizing: border-box;
     background: rgba(0,0,0,0.8);
     overflow: hidden;
+
+    .warning {
+        font-family: 'Roboto', Arial, Helvetica, sans-serif;
+        font-size: 16px;
+        font-weight: normal;
+        color: white;
+        text-align: center;
+        margin: 12px 0;
+        height: 24px;
+        flex-grow: 0;
+    }
 }
 
 .calling-container > .flex-container {

@@ -38,12 +38,6 @@ export class Incoming extends React.Component<IncomingProps> {
             this.props.lang,
           )}
         </h2>
-        <h2 className="title">
-          {this.props.translator.translate(
-            'Pick Up the phone',
-            this.props.lang,
-          )}
-        </h2>
         <h1 className="phoneNumber">
           {formatCallingNumber(this.props.callingNumber) || ''}
         </h1>
@@ -61,6 +55,12 @@ export class Incoming extends React.Component<IncomingProps> {
             </span>
           </div>
         </FlexRowSpaceEvenly>
+        <h4 className="warning">
+          {this.props.translator.translate(
+            'Pick Up the phone',
+            this.props.lang,
+          )}
+        </h4>
       </div>
     )
   }
