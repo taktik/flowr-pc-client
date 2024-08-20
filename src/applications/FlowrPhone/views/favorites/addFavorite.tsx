@@ -15,7 +15,7 @@ export interface AddFavoriteProps {
   save: (favorite: CallingNumber) => void
   openKeyboard?: () => void
   closeKeyboard?: () => void
-  phoneNumberPrefix?: boolean
+  applyExternalPhoneNumberPrefix?: boolean
 }
 
 interface AddFavoriteState {
@@ -70,12 +70,12 @@ export class AddFavorite extends React.Component<AddFavoriteProps, AddFavoriteSt
 
   handleNumberChange(e: React.ChangeEvent<HTMLInputElement>): void {
     if (numberValidationRegExp.test(e.target.value)) {
-      
-      if (this.props.phoneNumberPrefix) {
+      if (this.props.applyExternalPhoneNumberPrefix) {
         const value = e.target.value
 
-        // Add a prefix '0' if the first character is not '0' and the value is not empty
-        if (value.length > 0 && value.charAt(0) !== '0') {
+        //  Add a prefix '0' if the first character is a '0'
+        //  A number starting with '0' is considered as a external number and must be dialed with the prefix
+        if (value.length > 1 && !value.startsWith('00') && value.startsWith('0')) {
           e.target.value = '0' + value
         }
       }

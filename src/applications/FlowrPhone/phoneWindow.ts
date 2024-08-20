@@ -14,7 +14,7 @@ interface PhoneAppProps {
   history: boolean
   favorites: boolean
   currentUser: string
-  phoneNumberPrefix: string
+  applyExternalPhoneNumberPrefix: boolean
 }
 
 function buildPositionFromParents(parentRectangle: Rectangle) {
@@ -85,7 +85,7 @@ export class PhoneWindow extends KeyboardMixin(BrowserWindow) {
           history: !!props.history,
           lang: props.lang,
           registerProps: username && host ? { username, host } : null,
-          phoneNumberPrefix: props.phoneNumberPrefix,
+          applyExternalPhoneNumberPrefix: props.applyExternalPhoneNumberPrefix,
         }
       }
     }

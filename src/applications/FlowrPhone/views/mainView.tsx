@@ -40,7 +40,7 @@ interface MainViewProps {
   openKeyboard?: () => void
   closeKeyboard?: () => void
   hidePhone?: () => void
-  phoneNumberPrefix?: boolean
+  applyExternalPhoneNumberPrefix?: boolean
 }
 
 interface MainViewState {
@@ -105,7 +105,7 @@ export class MainView extends React.Component<MainViewProps, MainViewState> {
             closeKeyboard={this.props.closeKeyboard}
             remove={this.props.removeFavorite}
             save={this.props.saveFavorite}
-            phoneNumberPrefix={this.props.phoneNumberPrefix}
+            applyExternalPhoneNumberPrefix={this.props.applyExternalPhoneNumberPrefix}
           />)
         } else {
           return <></>  

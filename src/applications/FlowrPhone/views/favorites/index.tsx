@@ -16,7 +16,7 @@ interface FavoritesProps {
   save: (phoneNumber: CallingNumber) => void
   openKeyboard?: () => void
   closeKeyboard?: () => void
-  phoneNumberPrefix?: boolean
+  applyExternalPhoneNumberPrefix?: boolean
 }
 
 enum FavoritesRoute { LIST, ADD }
@@ -96,7 +96,7 @@ export class FavoritesView extends React.Component<FavoritesProps, FavoritesStat
           back={this.listRoute.bind(this)}
           openKeyboard={this.props.openKeyboard}
           closeKeyboard={this.props.closeKeyboard}
-          phoneNumberPrefix={this.props.phoneNumberPrefix}
+          applyExternalPhoneNumberPrefix={this.props.applyExternalPhoneNumberPrefix}
         ></AddFavorite>
       </div>
     )

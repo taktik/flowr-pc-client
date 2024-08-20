@@ -40,7 +40,7 @@ type PhoneProps = {
   currentUser: string,
   history: boolean,
   favorites: boolean,
-  phoneNumberPrefix?: boolean
+  applyExternalPhoneNumberPrefix?: boolean
 }
 
 type PhoneAppState = {
@@ -359,7 +359,7 @@ class Phone extends React.Component<PhoneProps, PhoneAppState> {
             openKeyboard={window.openKeyboard}
             closeKeyboard={window.closeKeyboard}
             hidePhone={this.hide.bind(this)}
-            phoneNumberPrefix={this.props.phoneNumberPrefix}
+            applyExternalPhoneNumberPrefix={this.props.applyExternalPhoneNumberPrefix}
         />
       </div>
     )
