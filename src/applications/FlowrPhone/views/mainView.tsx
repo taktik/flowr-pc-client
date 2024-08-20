@@ -40,6 +40,7 @@ interface MainViewProps {
   openKeyboard?: () => void
   closeKeyboard?: () => void
   hidePhone?: () => void
+  phoneNumberPrefix?: boolean
 }
 
 interface MainViewState {
@@ -104,6 +105,7 @@ export class MainView extends React.Component<MainViewProps, MainViewState> {
             closeKeyboard={this.props.closeKeyboard}
             remove={this.props.removeFavorite}
             save={this.props.saveFavorite}
+            phoneNumberPrefix={this.props.phoneNumberPrefix}
           />)
         } else {
           return <></>  
@@ -132,12 +134,10 @@ export class MainView extends React.Component<MainViewProps, MainViewState> {
       elapsedTime: this.props.elapsedTime,
     }
   }
-
   
   getUnavailableTemplate = () : JSX.Element => <Unavailable translator={this.props.translator} lang={this.props.lang} />
 
   render(): JSX.Element {
-
     const templateIfCapable = (template: JSX.Element, capability: PhoneCapabilities): JSX.Element => {
       if (!this.props.capabilities || this.props.capabilities[capability]) {
         return template
@@ -166,6 +166,7 @@ export class MainView extends React.Component<MainViewProps, MainViewState> {
       default:
         template = this.getUnavailableTemplate()
     }
+
     return (
         <Container>
           <>

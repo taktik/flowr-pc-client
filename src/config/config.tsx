@@ -157,6 +157,12 @@ export function Config({ config, lastError, isLaunchedUrlCorrect }: ConfigProps)
           register={register}
           path="applications.FlowrPhone.clearAppDataOnStart"
         />
+        <LabeledInput
+          label="Prefix phone number by '0'"
+          type="checkbox"
+          register={register}
+          path="applications.FlowrPhone.phoneNumberPrefix"
+        />
 
         <h3>Virtual keyboard</h3>
         <LabeledInput

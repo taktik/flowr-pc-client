@@ -76,7 +76,8 @@ const defaultPhoneProps: PhoneProps = {
   },
   currentUser: '',
   history: false,
-  favorites: false
+  favorites: false,
+  phoneNumberPrefix: false,
 }
 
 window.ipcRenderer.invoke('initProps')
@@ -93,6 +94,7 @@ window.ipcRenderer.invoke('initProps')
         lang={props.lang}
         phoneServer={props.server}
         registerProps={props.registerProps}
+        phoneNumberPrefix={props.phoneNumberPrefix}
     />, document.getElementById('phone'))
   })
   .catch((error) => window.ipcRenderer.send('phone-error', error))

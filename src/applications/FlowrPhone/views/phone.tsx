@@ -40,6 +40,7 @@ type PhoneProps = {
   currentUser: string,
   history: boolean,
   favorites: boolean,
+  phoneNumberPrefix?: boolean
 }
 
 type PhoneAppState = {
@@ -200,7 +201,6 @@ class Phone extends React.Component<PhoneProps, PhoneAppState> {
   }
 
   receivedRegisterProps(e: Event, registerProps: RegisterProps): void {
-    console.log('Received register props', registerProps)
     this.registerStateMachine.registerProps = registerProps
   }
 
@@ -240,7 +240,6 @@ class Phone extends React.Component<PhoneProps, PhoneAppState> {
 
   historyChanged(e: Event, history: boolean): void {
     if (this._history && !history) {
-      console.log('History functionality revoked')
       delete this._history
     }
   }
@@ -360,6 +359,7 @@ class Phone extends React.Component<PhoneProps, PhoneAppState> {
             openKeyboard={window.openKeyboard}
             closeKeyboard={window.closeKeyboard}
             hidePhone={this.hide.bind(this)}
+            phoneNumberPrefix={this.props.phoneNumberPrefix}
         />
       </div>
     )

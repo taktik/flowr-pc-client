@@ -21,7 +21,7 @@ export interface IFlowrStore {
   windowBounds: { width: number; height: number }
   isMaximized: boolean
   clearAppDataOnStart: boolean
-  applications: { FlowrPhone: { clearAppDataOnStart: boolean } }
+  applications: { [key:string]: any }
   extUrl: string
   isKiosk: boolean
   flowrMonitoringTime?: number

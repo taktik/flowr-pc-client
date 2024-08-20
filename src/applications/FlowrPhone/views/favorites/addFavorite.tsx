@@ -1,10 +1,10 @@
 import * as React from 'react'
-import { CallingNumber } from '../phone'
-import { Translator } from '../../../../translator/translator'
-import { RemoteCodes } from '../../remote'
-import { numberValidationRegExp } from '../../helper/format'
-import { ClickableIcon } from '../clickableIcon'
 import styled from 'styled-components'
+import { Translator } from '../../../../translator/translator'
+import { numberValidationRegExp } from '../../helper/format'
+import { RemoteCodes } from '../../remote'
+import { ClickableIcon } from '../clickableIcon'
+import { CallingNumber } from '../phone'
 
 export interface AddFavoriteProps {
   name?: string
@@ -15,6 +15,7 @@ export interface AddFavoriteProps {
   save: (favorite: CallingNumber) => void
   openKeyboard?: () => void
   closeKeyboard?: () => void
+  phoneNumberPrefix?: boolean
 }
 
 interface AddFavoriteState {
@@ -48,7 +49,7 @@ export class AddFavorite extends React.Component<AddFavoriteProps, AddFavoriteSt
     this.state = { name: this.props.name || '', value: this.props.value || '' }
   }
 
-  save() {
+  save(): void {
     const { name, value } = this.state
 
     if (!name || !value) {
@@ -63,17 +64,27 @@ export class AddFavorite extends React.Component<AddFavoriteProps, AddFavoriteSt
     }
   }
 
-  handleNameChange(e: React.ChangeEvent<HTMLInputElement>) {
+  handleNameChange(e: React.ChangeEvent<HTMLInputElement>): void {
     this.setState({ name: e.target.value })
   }
 
-  handleNumberChange(e: React.ChangeEvent<HTMLInputElement>) {
+  handleNumberChange(e: React.ChangeEvent<HTMLInputElement>): void {
     if (numberValidationRegExp.test(e.target.value)) {
+      
+      if (this.props.phoneNumberPrefix) {
+        const value = e.target.value
+
+        // Add a prefix '0' if the first character is not '0' and the value is not empty
+        if (value.length > 0 && value.charAt(0) !== '0') {
+          e.target.value = '0' + value
+        }
+      }
+      
       this.setState({ value: e.target.value })
     }
   }
 
-  render() {
+  render(): JSX.Element {
     return (
       <div className="add-favorite">
           <label className="label">{this.props.translator.translate('Name', this.props.lang)}</label>
@@ -91,14 +102,14 @@ export class AddFavorite extends React.Component<AddFavoriteProps, AddFavoriteSt
     )
   }
 
-  componentWillMount() {
+  componentWillMount(): void {
     document.addEventListener('keydown', this.globalOnKeyDown)
     if (this.props.openKeyboard) {
       this.props.openKeyboard()
     }
   }
 
-  componentWillUnmount() {
+  componentWillUnmount(): void {
     document.removeEventListener('keydown', this.globalOnKeyDown)
     if (this.props.closeKeyboard) {
       this.props.closeKeyboard()
