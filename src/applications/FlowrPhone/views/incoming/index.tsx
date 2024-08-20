@@ -29,7 +29,7 @@ export class Incoming extends React.Component<IncomingProps> {
     this.onKeyDown = this.onKeyDown.bind(this)
   }
 
-  render() {
+  render(): JSX.Element {
     return (
       <div className="incoming-call-container">
         <h2 className="title">
@@ -65,11 +65,11 @@ export class Incoming extends React.Component<IncomingProps> {
     )
   }
 
-  componentDidMount() {
+  componentDidMount(): void {
     document.addEventListener('keydown', this.onKeyDown)
   }
 
-  componentWillUnmount() {
+  componentWillUnmount(): void {
     document.removeEventListener('keydown', this.onKeyDown)
   }
 }
