@@ -1,17 +1,17 @@
+import { FontAwesomeIcon } from "@fortawesome/react-fontawesome"
 import * as React from 'react'
-import { Incoming } from './incoming'
-import { Unavailable } from './unavailable'
-import { OffHook } from './offHook'
-import { Calling } from './calling'
-import { CallState, OFF_HOOK_STATE, INCOMING_STATE, ANSWERED_STATE, CALL_OUT_STATE, OUTGOING_STATE } from '../stateMachines/callStateMachine'
 import styled from 'styled-components'
 import { robotoRegular } from '.'
 import { Translator } from '../../../translator/translator'
-import { PhoneCapabilities, CallingNumber } from './phone'
-import { HistoryView } from './history'
 import { PhoneHistory } from '../features/history'
+import { ANSWERED_STATE, CallState, CALL_OUT_STATE, INCOMING_STATE, OFF_HOOK_STATE, OUTGOING_STATE } from '../stateMachines/callStateMachine'
+import { Calling } from './calling'
 import { FavoritesView } from './favorites'
-import {FontAwesomeIcon} from "@fortawesome/react-fontawesome";
+import { HistoryView } from './history'
+import { Incoming } from './incoming'
+import { OffHook } from './offHook'
+import { CallingNumber, PhoneCapabilities } from './phone'
+import { Unavailable } from './unavailable'
 
 enum PhoneRoute {
   MAIN,
@@ -47,6 +47,8 @@ interface MainViewState {
   callNumber?: CallingNumber
 }
 
+interface baseCallingProps { translator: Translator, lang: string, hangup: () => void, mute: () => void, callingNumber: CallingNumber, elapsedTime: number }
+
 const StyledCalling = styled(Calling)`
   height: 50%;
   width: 100%;
@@ -78,7 +80,7 @@ export class MainView extends React.Component<MainViewProps, MainViewState> {
     return (callNumber?: CallingNumber): void => this.setState({ route, callNumber })
   }
 
-  call(callNumber: CallingNumber) {
+  call(callNumber: CallingNumber): void {
     this.props.call(callNumber)
     this.setState({ callNumber: { value: '' } })
   }
@@ -88,6 +90,8 @@ export class MainView extends React.Component<MainViewProps, MainViewState> {
       case PhoneRoute.HISTORY:
         if (this.props.history) {
           return (<HistoryView phoneCalls={this.props.history} favorites={this.props.favorites} select={this.goToPage(PhoneRoute.MAIN)} translator={this.props.translator} lang={this.props.lang}/>)
+        } else {
+          return <></>
         }
       case PhoneRoute.FAVORITES:
         if (this.props.favorites) {
@@ -101,7 +105,9 @@ export class MainView extends React.Component<MainViewProps, MainViewState> {
             remove={this.props.removeFavorite}
             save={this.props.saveFavorite}
           />)
-        }
+        } else {
+          return <></>  
+        } 
       case PhoneRoute.MAIN:
       default:
         return (<OffHook
@@ -116,7 +122,7 @@ export class MainView extends React.Component<MainViewProps, MainViewState> {
     }
   }
 
-  baseCallingProps() {
+  baseCallingProps(): baseCallingProps {
     return {
       translator: this.props.translator,
       lang: this.props.lang,
@@ -127,19 +133,20 @@ export class MainView extends React.Component<MainViewProps, MainViewState> {
     }
   }
 
-  render() {
-    let template: JSX.Element
+  
+  getUnavailableTemplate = () : JSX.Element => <Unavailable translator={this.props.translator} lang={this.props.lang} />
 
-    const unavailableTemplate = (<Unavailable translator={this.props.translator} lang={this.props.lang} />)
+  render(): JSX.Element {
 
     const templateIfCapable = (template: JSX.Element, capability: PhoneCapabilities): JSX.Element => {
       if (!this.props.capabilities || this.props.capabilities[capability]) {
         return template
       }
-      console.log('FORBIDDEN', this.props.capabilities, capability)
-      return unavailableTemplate
+      return this.getUnavailableTemplate()
     }
 
+    let template: JSX.Element
+    
     switch (this.props.callState) {
       case OFF_HOOK_STATE:
         template = templateIfCapable(this.baseTemplateForRoute(), PhoneCapabilities.EMIT)
@@ -157,7 +164,7 @@ export class MainView extends React.Component<MainViewProps, MainViewState> {
         template = templateIfCapable((<StyledCalling mode={OUTGOING_STATE} {...this.baseCallingProps()}/>), PhoneCapabilities.EMIT)
         break
       default:
-        template = unavailableTemplate
+        template = this.getUnavailableTemplate()
     }
     return (
         <Container>
