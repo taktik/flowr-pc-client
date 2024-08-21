@@ -154,12 +154,12 @@ export class Calling extends React.Component<CallingProps, CallingState> {
                 </span>
               </div>
             </div>
-            <h4 className="warning">
+            <p className="warning">
               {this.props.translator.translate(
                 'Pick Up the phone',
                 this.props.lang,
               )}
-            </h4>
+            </p>
           </div>
 
           {keyboard}

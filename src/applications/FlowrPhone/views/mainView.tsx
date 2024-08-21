@@ -51,7 +51,7 @@ interface MainViewState {
 interface baseCallingProps { translator: Translator, lang: string, hangup: () => void, mute: () => void, callingNumber: CallingNumber, elapsedTime: number }
 
 const StyledCalling = styled(Calling)`
-  height: 50%;
+  height: 70%;
   width: 100%;
   ${robotoRegular}
   box-sizing: border-box;
@@ -59,7 +59,7 @@ const StyledCalling = styled(Calling)`
 
 const Container = styled.div `
   position: absolute;
-  height: 440px;
+  height: 540px;
   width: 880px;
   top: 50%;
   left: 50%;
