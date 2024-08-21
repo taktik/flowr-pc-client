@@ -75,11 +75,11 @@ export class Calling extends React.Component<CallingProps, CallingState> {
     this.onKeyDown = this.onKeyDown.bind(this)
   }
 
-  toggleKeyboard() {
+  toggleKeyboard(): void {
     this.setState(state => ({ displayKeyPad: !state.displayKeyPad }))
   }
 
-  render() {
+  render(): JSX.Element {
     let title
     let elapsedTime
 
@@ -168,11 +168,11 @@ export class Calling extends React.Component<CallingProps, CallingState> {
     )
   }
 
-  componentDidMount() {
+  componentDidMount(): void {
     document.addEventListener('keydown', this.onKeyDown)
   }
 
-  componentWillUnmount() {
+  componentWillUnmount(): void {
     document.removeEventListener('keydown', this.onKeyDown)
   }
 }
