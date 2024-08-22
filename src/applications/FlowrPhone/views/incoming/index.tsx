@@ -55,12 +55,12 @@ export class Incoming extends React.Component<IncomingProps> {
             </span>
           </div>
         </FlexRowSpaceEvenly>
-        <h4 className="warning">
+        <p className="warning">
           {this.props.translator.translate(
             'Pick Up the phone',
             this.props.lang,
           )}
-        </h4>
+        </p>
       </div>
     )
   }

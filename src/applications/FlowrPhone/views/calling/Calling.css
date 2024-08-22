@@ -17,8 +17,8 @@
         color: white;
         text-align: center;
         margin: 12px 0;
-        height: 24px;
-        flex-grow: 0;
+        height: auto;
+        width: 100%;
     }
 }
 

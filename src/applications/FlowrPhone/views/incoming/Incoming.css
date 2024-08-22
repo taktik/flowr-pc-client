@@ -15,8 +15,9 @@
         color: white;
         text-align: center;
         margin: 12px 0;
-        height: 24px;
-        flex-grow: 0;
+        height: auto;
+        flex-grow: 1;
+        width: 100%;
     }
 }
 
@@ -45,7 +46,7 @@
 }
 
 .buttons-container{
-    height: 50%;
+    height: 30%;
     flex-grow: 2;
 }
 

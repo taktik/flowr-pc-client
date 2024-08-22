@@ -146,7 +146,7 @@ export class MainView extends React.Component<MainViewProps, MainViewState> {
     }
 
     let template: JSX.Element
-    
+
     switch (this.props.callState) {
       case OFF_HOOK_STATE:
         template = templateIfCapable(this.baseTemplateForRoute(), PhoneCapabilities.EMIT)
