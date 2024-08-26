@@ -48,7 +48,7 @@ interface MainViewState {
   callNumber?: CallingNumber
 }
 
-interface baseCallingProps { translator: Translator, lang: string, hangup: () => void, mute: () => void, callingNumber: CallingNumber, elapsedTime: number }
+interface BaseCallingProps { translator: Translator, lang: string, hangup: () => void, mute: () => void, callingNumber: CallingNumber, elapsedTime: number }
 
 const StyledCalling = styled(Calling)`
   height: 70%;
@@ -124,7 +124,7 @@ export class MainView extends React.Component<MainViewProps, MainViewState> {
     }
   }
 
-  baseCallingProps(): baseCallingProps {
+  baseCallingProps(): BaseCallingProps {
     return {
       translator: this.props.translator,
       lang: this.props.lang,
