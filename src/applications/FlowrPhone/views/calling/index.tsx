@@ -118,20 +118,6 @@ export class Calling extends React.Component<CallingProps, CallingState> {
         <div className="flex-container">
           <div className="flex-column width-50">
             {elapsedTime}
-            {/* <FlexRowCenter className={this.props.className}>
-              {<div>
-                <MuteMicIcon mute={this.props.mute}/>
-                <span className="buttonSpan">Mute</span>
-              </div>
-              <div>
-                <KeyPadIcon displayKeyPad={this.toggleKeyboard.bind(this)}/>
-                <span className="buttonSpan">Keypad</span>
-              </div>
-              <div>
-                <SpeakerIcon speaker={this.props.speaker}/>
-                <span className="buttonSpan disabled">Speaker</span>
-              </div>}
-            </FlexRowCenter> */}
             <div className="flex-row">
               <div className="buttonContainer">
                 <KeyPadIcon
